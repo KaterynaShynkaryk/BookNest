@@ -47,7 +47,7 @@ class Book(models.Model):
     )
     external_id = models.CharField(max_length=120, blank=True)
     cover_url = models.URLField(blank=True)
-    publisher_year = models.PositiveIntegerField(null=True, blank=True)
+    published_year = models.PositiveIntegerField(null=True, blank=True)
     description = models.TextField(blank=True)
 
     shelves = models.ManyToManyField(

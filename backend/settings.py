@@ -121,3 +121,9 @@ STATIC_URL = 'static/'
 STATICFILES_DIRS = [
     BASE_DIR / 'static',
 ]
+
+
+# Auth settings
+LOGIN_URL = '/auth/login/'
+LOGIN_REDIRECT_URL = '/test/'
+LOGOUT_REDIRECT_URL = '/auth/login/'
