@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+
+{% block title %}Add Book{% endblock %}
+
+{% block content %}
+    <h2>Додати книгу</h2>
+    <form method="post">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <button type="submit">Зберегти</button>
+    </form>
+    <p><a href="{% url "book_list" %}">← Назад до списку</a></p>
+{% endblock %}
