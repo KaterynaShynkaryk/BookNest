@@ -1,13 +1,23 @@
 {% extends "base.html" %}
 
-{% block title %}Add Book{% endblock %}
+{% block title %}
+    {% if mode == "update" %}Редагувати книгу{% else %}Додати книгу{% endif %}
+{% endblock %}
 
 {% block content %}
-    <h2>Додати книгу</h2>
+    <h2>
+        {% if mode == "update" %}Редагувати книгу{% else %}Додати книгу{% endif %}
+    </h2>
+
     <form method="post">
         {% csrf_token %}
         {{ form.as_p }}
-        <button type="submit">Зберегти</button>
+        <button type="submit">
+            {% if mode == "update" %}Зберегти зміни{% else %}Зберегти{% endif %}
+        </button>
     </form>
-    <p><a href="{% url "book_list" %}">← Назад до списку</a></p>
+
+    <p>
+        <a href="{% url "book_list" %}">← Назад до списку</a>
+    </p>
 {% endblock %}

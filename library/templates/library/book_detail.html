@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+
+{% block title %}{{ book.title }}{% endblock %}
+
+{% block content %}
+    <h2>{{ book.title }}</h2>
+    <p><strong>Автор:</strong> {{ book.author }}</p>
+    <p><strong>Жанр:</strong> {{ book.genre|default:"Не вказано" }}</p>
+    <p><strong>Видавництво:</strong> {{ book.publisher|default:"Не вказано" }}</p>
+    <p><strong>Статус:</strong> {{ book.get_status_display }}</p>
+    <p><strong>Улюблена:</strong> {% if book.is_favorite %}Так{% else %}Ні{% endif %}</p>
+    <p><strong>Оцінка:</strong> {{ book.rating|default:"Немає оцінки" }}</p>
+    <p><strong>Дата початку:</strong> {{ book.start_date|default:"Не вказано" }}</p>
+    <p><strong>Дата завершення:</strong> {{ book.finish_date|default:"Не вказано" }}</p>
+    <p><strong>Опис:</strong> {{ book.description|default:"Опису ще немає" }}</p>
+
+    <p>
+        <a href="{% url 'book_update' book.pk %}">Редагувати</a>
+        <a href="{% url 'book_delete' book.pk %}">Видалити</a>
+        <a href="{% url 'book_list' book.pk %}">Назад до списку</a>
+    </p>
+{% endblock %}
