@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+
+{% block title %}Моя бібліотека{% endblock %}
+
+{% block content %}
+    <h2>Моя бібліотека</h2>
+    <p><a href="{% url 'book_create' %}">+ Додати книгу</a></p>
+
+    {% if books %}
+        <ul>
+            {% for book in books %}
+                <li>
+                    <strong>{{ book.title }}</strong> — {{ book.author }}
+                    ({{ book.get_status_display }})
+                    {% if book.is_favorite %}⭐{% endif %}
+
+                    <div>
+                        <a href="{% url 'book_detail' book.pk %}">Деталі</a>
+                        <a href="{% url 'book_update' book.pk %}">Редагувати</a>
+                        <a href="{% url 'book_delete' book.pk %}">Видалити</a>
+                    </div>
+                </li>
+            {% endfor %}
+        </ul>
+    {% else %}
+        <p>Поки немає книг. Додай першу 📚</p>
+    {% endif %}
+{% endblock %}
