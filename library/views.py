@@ -1,4 +1,4 @@
-from django.contrib.auth import login
+from django.contrib.auth import login, logout
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.forms import UserCreationForm
 from django.shortcuts import get_object_or_404, redirect, render
@@ -8,6 +8,11 @@ from .models import Book
 
 def test_page(request):
     return render(request, "library/test.html")
+
+
+def logout_view(request):
+    logout(request)
+    return redirect("login")
 
 
 def register(request):
