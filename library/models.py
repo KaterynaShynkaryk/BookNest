@@ -5,10 +5,10 @@ from django.db import models
 
 class Book(models.Model):
     class Status(models.TextChoices):
-        PLANNED = 'planned', 'Planned'
-        READING = 'reading', 'Reading'
-        COMPLETED = 'completed', 'Completed'
-        FAILED = 'failed', 'Failed'
+        PLANNED = 'planned', 'Заплановано'
+        READING = 'reading', 'Читаю'
+        COMPLETED = 'completed', 'Прочитано'
+        FAILED = 'failed', 'Закинуто'
 
     class Source(models.TextChoices):
         MANUAL = 'manual', 'Manual'
