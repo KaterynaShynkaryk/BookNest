@@ -72,15 +72,21 @@ a {
     font-weight: 700;
 }
 
+.checkbox-filter {
+    align-items: center;
+    display: inline-flex;
+    gap: 6px;
+}
+
 .library-filters select,
-.library-filters button {
+.library-filters button:not(.favorite-toggle) {
     border: 1px solid #d7c2ad;
     border-radius: 999px;
     font: inherit;
     padding: 8px 12px;
 }
 
-.library-filters button {
+.library-filters button:not(.favorite-toggle) {
     background: #8b5e3c;
     color: #fff;
     cursor: pointer;
@@ -137,11 +143,27 @@ a {
     padding: 14px;
 }
 
+.book-card--favorite {
+    border-left-color: #d4a017;
+}
+
 .book-card__main {
     align-items: flex-start;
     display: flex;
     gap: 12px;
     justify-content: space-between;
+}
+
+.favorite-toggle {
+    background: #fff4c2;
+    border: 1px solid #d4a017;
+    border-radius: 999px;
+    color: #9a6b00;
+    cursor: pointer;
+    font-size: 1.2rem;
+    line-height: 1;
+    min-height: 36px;
+    min-width: 36px;
 }
 
 .book-actions,

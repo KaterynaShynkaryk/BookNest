@@ -20,8 +20,12 @@
                 <option value="{{ value }}" {% if selected_status == value %}selected{% endif %}>{{ label }}</option>
             {% endfor %}
         </select>
+        <label class="checkbox-filter">
+            <input type="checkbox" name="favorite" value="1" {% if favorite_only %}checked{% endif %}>
+            Тільки обране ⭐
+        </label>
         <button type="submit">Показати</button>
-        {% if selected_status %}
+        {% if selected_status or favorite_only %}
             <a href="{% url 'book_list' %}">Скинути</a>
         {% endif %}
         <span class="visible-count">Показано книг: {{ displayed_count }}</span>
@@ -30,13 +34,19 @@
     {% if books %}
         <ul class="book-list">
             {% for book in books %}
-                <li class="book-card book-card-- {{ book.status }}">
+                <li class="book-card book-card-- {{ book.status }} {% if book.is_favorite %}book-card--favorite{% endif %}">
                     <div class="book-card__main">
                         <div>
                             <strong>{{ book.title }}</strong>
                             <span>- {{ book.author }}</span>
-                            {% if book.is_favorite %}<span aria-label="Улюблена книга">⭐</span>{% endif %}
                         </div>
+                        <form method="post" action="{% url 'book_toggle_favorite' book.pk %}">
+                            {% csrf_token %}
+                            <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                            <button class="favorite-toggle" type="submit" aria-label="{% if book.is_favorite %}Прибрати з обраного{% else %}Додати в обране{% endif %}">
+                                {% if book.is_favorite %}★{% else %}☆{% endif %}
+                            </button>
+                        </form>
                     </div>
 
                     <span class="status-label status-label--{{ book.status }}">{{ book.get_status_display }}</span>
@@ -58,6 +68,6 @@
             {% endfor %}
         </ul>
     {% else %}
-        <p class="empty-library">За цим статусом книг немає.</p>
+        <p class="empty-library">За цими фільтрами книг немає.</p>
     {% endif %}
 {% endblock %}

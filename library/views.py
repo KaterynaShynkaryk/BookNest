@@ -2,6 +2,7 @@ from django.contrib.auth import login, logout
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.forms import UserCreationForm
 from django.shortcuts import get_object_or_404, redirect, render
+from django.utils.http import url_has_allowed_host_and_scheme
 from .forms import BookForm
 from .models import Book
 
@@ -31,6 +32,7 @@ def register(request):
 @login_required
 def book_list(request):
     selected_status = request.GET.get("status", "")
+    favorite_only = request.GET.get("favorite") == "1"
     available_statuses = {status for status, label in Book.Status.choices}
 
     books = Book.objects.filter(user=request.user).prefetch_related("shelves")
@@ -39,6 +41,9 @@ def book_list(request):
     else:
         selected_status = ""
 
+    if favorite_only:
+        books = books.filter(is_favorite=True)
+
     return render(
         request,
         "library/book_list.html",
@@ -46,9 +51,28 @@ def book_list(request):
             "books": books,
             "status_choices": Book.Status.choices,
             "selected_status": selected_status,
+            "favorite_only": favorite_only,
             "displayed_count": books.count(),
         },
     )
+
+
+@login_required
+def book_toggle_favorite(request, pk):
+    book = get_object_or_404(Book, pk=pk, user=request.user)
+
+    if request.method == "POST":
+        book.is_favorite = not book.is_favorite
+        book.save(update_fields=["is_favorite", "updated_at"])
+
+    next_url = request.POST.get("next") or request.GET.get("next")
+    if next_url and url_has_allowed_host_and_scheme(
+        next_url,
+        allowed_hosts={request.get_host()},
+    ):
+        return redirect(next_url)
+
+    return redirect("book_list")
 
 
 @login_required
