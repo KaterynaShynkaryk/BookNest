@@ -3,26 +3,61 @@
 {% block title %}Моя бібліотека{% endblock %}
 
 {% block content %}
-    <h2>Моя бібліотека</h2>
-    <p><a href="{% url 'book_create' %}">+ Додати книгу</a></p>
+    <section class="library-header">
+        <div>
+            <p class="eyebrow">Твій читацький простір</p>
+            <h2>Моя бібліотека</h2>
+            <p class="muted">Статус обирається з готового списку в картці книги. Полички залишаються окремою категоризацією</p>
+        </div>
+        <a class="button" href="{% url 'book_create' %}">+ Додати книгу</a>
+    </section>
+
+    <form class="library-filters" method="get" aria-label="Фільтри бібліотеки">
+        <label for="status-filter">Статус читання</label>
+        <select id="status-filter" name="status">
+            <option value="">Усі статуси</option>
+            {% for value, label in status_choices %}
+                <option value="{{ value }}" {% if selected_status == value %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+        </select>
+        <button type="submit">Показати</button>
+        {% if selected_status %}
+            <a href="{% url 'book_list' %}">Скинути</a>
+        {% endif %}
+        <span class="visible-count">Показано книг: {{ displayed_count }}</span>
+    </form>
 
     {% if books %}
-        <ul>
+        <ul class="book-list">
             {% for book in books %}
-                <li>
-                    <strong>{{ book.title }}</strong> — {{ book.author }}
-                    ({{ book.get_status_display }})
-                    {% if book.is_favorite %}⭐{% endif %}
+                <li class="book-card book-card-- {{ book.status }}">
+                    <div class="book-card__main">
+                        <div>
+                            <strong>{{ book.title }}</strong>
+                            <span>- {{ book.author }}</span>
+                            {% if book.is_favorite %}<span aria-label="Улюблена книга">⭐</span>{% endif %}
+                        </div>
+                    </div>
 
-                    <div>
+                    <span class="status-label status-label--{{ book.status }}">{{ book.get_status_display }}</span>
+
+                    {% if book.shelves.all %}
+                        <div class="shelf-tags" aria-label="Полички книги">
+                            {% for shelf in book.shelves.all %}
+                                <span>{{ shelf.name }}</span>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+
+                    <nav class="book-actions" aria-label="Дії для {{ book.title }}">
                         <a href="{% url 'book_detail' book.pk %}">Деталі</a>
                         <a href="{% url 'book_update' book.pk %}">Редагувати</a>
                         <a href="{% url 'book_delete' book.pk %}">Видалити</a>
-                    </div>
+                    </nav>
                 </li>
             {% endfor %}
         </ul>
     {% else %}
-        <p>Поки немає книг. Додай першу 📚</p>
+        <p class="empty-library">За цим статусом книг немає.</p>
     {% endif %}
 {% endblock %}
