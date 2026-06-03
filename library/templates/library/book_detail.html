@@ -4,11 +4,18 @@
 
 {% block content %}
     <a class="back-link" href="{% url 'book_list' %}">← До бібліотеки</a>
+
     <section class="detail-layout fade-in">
         <div class="detail-main">
             <div class="detail-title-row">
-                <div class="book-cover book-cover--lg" aria-hidden="true">
-                    <span>{{ book.title|slice:":1" }}</span>
+                <div class="book-cover book-cover--lg">
+                    {% if book.cover_image %}
+                        <img src="{{ book.cover_image.url }}" alt="Обкладинка книги {{ book.title }}">
+                    {% elif book.cover_url %}
+                        <img src="{{ book.cover_url }}" alt="Обкладинка книги {{ book.title }}">
+                    {% else %}
+                        <span>{{ book.title|slice:":1" }}</span>
+                    {% endif %}
                 </div>
                 <div class="detail-title-content">
                     <h1>{{ book.title }}</h1>

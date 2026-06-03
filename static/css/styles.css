@@ -390,6 +390,14 @@ a:hover {
     position: relative;
 }
 
+
+.book-cover img {
+    display: block;
+    height: 100%;
+    object-fit: cover;
+    width: 100%;
+}
+
 .book-cover::after {
     background: rgba(255, 255, 255, 0.38);
     content: "";
@@ -493,13 +501,22 @@ a:hover {
     align-items: center;
     background: var(--muted);
     border-radius: 1rem;
-    color: color-mix(in srgb, var(--muted-foreground) 42%, transparent);
+    color: var(--primary);
     display: inline-flex;
-    font-size: 2rem;
     height: 8rem;
     justify-content: center;
     margin-bottom: 1.5rem;
     width: 6rem;
+}
+
+.empty-book svg {
+    fill: none;
+    height: 2.75rem;
+    stroke: currentColor;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    stroke-width: 1.7;
+    width: 2.75rem;
 }
 
 .empty-state h2 {
@@ -838,7 +855,7 @@ a:hover {
         flex-direction: column;
     }
 
-.add-book-link,
+    .add-book-link,
     .filter-controls,
     .visible-count {
         width: 100%;

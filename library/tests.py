@@ -1,4 +1,5 @@
 from django.contrib.auth import get_user_model
+from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase
 from django.urls import reverse
 
@@ -28,7 +29,6 @@ class BookListViewTest(TestCase):
             is_favorite=True,
         )
         Book.objects.create(
-            user=self.user,
             title="Abandoned Book",
             author="Author Three",
             status=Book.Status.FAILED,
@@ -116,6 +116,7 @@ class BookListViewTest(TestCase):
         self.assertTrue(book.is_favorite)
 
         self.client.post(reverse("book_toggle_favorite", args=[book.pk]))
+        self.client.post(reverse("book_toggle_favorite", args=[book.pk]))
         book.refresh_from_db()
         self.assertFalse(book.is_favorite)
 
@@ -158,7 +159,27 @@ class BookFormTests(TestCase):
         self.assertEqual(form.fields["author"].label, "Автор")
         self.assertEqual(form.fields["publisher"].label, "Видавництво")
         self.assertEqual(form.fields["published_year"].label, "Рік видання")
+        self.assertEqual(form.fields["cover_image"].label, "Фото обкладинки")
         self.assertEqual(form.fields["is_favorite"].label, "Додати в обране")
+
+
+    def test_book_form_accepts_cover_image_upload(self):
+        cover = SimpleUploadedFile(
+            "cover.png",
+            b"fake image content",
+            content_type="image/png",
+        )
+        form = BookForm(
+            data={
+                "title": "Cover Book",
+                "author": "Author One",
+                "status": Book.Status.PLANNED,
+            },
+            files={"cover_image": cover},
+        )
+
+        self.assertTrue(form.is_valid(), form.errors)
+        self.assertEqual(form.cleaned_data["cover_image"].name, "cover.png")
 
     def test_auth_forms_labels_are_ukrainian(self):
         login_form = UkrainianAuthenticationForm()
@@ -192,3 +213,4 @@ class BookFormTests(TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Додати книгу")
+        self.assertContains(response, 'enctype="multipart/form-data"')

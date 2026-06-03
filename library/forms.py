@@ -43,6 +43,7 @@ class BookForm(BootstrapFormMixin, forms.ModelForm):
             "genre",
             "publisher",
             "published_year",
+            "cover_image",
             "status",
             "is_favorite",
             "rating",
@@ -57,6 +58,7 @@ class BookForm(BootstrapFormMixin, forms.ModelForm):
             "genre": "Жанр",
             "publisher": "Видавництво",
             "published_year": "Рік видання",
+            "cover_image": "Фото обкладинки",
             "status": "Статус читання",
             "is_favorite": "Додати в обране",
             "rating": "Оцінка",
@@ -67,6 +69,7 @@ class BookForm(BootstrapFormMixin, forms.ModelForm):
         }
         help_texts = {
             "published_year": "За бажанням: рік видання або перевидання.",
+            "cover_image": "JPG, PNG, WEBP або GIF. Якщо не додати фото, покажемо мінімалістичну обкладинку.",
             "rating": "Вкажи число від 1 до 5, якщо вже маєш оцінку.",
         }
         widgets = {
@@ -75,6 +78,7 @@ class BookForm(BootstrapFormMixin, forms.ModelForm):
             "genre": forms.TextInput(attrs={"placeholder": "Роман, нон-фікшн, фантастика..."}),
             "publisher": forms.TextInput(attrs={"placeholder": "Назва видавництва"}),
             "published_year": forms.NumberInput(attrs={"min": 0, "placeholder": "Наприклад, 2024"}),
+            "cover_image": forms.FileInput(attrs={"accept": "image/*"}),
             "rating": forms.NumberInput(attrs={"min": 1, "max": 5, "placeholder": "1–5"}),
             "start_date": forms.DateInput(attrs={"type": "date"}),
             "finish_date": forms.DateInput(attrs={"type": "date"}),

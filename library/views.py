@@ -26,8 +26,8 @@ def register(request):
         form = UkrainianUserCreationForm()
 
     return render(request, "registration/register.html", {"form": form})
-  
-  
+
+
 @login_required
 def book_list(request):
     selected_status = request.GET.get("status", "")
@@ -66,8 +66,8 @@ def book_toggle_favorite(request, pk):
 
     next_url = request.POST.get("next") or request.GET.get("next")
     if next_url and url_has_allowed_host_and_scheme(
-        next_url,
-        allowed_hosts={request.get_host()},
+            next_url,
+            allowed_hosts={request.get_host()},
     ):
         return redirect(next_url)
 
@@ -83,7 +83,7 @@ def book_detail(request, pk):
 @login_required
 def book_create(request):
     if request.method == "POST":
-        form = BookForm(request.POST, user=request.user)
+        form = BookForm(request.POST, request.FILES, user=request.user)
         if form.is_valid():
             book = form.save(commit=False)
             book.user = request.user
@@ -101,7 +101,7 @@ def book_update(request, pk):
     book = get_object_or_404(Book, pk=pk, user=request.user)
 
     if request.method == "POST":
-        form = BookForm(request.POST, instance=book, user=request.user)
+        form = BookForm(request.POST, request.FILES, instance=book, user=request.user)
         if form.is_valid():
             book = form.save(commit=False)
             book.user = request.user

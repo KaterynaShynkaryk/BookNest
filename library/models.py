@@ -1,5 +1,5 @@
 from django.conf import settings
-from django.core.validators import MaxValueValidator, MinValueValidator
+from django.core.validators import FileExtensionValidator, MaxValueValidator, MinValueValidator
 from django.db import models
 
 
@@ -47,6 +47,15 @@ class Book(models.Model):
     )
     external_id = models.CharField(max_length=120, blank=True)
     cover_url = models.URLField(blank=True)
+    cover_image = models.FileField(
+        upload_to='book_covers/',
+        blank=True,
+        validators=[
+            FileExtensionValidator(
+                allowed_extensions=['jpg', 'jpeg', 'png', 'webp', 'gif'],
+            ),
+        ],
+    )
     published_year = models.PositiveIntegerField(null=True, blank=True)
     description = models.TextField(blank=True)
 

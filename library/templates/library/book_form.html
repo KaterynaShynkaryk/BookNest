@@ -13,7 +13,7 @@
             <p>Заповніть основну інформацію — усе інше можна доповнити пізніше.</p>
         </div>
 
-        <form method="post" novalidate class="book-form-card">
+        <form method="post" enctype="multipart/form-data" novalidate class="book-form-card">
             {% csrf_token %}
             {% if form.non_field_errors %}
                 <div class="alert alert-danger" role="alert">{{ form.non_field_errors }}</div>
@@ -21,7 +21,7 @@
 
             <div class="row g-4">
                 {% for field in form %}
-                    <div class="{% if field.name == 'description' or field.name == 'shelves' %}col-12{% elif field.name == 'is_favorite' %}col-12{% else %}col-md-6{% endif %}">
+                    <div class="{% if field.name == 'description' or field.name == 'shelves' or field.name == 'cover_image' %}col-12{% elif field.name == 'is_favorite' %}col-12{% else %}col-md-6{% endif %}">
                         {% if field.field.widget.input_type == 'checkbox' %}
                             <label class="inline-check" for="{{ field.id_for_label }}">
                                 {{ field }}
