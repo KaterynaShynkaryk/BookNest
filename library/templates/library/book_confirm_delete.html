@@ -3,13 +3,20 @@
 {% block title %}Видалити книгу{% endblock %}
 
 {% block content %}
-    <h2>Видалити книгу</h2>
+    <section class="delete-shell fade-in">
+        <div class="delete-card">
+            <div class="warning-icon" aria-hidden="true">!</div>
+            <h1>Видалити книгу?</h1>
+            <p class="delete-lead">Ви збираєтесь видалити:</p>
+            <p class="delete-title">{{ book.title }}</p>
+            <p class="delete-author">{{ book.author }}</p>
+            <p class="delete-note">Цю дію неможливо скасувати. Книга буде назавжди видалена з вашої бібліотеки.</p>
 
-    <p>Ти впевнена, що хочеш видалити книгу <strong>{{ book.title }}</strong>?</p>
-
-    <form method="post">
-        {% csrf_token %}
-        <button type="submit">Так, видалити</button>
-        <a href="{% url 'book_detail' book.pk %}">Скасувати</a>
-    </form>
+            <form class="delete-actions" method="post">
+                {% csrf_token %}
+                <button class="danger-submit" type="submit">⌫ Так, видалити</button>
+                <a class="nav-link-button" href="{% url 'book_detail' book.pk %}">← Ні, повернутися</a>
+            </form>
+        </div>
+    </section>
 {% endblock %}

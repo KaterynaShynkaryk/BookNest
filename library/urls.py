@@ -1,6 +1,8 @@
 from django.contrib.auth import views as auth_views
 from django.urls import path
 
+from .forms import UkrainianAuthenticationForm
+
 from .views import (
     book_create,
     book_delete,
@@ -23,6 +25,10 @@ urlpatterns = [
     path("test/", test_page, name="test_page"),
     path("register/", register, name="register"),
     path("auth/register/", register, name="auth_register"),
-    path("auth/login/", auth_views.LoginView.as_view(), name="login"),
+    path(
+        "auth/login/",
+        auth_views.LoginView.as_view(authentication_form=UkrainianAuthenticationForm),
+        name="login",
+    ),
     path("auth/logout/", auth_views.LogoutView.as_view(), name="logout"),
 ]

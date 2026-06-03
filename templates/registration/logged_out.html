@@ -1,8 +1,20 @@
 {% extends 'base.html' %}
 
-{% block title %}Logged out{% endblock %}
+{% block title %}Вихід{% endblock %}
+{% block body_class %}auth-body{% endblock %}
+{% block app_nav %}{% endblock %}
+{% block main_class %}auth-page{% endblock %}
 
 {% block content %}
-    <h2>Ти вийшла з акаунту</h2>
-    <p><a href="{% url 'login' %}">Увійти знову</a> </p>
+    <section class="auth-card fade-in">
+        <a class="auth-logo" href="{% url 'book_list' %}">
+            <span class="brand-icon" aria-hidden="true">⌁</span>
+            <span>Моя бібліотека</span>
+        </a>
+        <div class="auth-panel text-center">
+            <h1>Ви вийшли з акаунту</h1>
+            <p>Коли захочете повернутися до книг, просто увійдіть знову.</p>
+            <a class="primary-link-button" href="{% url 'login' %}">Увійти знову</a>
+        </div>
+    </section>
 {% endblock %}

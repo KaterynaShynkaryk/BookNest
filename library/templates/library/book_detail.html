@@ -3,20 +3,64 @@
 {% block title %}{{ book.title }}{% endblock %}
 
 {% block content %}
-    <h2>{{ book.title }}</h2>
-    <p><strong>Автор:</strong> {{ book.author }}</p>
-    <p><strong>Жанр:</strong> {{ book.genre|default:"Не вказано" }}</p>
-    <p><strong>Видавництво:</strong> {{ book.publisher|default:"Не вказано" }}</p>
-    <p><strong>Статус:</strong> {{ book.get_status_display }}</p>
-    <p><strong>Улюблена:</strong> {% if book.is_favorite %}Так{% else %}Ні{% endif %}</p>
-    <p><strong>Оцінка:</strong> {{ book.rating|default:"Немає оцінки" }}</p>
-    <p><strong>Дата початку:</strong> {{ book.start_date|default:"Не вказано" }}</p>
-    <p><strong>Дата завершення:</strong> {{ book.finish_date|default:"Не вказано" }}</p>
-    <p><strong>Опис:</strong> {{ book.description|default:"Опису ще немає" }}</p>
+    <a class="back-link" href="{% url 'book_list' %}">← До бібліотеки</a>
+    <section class="detail-layout fade-in">
+        <div class="detail-main">
+            <div class="detail-title-row">
+                <div class="book-cover book-cover--lg" aria-hidden="true">
+                    <span>{{ book.title|slice:":1" }}</span>
+                </div>
+                <div class="detail-title-content">
+                    <h1>{{ book.title }}</h1>
+                    <p>{{ book.author }}</p>
+                    <div class="detail-badges">
+                        <span class="status-label status-label--{{ book.status }}">{{ book.get_status_display }}</span>
+                        {% if book.is_favorite %}<span class="favorite-label">★ Улюблена</span>{% endif %}
+                    </div>
+                    {% if book.rating %}<p class="detail-rating">★ {{ book.rating }}/5</p>{% endif %}
+                </div>
+            </div>
 
-    <p>
-        <a href="{% url 'book_update' book.pk %}">Редагувати</a>
-        <a href="{% url 'book_delete' book.pk %}">Видалити</a>
-        <a href="{% url 'book_list' %}">Назад до списку</a>
-    </p>
+            <div class="meta-card">
+                {% if book.genre %}<div class="meta-row"><span>⌑</span><div><small>Жанр</small><strong>{{ book.genre }}</strong></div></div>{% endif %}
+                {% if book.publisher %}<div class="meta-row"><span>⌂</span><div><small>Видавництво</small><strong>{{ book.publisher }}</strong></div></div>{% endif %}
+                {% if book.published_year %}<div class="meta-row"><span>◷</span><div><small>Рік видання</small><strong>{{ book.published_year }}</strong></div></div>{% endif %}
+                <div class="meta-row"><span>♙</span><div><small>Автор</small><strong>{{ book.author }}</strong></div></div>
+                {% if book.start_date %}<div class="meta-row"><span>◇</span><div><small>Почато читати</small><strong>{{ book.start_date }}</strong></div></div>{% endif %}
+                {% if book.finish_date %}<div class="meta-row"><span>◇</span><div><small>Закінчено читати</small><strong>{{ book.finish_date }}</strong></div></div>{% endif %}
+            </div>
+
+            {% if book.shelves.all %}
+                <section class="detail-section">
+                    <h2>Полиці</h2>
+                    <div class="shelf-tags">
+                        {% for shelf in book.shelves.all %}
+                            <span>{{ shelf.name }}</span>
+                        {% endfor %}
+                    </div>
+                </section>
+            {% endif %}
+
+            {% if book.description %}
+                <section class="detail-section">
+                    <h2>Опис</h2>
+                    <p>{{ book.description }}</p>
+                </section>
+            {% endif %}
+        </div>
+
+        <aside class="detail-sidebar">
+            <div class="side-card">
+                <h2>Дії</h2>
+                <a class="action-link primary-action" href="{% url 'book_update' book.pk %}">✎ Редагувати книгу</a>
+                <a class="action-link danger-action" href="{% url 'book_delete' book.pk %}">⌫ Видалити книгу</a>
+            </div>
+            {% if not book.description %}
+                <div class="note-box">
+                    <h2>Нотатка</h2>
+                    <p>Опису ще немає. Додайте його під час редагування, щоб зберегти враження від книги.</p>
+                </div>
+            {% endif %}
+        </aside>
+    </section>
 {% endblock %}

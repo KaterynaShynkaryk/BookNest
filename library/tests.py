@@ -2,7 +2,7 @@ from django.contrib.auth import get_user_model
 from django.test import TestCase
 from django.urls import reverse
 
-from .forms import BookForm
+from .forms import BookForm, UkrainianAuthenticationForm, UkrainianUserCreationForm
 from .models import Book, Shelf
 
 
@@ -140,16 +140,34 @@ class BookListViewTest(TestCase):
 
 class BookFormTests(TestCase):
     def test_status_uses_ready_ukrainian_choices(self):
-       form = BookForm()
+        form = BookForm()
 
-       self.assertEqual(
-           [value for value, label in form.fields["status"].choices if value],
-           [status for status, label in Book.Status.choices],
-       )
-       self.assertEqual(
-           [label for value, label in Book.Status.choices],
-           ["Заплановано", "Читаю", "Прочитано", "Закинуто"],
-       )
+        self.assertEqual(
+            [value for value, label in form.fields["status"].choices if value],
+            [status for status, label in Book.Status.choices],
+        )
+        self.assertEqual(
+            [label for value, label in Book.Status.choices],
+            ["Заплановано", "Читаю", "Прочитано", "Закинуто"],
+        )
+
+    def test_book_form_labels_are_ukrainian(self):
+        form = BookForm()
+
+        self.assertEqual(form.fields["title"].label, "Назва книги")
+        self.assertEqual(form.fields["author"].label, "Автор")
+        self.assertEqual(form.fields["publisher"].label, "Видавництво")
+        self.assertEqual(form.fields["published_year"].label, "Рік видання")
+        self.assertEqual(form.fields["is_favorite"].label, "Додати в обране")
+
+    def test_auth_forms_labels_are_ukrainian(self):
+        login_form = UkrainianAuthenticationForm()
+        register_form = UkrainianUserCreationForm()
+
+        self.assertEqual(login_form.fields["username"].label, "Ім'я користувача")
+        self.assertEqual(login_form.fields["password"].label, "Пароль")
+        self.assertEqual(register_form.fields["email"].label, "Email")
+        self.assertEqual(register_form.fields["password2"].label, "Підтвердження пароля")
 
     def test_shelves_are_limited_to_current_user(self):
         User = get_user_model()

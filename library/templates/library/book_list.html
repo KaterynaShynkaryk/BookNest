@@ -1,73 +1,98 @@
 {% extends "base.html" %}
 
-{% block title %}Моя бібліотека{% endblock %}
+{% block title %}Мої книги{% endblock %}
 
 {% block content %}
-    <section class="library-header">
+    <section class="page-heading fade-in">
         <div>
-            <p class="eyebrow">Твій читацький простір</p>
-            <h2>Моя бібліотека</h2>
-            <p class="muted">Статус обирається з готового списку в картці книги. Полички залишаються окремою категоризацією</p>
+            <h1>Мої книги</h1>
+            <p>Ваша особиста цифрова бібліотека</p>
         </div>
-        <a class="button" href="{% url 'book_create' %}">+ Додати книгу</a>
+        <a class="primary-link-button add-book-link" href="{% url 'book_create' %}">+ Додати книгу</a>
     </section>
 
-    <form class="library-filters" method="get" aria-label="Фільтри бібліотеки">
-        <label for="status-filter">Статус читання</label>
-        <select id="status-filter" name="status">
-            <option value="">Усі статуси</option>
-            {% for value, label in status_choices %}
-                <option value="{{ value }}" {% if selected_status == value %}selected{% endif %}>{{ label }}</option>
-            {% endfor %}
-        </select>
-        <label class="checkbox-filter">
-            <input type="checkbox" name="favorite" value="1" {% if favorite_only %}checked{% endif %}>
-            Тільки обране ⭐
-        </label>
-        <button type="submit">Показати</button>
-        {% if selected_status or favorite_only %}
-            <a href="{% url 'book_list' %}">Скинути</a>
-        {% endif %}
-        <span class="visible-count">Показано книг: {{ displayed_count }}</span>
+        <form class="filter-bar fade-in delay-1" method="get" aria-label="Фільтри бібліотеки">
+        <div class="filter-controls">
+            <select class="form-select compact-select" id="status-filter" name="status" aria-label="Статус читання" onchange="this.form.submit()">
+                <option value="">Усі книги</option>
+                {% for value, label in status_choices %}
+                    <option value="{{ value }}" {% if selected_status == value %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+            </select>
+
+            <label class="favorite-filter">
+                <input class="form-check-input" type="checkbox" name="favorite" value="1" {% if favorite_only %}checked{% endif %} onchange="this.form.submit()">
+                <span>Улюблені</span>
+            </label>
+
+            {% if selected_status or favorite_only %}
+                <a class="reset-link" href="{% url 'book_list' %}">Скинути</a>
+            {% endif %}
+        </div>
+        <span class="visible-count">Показано книг: <strong>{{ displayed_count }}</strong></span>
     </form>
 
-    {% if books %}
-        <ul class="book-list">
+    <section class="book-grid" aria-label="Список книг">
+        {% if books %}
             {% for book in books %}
-                <li class="book-card book-card-- {{ book.status }} {% if book.is_favorite %}book-card--favorite{% endif %}">
-                    <div class="book-card__main">
-                        <div>
-                            <strong>{{ book.title }}</strong>
-                            <span>- {{ book.author }}</span>
-                        </div>
-                        <form method="post" action="{% url 'book_toggle_favorite' book.pk %}">
-                            {% csrf_token %}
-                            <input type="hidden" name="next" value="{{ request.get_full_path }}">
-                            <button class="favorite-toggle" type="submit" aria-label="{% if book.is_favorite %}Прибрати з обраного{% else %}Додати в обране{% endif %}">
-                                {% if book.is_favorite %}★{% else %}☆{% endif %}
-                            </button>
-                        </form>
-                    </div>
+                <article class="book-card fade-in" style="animation-delay: {{ forloop.counter0 }}00ms">
+                    <div class="status-strip status-strip--{{ book.status }}" aria-hidden="true"></div>
+                    <div class="book-card__body">
+                        <div class="book-card__top">
+                            <a class="book-cover book-cover--sm" href="{% url 'book_detail' book.pk %}" aria-label="Відкрити {{ book.title }}">
+                                <span>{{ book.title|slice:":1" }}</span>
+                            </a>
 
-                    <span class="status-label status-label--{{ book.status }}">{{ book.get_status_display }}</span>
-
-                    {% if book.shelves.all %}
-                        <div class="shelf-tags" aria-label="Полички книги">
-                            {% for shelf in book.shelves.all %}
-                                <span>{{ shelf.name }}</span>
-                            {% endfor %}
+                            <div class="book-card__content">
+                                <div class="book-title-row">
+                                    <h2><a href="{% url 'book_detail' book.pk %}">{{ book.title }}</a></h2>
+                                    <form method="post" action="{% url 'book_toggle_favorite' book.pk %}">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                                        <button class="favorite-toggle" type="submit" aria-label="{% if book.is_favorite %}Прибрати з обраного{% else %}Додати в обране{% endif %}">
+                                            {% if book.is_favorite %}★{% else %}☆{% endif %}
+                                        </button>
+                                    </form>
+                                </div>
+                                <p class="book-author">{{ book.author }}</p>
+                                {% if book.genre %}<p class="book-genre">{{ book.genre }}</p>{% endif %}
+                                {% if book.rating %}<p class="rating-line" aria-label="Оцінка {{ book.rating }} з 5">★ {{ book.rating }}/5</p>{% endif %}
+                            </div>
                         </div>
-                    {% endif %}
+
+                        <span class="status-label status-label--{{ book.status }}">{{ book.get_status_display }}</span>
+
+                        {% if book.shelves.all %}
+                            <div class="shelf-tags" aria-label="Полички книги">
+                                {% for shelf in book.shelves.all %}
+                                    <span>{{ shelf.name }}</span>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
 
                     <nav class="book-actions" aria-label="Дії для {{ book.title }}">
-                        <a href="{% url 'book_detail' book.pk %}">Деталі</a>
-                        <a href="{% url 'book_update' book.pk %}">Редагувати</a>
-                        <a href="{% url 'book_delete' book.pk %}">Видалити</a>
-                    </nav>
-                </li>
+                            <a href="{% url 'book_detail' book.pk %}">⌕ Деталі</a>
+                            <span aria-hidden="true">·</span>
+                            <a href="{% url 'book_update' book.pk %}">✎ Редагувати</a>
+                            <span aria-hidden="true">·</span>
+                            <a class="danger-link" href="{% url 'book_delete' book.pk %}">⌫ Видалити</a>
+                        </nav>
+                    </div>
+                </article>
             {% endfor %}
-        </ul>
-    {% else %}
-        <p class="empty-library">За цими фільтрами книг немає.</p>
-    {% endif %}
+        {% else %}
+            <div class="empty-state">
+                <div class="empty-book" aria-hidden="true">⌁</div>
+                {% if selected_status or favorite_only %}
+                    <h2>Немає книг за цим фільтром</h2>
+                    <p>Спробуйте скинути фільтр або обрати інший статус.</p>
+                    <a class="nav-link-button" href="{% url 'book_list' %}">Скинути фільтр</a>
+                {% else %}
+                    <h2>Ваша бібліотека поки порожня</h2>
+                    <p>Додайте першу книгу і почніть свій читацький шлях.</p>
+                    <a class="primary-link-button" href="{% url 'book_create' %}">Додати книгу</a>
+                {% endif %}
+            </div>
+        {% endif %}
+    </section>
 {% endblock %}

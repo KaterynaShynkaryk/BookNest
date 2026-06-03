@@ -1,13 +1,38 @@
 {% extends 'base.html' %}
 
-{% block title %}Register{% endblock %}
+{% block title %}Реєстрація{% endblock %}
+{% block body_class %}auth-body{% endblock %}
+{% block app_nav %}{% endblock %}
+{% block main_class %}auth-page{% endblock %}
 
 {% block content %}
-    <h2>Реєстрація</h2>
-    <form method="post">
-        {% csrf_token %}
-        {{ form.as_p }}
-        <button type="submit">Create account</button>
-    </form>
-    <p>Вже маєш акаунт? <a href="{% url 'login' %}">Login</a></p>
+    <section class="auth-card fade-in">
+        <a class="auth-logo" href="{% url 'book_list' %}">
+            <span class="brand-icon" aria-hidden="true">⌁</span>
+            <span>Моя бібліотека</span>
+        </a>
+
+        <div class="auth-panel">
+            <h1>Реєстрація</h1>
+            <p>Створіть свою особисту бібліотеку</p>
+
+            <form method="post" novalidate class="auth-form">
+                {% csrf_token %}
+                {% if form.non_field_errors %}
+                    <div class="alert alert-danger" role="alert">{{ form.non_field_errors }}</div>
+                {% endif %}
+                {% for field in form %}
+                    <div>
+                        <label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
+                        {{ field }}
+                        {% if field.help_text %}<div class="form-text">{{ field.help_text }}</div>{% endif %}
+                        {% for error in field.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+                    </div>
+                {% endfor %}
+                <button class="primary-link-button button-submit w-100" type="submit">Зареєструватися</button>
+            </form>
+
+            <p class="auth-switch">Вже є акаунт? <a href="{% url 'login' %}">Увійти</a></p>
+        </div>
+    </section>
 {% endblock %}

@@ -1,9 +1,8 @@
 from django.contrib.auth import login, logout
 from django.contrib.auth.decorators import login_required
-from django.contrib.auth.forms import UserCreationForm
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils.http import url_has_allowed_host_and_scheme
-from .forms import BookForm
+from .forms import BookForm, UkrainianUserCreationForm
 from .models import Book
 
 
@@ -18,13 +17,13 @@ def logout_view(request):
 
 def register(request):
     if request.method == "POST":
-        form = UserCreationForm(request.POST)
+        form = UkrainianUserCreationForm(request.POST)
         if form.is_valid():
             user = form.save()
             login(request, user)
             return redirect("book_list")
     else:
-        form = UserCreationForm()
+        form = UkrainianUserCreationForm()
 
     return render(request, "registration/register.html", {"form": form})
   
