@@ -1,23 +1,48 @@
 {% extends "base.html" %}
 
 {% block title %}
-    {% if mode == "update" %}Редагувати книгу{% else %}Додати книгу{% endif %}
+    {% if mode == "update" %}Редагувати книгу{% else %}Додати нову книгу{% endif %}
 {% endblock %}
 
 {% block content %}
-    <h2>
-        {% if mode == "update" %}Редагувати книгу{% else %}Додати книгу{% endif %}
-    </h2>
+    <a class="back-link" href="{% url "book_list" %}">← До бібліотеки</a>
 
-    <form method="post">
-        {% csrf_token %}
-        {{ form.as_p }}
-        <button type="submit">
-            {% if mode == "update" %}Зберегти зміни{% else %}Зберегти{% endif %}
-        </button>
-    </form>
+    <section class="form-shell fade-in">
+        <div class="form-heading">
+            <h1>{% if mode == "update" %}Редагувати: {{ book.title }}{% else %}Додати нову книгу{% endif %}</h1>
+            <p>Заповніть основну інформацію — усе інше можна доповнити пізніше.</p>
+        </div>
 
-    <p>
-        <a href="{% url "book_list" %}">← Назад до списку</a>
-    </p>
+        <form method="post" enctype="multipart/form-data" novalidate class="book-form-card">
+            {% csrf_token %}
+            {% if form.non_field_errors %}
+                <div class="alert alert-danger" role="alert">{{ form.non_field_errors }}</div>
+            {% endif %}
+
+            <div class="row g-4">
+                {% for field in form %}
+                    <div class="{% if field.name == 'description' or field.name == 'shelves' or field.name == 'cover_image' or field.name == 'cover_url' %}col-12{% elif field.name == 'is_favorite' %}col-12{% else %}col-md-6{% endif %}">
+                        {% if field.field.widget.input_type == 'checkbox' %}
+                            <label class="inline-check" for="{{ field.id_for_label }}">
+                                {{ field }}
+                                <span>{{ field.label }}</span>
+                            </label>
+                        {% else %}
+                            <label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
+                            {{ field }}
+                        {% endif %}
+                        {% if field.help_text %}<div class="form-text">{{ field.help_text }}</div>{% endif %}
+                        {% for error in field.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+                    </div>
+                {% endfor %}
+            </div>
+
+            <div class="form-actions">
+                <button class="primary-link-button button-submit" type="submit">
+                    {% if mode == "update" %}Зберегти зміни{% else %}Додати книгу{% endif %}
+                </button>
+                <a class="nav-link-button" href="{% url "book_list" %}">Скасувати</a>
+            </div>
+        </form>
+    </section>
 {% endblock %}
