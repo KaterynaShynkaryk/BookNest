@@ -873,3 +873,8 @@ a:hover {
         flex-direction: column;
     }
 }
+
+.mirrored-icon {
+    display: inline-block;
+    transform: scaleX(-1);
+}

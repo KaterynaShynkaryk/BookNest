@@ -77,11 +77,11 @@
                         {% endif %}
 
                         <nav class="book-actions" aria-label="Дії для {{ book.title }}">
-                            <a href="{% url 'book_detail' book.pk %}">⌕ Деталі</a>
+                            <a href="{% url 'book_detail' book.pk %}">🔍︎ Деталі</a>
                             <span aria-hidden="true">·</span>
-                            <a href="{% url 'book_update' book.pk %}">✎ Редагувати</a>
+                            <a href="{% url 'book_update' book.pk %}"><span class="mirrored-icon" aria-hidden="true">✎</span> Редагувати</a>
                             <span aria-hidden="true">·</span>
-                            <a class="danger-link" href="{% url 'book_delete' book.pk %}">⌫ Видалити</a>
+                            <a class="danger-link" href="{% url 'book_delete' book.pk %}">🗙 Видалити</a>
                         </nav>
                     </div>
                 </article>

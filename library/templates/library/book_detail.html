@@ -29,10 +29,10 @@
             </div>
 
             <div class="meta-card">
-                {% if book.genre %}<div class="meta-row"><span>⌑</span><div><small>Жанр</small><strong>{{ book.genre }}</strong></div></div>{% endif %}
-                {% if book.publisher %}<div class="meta-row"><span>⌂</span><div><small>Видавництво</small><strong>{{ book.publisher }}</strong></div></div>{% endif %}
-                {% if book.published_year %}<div class="meta-row"><span>◷</span><div><small>Рік видання</small><strong>{{ book.published_year }}</strong></div></div>{% endif %}
-                <div class="meta-row"><span>♙</span><div><small>Автор</small><strong>{{ book.author }}</strong></div></div>
+                {% if book.genre %}<div class="meta-row"><span>🎭︎</span><div><small>Жанр</small><strong>{{ book.genre }}</strong></div></div>{% endif %}
+                {% if book.publisher %}<div class="meta-row"><span>🏛︎</span><div><small>Видавництво</small><strong>{{ book.publisher }}</strong></div></div>{% endif %}
+                {% if book.published_year %}<div class="meta-row"><span>🕒︎</span><div><small>Рік видання</small><strong>{{ book.published_year }}</strong></div></div>{% endif %}
+                <div class="meta-row"><span>👤︎</span><div><small>Автор</small><strong>{{ book.author }}</strong></div></div>
                 {% if book.start_date %}<div class="meta-row"><span>◇</span><div><small>Почато читати</small><strong>{{ book.start_date }}</strong></div></div>{% endif %}
                 {% if book.finish_date %}<div class="meta-row"><span>◇</span><div><small>Закінчено читати</small><strong>{{ book.finish_date }}</strong></div></div>{% endif %}
             </div>
@@ -59,8 +59,8 @@
         <aside class="detail-sidebar">
             <div class="side-card">
                 <h2>Дії</h2>
-                <a class="action-link primary-action" href="{% url 'book_update' book.pk %}">✎ Редагувати книгу</a>
-                <a class="action-link danger-action" href="{% url 'book_delete' book.pk %}">⌫ Видалити книгу</a>
+                <a class="action-link primary-action" href="{% url 'book_update' book.pk %}"><span class="mirrored-icon" aria-hidden="true">✎</span> Редагувати</a>
+                <a class="action-link danger-action" href="{% url 'book_delete' book.pk %}">🗙 Видалити книгу</a>
             </div>
             {% if not book.description %}
                 <div class="note-box">

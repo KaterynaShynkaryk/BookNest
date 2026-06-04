@@ -29,6 +29,7 @@ class BookListViewTest(TestCase):
             is_favorite=True,
         )
         Book.objects.create(
+            user=self.user,
             title="Abandoned Book",
             author="Author Three",
             status=Book.Status.FAILED,
@@ -101,6 +102,20 @@ class BookListViewTest(TestCase):
         self.assertContains(response, "Favorite Book")
         self.assertNotContains(response, "Regular Book")
 
+    def test_book_cover_url_is_rendered_when_no_uploaded_cover_exists(self):
+        Book.objects.create(
+            user=self.user,
+            title="Linked Cover Book",
+            author="Author One",
+            cover_url="https://example.com/cover.jpg",
+        )
+
+        self.client.force_login(self.user)
+        response = self.client.get(reverse("book_list"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'src="https://example.com/cover.jpg"')
+
     def test_favorite_toggle_changes_book_favorite_state(self):
         book = Book.objects.create(
             user=self.user,
@@ -115,7 +130,6 @@ class BookListViewTest(TestCase):
         book.refresh_from_db()
         self.assertTrue(book.is_favorite)
 
-        self.client.post(reverse("book_toggle_favorite", args=[book.pk]))
         self.client.post(reverse("book_toggle_favorite", args=[book.pk]))
         book.refresh_from_db()
         self.assertFalse(book.is_favorite)
@@ -159,7 +173,8 @@ class BookFormTests(TestCase):
         self.assertEqual(form.fields["author"].label, "Автор")
         self.assertEqual(form.fields["publisher"].label, "Видавництво")
         self.assertEqual(form.fields["published_year"].label, "Рік видання")
-        self.assertEqual(form.fields["cover_image"].label, "Фото обкладинки")
+        self.assertEqual(form.fields["cover_image"].label, "Фото обкладинки з комп’ютера")
+        self.assertEqual(form.fields["cover_url"].label, "Посилання на обкладинку")
         self.assertEqual(form.fields["is_favorite"].label, "Додати в обране")
 
 
@@ -180,6 +195,19 @@ class BookFormTests(TestCase):
 
         self.assertTrue(form.is_valid(), form.errors)
         self.assertEqual(form.cleaned_data["cover_image"].name, "cover.png")
+
+    def test_book_form_accepts_cover_url(self):
+        form = BookForm(
+            data={
+                "title": "Cover Link Book",
+                "author": "Author One",
+                "cover_url": "https://example.com/cover.jpg",
+                "status": Book.Status.PLANNED,
+            },
+        )
+
+        self.assertTrue(form.is_valid(), form.errors)
+        self.assertEqual(form.cleaned_data["cover_url"], "https://example.com/cover.jpg")
 
     def test_auth_forms_labels_are_ukrainian(self):
         login_form = UkrainianAuthenticationForm()
@@ -213,4 +241,5 @@ class BookFormTests(TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Додати книгу")
+        self.assertContains(response, "Посилання на обкладинку")
         self.assertContains(response, 'enctype="multipart/form-data"')

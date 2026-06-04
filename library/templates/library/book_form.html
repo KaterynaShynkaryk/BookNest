@@ -21,7 +21,7 @@
 
             <div class="row g-4">
                 {% for field in form %}
-                    <div class="{% if field.name == 'description' or field.name == 'shelves' or field.name == 'cover_image' %}col-12{% elif field.name == 'is_favorite' %}col-12{% else %}col-md-6{% endif %}">
+                    <div class="{% if field.name == 'description' or field.name == 'shelves' or field.name == 'cover_image' or field.name == 'cover_url' %}col-12{% elif field.name == 'is_favorite' %}col-12{% else %}col-md-6{% endif %}">
                         {% if field.field.widget.input_type == 'checkbox' %}
                             <label class="inline-check" for="{{ field.id_for_label }}">
                                 {{ field }}
