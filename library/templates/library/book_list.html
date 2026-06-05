@@ -6,12 +6,23 @@
     <section class="page-heading fade-in">
         <div class="page-heading__copy">
             <h1>Мої книги</h1>
+            <p>Ваша особиста цифрова бібліотека</p>
         </div>
         <a class="primary-link-button add-book-link" href="{% url 'book_create' %}">+ Додати книгу</a>
     </section>
 
     <form class="filter-bar fade-in delay-1" method="get" aria-label="Пошук і фільтри бібліотеки">
         <div class="filter-controls filter-controls--compact">
+            <label class="visually-hidden" for="title-search">Пошук за назвою</label>
+            <input
+                class="form-control search-input"
+                id="title-search"
+                type="search"
+                name="q"
+                value="{{ search_query }}"
+                placeholder="Пошук за назвою"
+            >
+
             <details class="filter-menu" {% if selected_status or selected_genre or selected_publisher or favorite_only %}open{% endif %}>
                 <summary class="filter-menu__toggle">
                     <span>Фільтри</span>
@@ -47,15 +58,6 @@
                     </label>
                 </div>
             </details>
-            <label class="visually-hidden" for="title-search">Пошук за назвою</label>
-            <input
-                class="form-control search-input"
-                id="title-search"
-                type="search"
-                name="q"
-                value="{{ search_query }}"
-                placeholder="Пошук за назвою"
-            >
 
             <button class="nav-link-button compact-submit" type="submit">Знайти</button>
 
@@ -70,6 +72,7 @@
         {% if books %}
             {% for book in books %}
                 <article class="book-card fade-in" style="animation-delay: {{ forloop.counter0 }}00ms">
+                    <a class="book-card__link" href="{% url 'book_detail' book.pk %}" aria-label="Відкрити деталі книги {{ book.title }}"></a>
                     <div class="status-strip status-strip--{{ book.status }}" aria-hidden="true"></div>
                     <div class="book-card__body">
                         <div class="book-card__top">
@@ -90,13 +93,13 @@
                                         {% csrf_token %}
                                         <input type="hidden" name="next" value="{{ request.get_full_path }}">
                                         <button class="favorite-toggle" type="submit" aria-label="{% if book.is_favorite %}Прибрати з обраного{% else %}Додати в обране{% endif %}">
-                                            {% if book.is_favorite %}★{% else %}☆{% endif %}
+                                            {% if book.is_favorite %}♥{% else %}♡{% endif %}
                                         </button>
                                     </form>
                                 </div>
                                 <p class="book-author">{{ book.author }}</p>
                                 {% if book.genre %}<p class="book-genre">{{ book.genre }}</p>{% endif %}
-                                {% if book.rating %}<p class="rating-line" aria-label="Оцінка {{ book.rating }} з 5">★ {{ book.rating }}/5</p>{% endif %}
+                                {% if book.rating %}<p class="rating-line" aria-label="Оцінка {{ book.rating }} з 5">{{ book.rating_stars }}</p>{% endif %}
                             </div>
                         </div>
 
@@ -110,13 +113,14 @@
                             </div>
                         {% endif %}
 
-                        <nav class="book-actions" aria-label="Дії для {{ book.title }}">
-                            <a href="{% url 'book_detail' book.pk %}">👁 Деталі</a>
-                            <span aria-hidden="true">·</span>
-                            <a href="{% url 'book_update' book.pk %}"><span class="mirrored-icon" aria-hidden="true">✎</span> Редагувати</a>
-                            <span aria-hidden="true">·</span>
-                            <a class="danger-link" href="{% url 'book_delete' book.pk %}">🗙 Видалити</a>
-                        </nav>
+                        <details class="book-actions-menu">
+                            <summary aria-label="Дії для {{ book.title }}">⋯</summary>
+                            <nav class="book-actions" aria-label="Дії для {{ book.title }}">
+                                <a href="{% url 'book_detail' book.pk %}">👁 Деталі</a>
+                                <a href="{% url 'book_update' book.pk %}"><span class="mirrored-icon" aria-hidden="true">✎</span> Редагувати</a>
+                                <a class="danger-link" href="{% url 'book_delete' book.pk %}">🗙 Видалити</a>
+                            </nav>
+                        </details>
                     </div>
                 </article>
             {% endfor %}
@@ -140,4 +144,42 @@
             </div>
         {% endif %}
     </section>
+
+<script>
+        (() => {
+            const actionMenus = document.querySelectorAll(".book-actions-menu");
+            const filterMenus = document.querySelectorAll(".filter-menu");
+            const allDismissibleMenus = [...actionMenus, ...filterMenus];
+            if (!allDismissibleMenus.length) return;
+
+            const closeMenus = (menus, exceptMenu = null) => {
+                menus.forEach((menu) => {
+                    if (menu !== exceptMenu) {
+                        menu.open = false;
+                    }
+                });
+            };
+
+            actionMenus.forEach((menu) => {
+                menu.addEventListener("toggle", () => {
+                    if (menu.open) {
+                        closeMenus(actionMenus, menu);
+                    }
+                });
+            });
+
+            document.addEventListener("click", (event) => {
+                if (event.target.closest(".book-actions-menu, .filter-menu")) return;
+
+                const hasOpenMenu = allDismissibleMenus.some((menu) => menu.open);
+                if (!hasOpenMenu) return;
+
+                if (event.target.closest(".book-card__link")) {
+                    event.preventDefault();
+                }
+
+                closeMenus(allDismissibleMenus);
+            });
+        })();
+    </script>
 {% endblock %}

@@ -2,7 +2,7 @@ from django.contrib.auth import login, logout
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils.http import url_has_allowed_host_and_scheme
-from .forms import BookForm, UkrainianUserCreationForm
+from .forms import BookForm, BookProgressForm, UkrainianUserCreationForm
 from .models import Book
 
 
@@ -123,7 +123,20 @@ def book_toggle_favorite(request, pk):
 @login_required
 def book_detail(request, pk):
     book = get_object_or_404(Book, pk=pk, user=request.user)
-    return render(request, "library/book_detail.html", {"book": book})
+
+    if request.method == "POST":
+        progress_form = BookProgressForm(request.POST, instance=book)
+        if progress_form.is_valid():
+            progress_form.save()
+            return redirect("book_detail", pk=book.pk)
+    else:
+        progress_form = BookProgressForm(instance=book)
+
+    return render(
+        request,
+        "library/book_detail.html",
+        {"book": book, "progress_form": progress_form},
+    )
 
 
 @login_required

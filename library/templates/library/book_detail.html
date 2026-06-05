@@ -22,9 +22,9 @@
                     <p>{{ book.author }}</p>
                     <div class="detail-badges">
                         <span class="status-label status-label--{{ book.status }}">{{ book.get_status_display }}</span>
-                        {% if book.is_favorite %}<span class="favorite-label">★ Улюблена</span>{% endif %}
+                        {% if book.is_favorite %}<span class="favorite-label">♥ Улюблена</span>{% endif %}
                     </div>
-                    {% if book.rating %}<p class="detail-rating">★ {{ book.rating }}/5</p>{% endif %}
+                    {% if book.rating %}<p class="detail-rating" aria-label="Оцінка {{ book.rating }} з 5">{{ book.rating_stars }}</p>{% endif %}
                 </div>
             </div>
 
@@ -57,6 +57,48 @@
         </div>
 
         <aside class="detail-sidebar">
+            <form method="post" class="side-card progress-card" data-progress-form>
+                {% csrf_token %}
+                <h2>Читання</h2>
+                {% if progress_form.non_field_errors %}
+                    <div class="alert alert-danger" role="alert">{{ progress_form.non_field_errors }}</div>
+                {% endif %}
+
+                <div class="progress-field">
+                    <label class="form-label" for="{{ progress_form.status.id_for_label }}">{{ progress_form.status.label }}</label>
+                    {{ progress_form.status }}
+                    {% for error in progress_form.status.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+                </div>
+
+                <label class="inline-check progress-favorite" for="{{ progress_form.is_favorite.id_for_label }}">
+                    {{ progress_form.is_favorite }}
+                    <span>♥ {{ progress_form.is_favorite.label }}</span>
+                </label>
+
+                <div class="progress-dates">
+                    <div class="progress-field">
+                        <label class="form-label" for="{{ progress_form.start_date.id_for_label }}">{{ progress_form.start_date.label }}</label>
+                        {{ progress_form.start_date }}
+                        {% for error in progress_form.start_date.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+                    </div>
+                    <div class="progress-field gated-field" data-completed-only>
+                        <label class="form-label" for="{{ progress_form.finish_date.id_for_label }}">{{ progress_form.finish_date.label }}</label>
+                        {{ progress_form.finish_date }}
+                        {% if progress_form.finish_date.help_text %}<div class="form-text">{{ progress_form.finish_date.help_text }}</div>{% endif %}
+                        {% for error in progress_form.finish_date.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+                    </div>
+                </div>
+
+                <div class="progress-field gated-field rating-control" data-completed-only>
+                    <span class="form-label">{{ progress_form.rating.label }}</span>
+                    {{ progress_form.rating }}
+                    {% if progress_form.rating.help_text %}<div class="form-text">{{ progress_form.rating.help_text }}</div>{% endif %}
+                    {% for error in progress_form.rating.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+                </div>
+
+                <button class="primary-link-button button-submit progress-submit" type="submit">Зберегти читання</button>
+            </form>
+
             <div class="side-card">
                 <h2>Дії</h2>
                 <a class="action-link primary-action" href="{% url 'book_update' book.pk %}"><span class="mirrored-icon" aria-hidden="true">✎</span> Редагувати</a>
@@ -70,4 +112,28 @@
             {% endif %}
         </aside>
     </section>
+
+<script>
+        (() => {
+            const form = document.querySelector("[data-progress-form]");
+            if (!form) return;
+
+            const status = form.querySelector("[name='status']");
+            const completedOnlyFields = form.querySelectorAll("[data-completed-only]");
+            const completedValue = "completed";
+
+            const syncCompletedFields = () => {
+                const isCompleted = status.value === completedValue;
+                completedOnlyFields.forEach((field) => {
+                    field.classList.toggle("is-muted", !isCompleted);
+                    field.querySelectorAll("input, select, textarea").forEach((input) => {
+                        input.disabled = !isCompleted;
+                    });
+                });
+            };
+
+            status.addEventListener("change", syncCompletedFields);
+            syncCompletedFields();
+        })();
+    </script>
 {% endblock %}

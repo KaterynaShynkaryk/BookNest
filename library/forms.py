@@ -4,6 +4,17 @@ from django.contrib.auth.forms import AuthenticationForm, UserCreationForm
 from .models import Book, Shelf
 
 
+def format_star_rating(value):
+    if value in (None, ""):
+        return "☆☆☆☆☆"
+
+    rating = int(value)
+    return "★" * rating + "☆" * (5 - rating)
+
+
+RATING_CHOICES = [(value, "★") for value in range(5, 0, -1)]
+
+
 class BootstrapFormMixin:
     """Add Bootstrap-friendly classes without overriding Django validation."""
 
@@ -13,27 +24,116 @@ class BootstrapFormMixin:
 
             if isinstance(widget, forms.CheckboxInput):
                 widget.attrs.setdefault("class", "form-check-input")
+            elif isinstance(widget, forms.RadioSelect):
+                widget.attrs.setdefault("class", "rating-radio-list")
             elif isinstance(widget, forms.Select):
                 widget.attrs.setdefault("class", "form-select")
             else:
                 widget.attrs.setdefault("class", "form-control")
 
 
+class BookProgressForm(BootstrapFormMixin, forms.ModelForm):
+    rating = forms.TypedChoiceField(
+        label="Оцінка",
+        choices=RATING_CHOICES,
+        coerce=int,
+        empty_value=None,
+        required=False,
+        widget=forms.RadioSelect,
+    )
+
+    class Meta:
+        model = Book
+        fields = ["status", "is_favorite", "start_date", "finish_date", "rating"]
+        labels = {
+            "status": "Статус читання",
+            "is_favorite": "Улюблена книга",
+            "start_date": "Дата початку",
+            "finish_date": "Дата завершення",
+            "rating": "Оцінка",
+        }
+        help_texts = {
+            "finish_date": "Доступно, коли статус книги — «Прочитано».",
+            "rating": "Оцінку можна ставити тільки для прочитаних книг.",
+        }
+        widgets = {
+            "start_date": forms.DateInput(attrs={"type": "date"}),
+            "finish_date": forms.DateInput(attrs={"type": "date"}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["status"].help_text = "Зміни статус прямо на сторінці книги."
+        self.apply_bootstrap_styles()
+
+    def clean(self):
+        cleaned_data = super().clean()
+        status = cleaned_data.get("status")
+        rating = cleaned_data.get("rating")
+        finish_date = cleaned_data.get("finish_date")
+
+        if status != Book.Status.COMPLETED:
+            if rating is not None:
+                self.add_error("rating", "Оцінку можна ставити тільки для прочитаних книг.")
+            if finish_date:
+                self.add_error("finish_date", "Дату завершення можна вказати тільки для прочитаних книг.")
+
+        return cleaned_data
+
+
 class BookForm(BootstrapFormMixin, forms.ModelForm):
+    rating = forms.TypedChoiceField(
+        label="Оцінка",
+        choices=RATING_CHOICES,
+        coerce=int,
+        empty_value=None,
+        required=False,
+        widget=forms.RadioSelect,
+    )
+
     def __init__(self, *args, user=None, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields["status"].help_text = "Обери один із статусів читання."
         shelves_field = self.fields["shelves"]
+        user_books = Book.objects.none()
 
         if user is not None:
             shelves_field.queryset = Shelf.objects.filter(user=user)
+            user_books = Book.objects.filter(user=user)
         else:
             shelves_field.queryset = Shelf.objects.none()
+
+        self.genre_options = list(
+            user_books.exclude(genre="")
+            .order_by("genre")
+            .values_list("genre", flat=True)
+            .distinct()
+        )
+        self.publisher_options = list(
+            user_books.exclude(publisher="")
+            .order_by("publisher")
+            .values_list("publisher", flat=True)
+            .distinct()
+        )
 
         shelves_field.required = False
         shelves_field.help_text = "Полички — окрема категоризація книг, незалежна від статусу читання."
         self.apply_bootstrap_styles()
         self.fields["description"].widget.attrs.setdefault("rows", 4)
+
+    def clean(self):
+        cleaned_data = super().clean()
+        status = cleaned_data.get("status")
+        rating = cleaned_data.get("rating")
+        finish_date = cleaned_data.get("finish_date")
+
+        if status != Book.Status.COMPLETED:
+            if rating is not None:
+                self.add_error("rating", "Оцінку можна ставити тільки для прочитаних книг.")
+            if finish_date:
+                self.add_error("finish_date", "Дату завершення можна вказати тільки для прочитаних книг.")
+
+        return cleaned_data
 
     class Meta:
         model = Book
@@ -73,7 +173,8 @@ class BookForm(BootstrapFormMixin, forms.ModelForm):
             "published_year": "За бажанням: рік видання або перевидання.",
             "cover_image": "Додай обкладинку файлом або посиланням. ",
             "cover_url": "Встав пряме посилання на зображення.",
-            "rating": "Вкажи число від 1 до 5, якщо вже маєш оцінку.",
+            "finish_date": "Доступно, коли статус книги — «Прочитано».",
+            "rating": "Оцінку можна ставити тільки для прочитаних книг.",
         }
         widgets = {
             "title": forms.TextInput(attrs={"placeholder": "Наприклад, Місто"}),
@@ -83,7 +184,6 @@ class BookForm(BootstrapFormMixin, forms.ModelForm):
             "published_year": forms.NumberInput(attrs={"min": 0, "placeholder": "Наприклад, 2024"}),
             "cover_image": forms.FileInput(attrs={"accept": "image/*"}),
             "cover_url": forms.URLInput(attrs={"placeholder": "https://example.com/cover.jpg"}),
-            "rating": forms.NumberInput(attrs={"min": 1, "max": 5, "placeholder": "1–5"}),
             "start_date": forms.DateInput(attrs={"type": "date"}),
             "finish_date": forms.DateInput(attrs={"type": "date"}),
             "description": forms.Textarea(attrs={"placeholder": "Коротко про книгу, настрій або очікування"}),

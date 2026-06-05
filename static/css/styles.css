@@ -13,6 +13,8 @@
     --destructive: hsl(0 37% 64%);
     --destructive-soft: hsl(0 50% 96%);
     --gold: hsl(39 78% 60%);
+    --gold-muted: hsl(39 28% 78%);
+    --heart: hsl(0 72% 58%);
     --tag-bg: hsl(210 25% 93%);
     --tag-text: hsl(210 28% 38%);
     --note-bg: hsl(44 60% 98%);
@@ -396,8 +398,22 @@ a:hover {
     display: flex;
     flex-direction: column;
     min-height: 100%;
-    overflow: hidden;
+    overflow: visible;
+    position: relative;
     transition: box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.book-card__link {
+    border-radius: 1rem;
+    display: block;
+    inset: 0;
+    position: absolute;
+    z-index: 1;
+}
+
+.book-card :is(a:not(.book-card__link), button, summary, input, .book-actions-menu) {
+    position: relative;
+    z-index: 2;
 }
 
 .book-card:hover {
@@ -406,8 +422,11 @@ a:hover {
 }
 
 .status-strip {
-    height: 4px;
-    width: 100%;
+    border-radius: 1rem 1rem 0 0;
+    flex-shrink: 0;
+    height: 5px;
+    margin: -1px -1px 0;
+    width: calc(100% + 2px);
 }
 
 .status-strip--planned { background: var(--status-planned-text); }
@@ -477,10 +496,19 @@ a:hover {
 .rating-line,
 .detail-rating,
 .favorite-label {
-    color: var(--gold);
-    font-size: 0.82rem;
+    font-size: 0.95rem;
     font-weight: 600;
+    letter-spacing: 0.04em;
     margin: 0;
+}
+
+.rating-line,
+.detail-rating {
+    color: var(--gold);
+}
+
+.favorite-label {
+    color: var(--heart);
 }
 
 .book-cover {
@@ -532,8 +560,8 @@ a:hover {
 .favorite-toggle {
     background: transparent;
     border: 0;
-    color: var(--gold);
-    font-size: 1rem;
+    color: var(--heart);
+    font-size: 1.1rem;
     line-height: 1;
     padding: 0.1rem;
 }
@@ -568,24 +596,63 @@ a:hover {
     padding: 0.22rem 0.6rem;
 }
 
-.book-actions {
-    align-items: center;
-    border-top: 1px solid var(--border);
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.6rem;
+.book-actions-menu {
+    align-self: flex-end;
     margin-top: auto;
-    padding-top: 0.9rem;
+    position: relative;
 }
 
-.book-actions a,
-.book-actions span {
+.book-actions-menu summary {
+    align-items: center;
+    background: var(--muted);
+    border: 1px solid var(--border);
+    border-radius: 999px;
     color: var(--muted-foreground);
-    font-size: 0.75rem;
-    font-weight: 500;
+    cursor: pointer;
+    display: inline-flex;
+    font-size: 1.1rem;
+    height: 2rem;
+    justify-content: center;
+    line-height: 1;
+    list-style: none;
+    width: 2rem;
 }
 
-.book-actions a:first-child {
+.book-actions-menu summary::-webkit-details-marker {
+    display: none;
+}
+
+.book-actions-menu[open] summary,
+.book-actions-menu summary:hover {
+    background: var(--primary-soft);
+    color: var(--primary);
+}
+
+.book-actions {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 0.85rem;
+    box-shadow: var(--shadow-hover);
+    display: grid;
+    gap: 0.2rem;
+    min-width: 9.5rem;
+    padding: 0.45rem;
+    position: absolute;
+    right: 0;
+    top: calc(100% + 0.4rem);
+    z-index: 20;
+}
+
+.book-actions a {
+    border-radius: 0.6rem;
+    color: var(--muted-foreground);
+    font-size: 0.78rem;
+    font-weight: 500;
+    padding: 0.45rem 0.55rem;
+}
+
+.book-actions a:hover {
+    background: var(--muted);
     color: var(--primary);
 }
 
@@ -680,6 +747,18 @@ a:hover {
     margin-top: 0.35rem;
 }
 
+.existing-value-picker {
+    display: grid;
+    gap: 0.35rem;
+    margin-top: 0.65rem;
+}
+
+.existing-value-picker .form-label {
+    color: var(--muted-foreground);
+    font-size: 0.75rem;
+    margin-bottom: 0;
+}
+
 .cover-field-group {
     background: color-mix(in srgb, var(--muted) 52%, transparent);
     border: 1px solid var(--border);
@@ -696,6 +775,54 @@ a:hover {
     display: grid;
     gap: 0.9rem;
     grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+
+.rating-radio-list {
+    display: inline-flex;
+    flex-direction: row-reverse;
+    gap: 0.15rem;
+    justify-content: flex-end;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.rating-radio-list > div {
+    line-height: 1;
+}
+
+.rating-radio-list label {
+    color: var(--gold-muted);
+    cursor: pointer;
+    display: inline-flex;
+    font-size: 1.9rem;
+    line-height: 1;
+    padding: 0.05rem;
+    transition: color 0.16s ease, transform 0.16s ease;
+}
+
+.rating-radio-list input {
+    clip: rect(0, 0, 0, 0);
+    clip-path: inset(50%);
+    height: 1px;
+    overflow: hidden;
+    position: absolute;
+    white-space: nowrap;
+    width: 1px;
+}
+
+.rating-radio-list label:hover,
+.rating-radio-list label:has(input:focus-visible) {
+    color: var(--gold);
+    transform: translateY(-1px);
+}
+
+.rating-radio-list > div:has(input:checked) label,
+.rating-radio-list > div:has(input:checked) ~ div label,
+.rating-radio-list > div:hover label,
+.rating-radio-list > div:hover ~ div label {
+    color: var(--gold);
 }
 
 .form-actions {
@@ -736,6 +863,39 @@ a:hover {
 
 .meta-card {
     margin-bottom: 1.5rem;
+}
+
+.progress-card {
+    display: grid;
+    gap: 1rem;
+}
+
+.progress-field {
+    display: grid;
+    gap: 0.4rem;
+}
+
+.progress-favorite {
+    margin-bottom: 0;
+}
+
+.progress-dates {
+    display: grid;
+    gap: 0.85rem;
+}
+
+.progress-submit {
+    justify-content: center;
+    width: 100%;
+}
+
+.gated-field {
+    border-radius: 0.85rem;
+    transition: opacity 0.18s ease;
+}
+
+.gated-field.is-muted {
+    opacity: 0.48;
 }
 
 .meta-row {
@@ -1021,7 +1181,7 @@ a:hover {
     .cover-field-options {
         grid-template-columns: 1fr;
     }
-    
+
     .book-grid {
         grid-template-columns: 1fr;
     }
