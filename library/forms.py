@@ -22,7 +22,7 @@ class BootstrapFormMixin:
 class BookForm(BootstrapFormMixin, forms.ModelForm):
     def __init__(self, *args, user=None, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields["status"].help_text = "Обери один із готових статусів читання."
+        self.fields["status"].help_text = "Обери один із статусів читання."
         shelves_field = self.fields["shelves"]
 
         if user is not None:
@@ -59,8 +59,8 @@ class BookForm(BootstrapFormMixin, forms.ModelForm):
             "genre": "Жанр",
             "publisher": "Видавництво",
             "published_year": "Рік видання",
-            "cover_image": "Фото обкладинки з комп’ютера",
-            "cover_url": "Посилання на обкладинку",
+            "cover_image": "Обкладинка",
+            "cover_url": "Посилання",
             "status": "Статус читання",
             "is_favorite": "Додати в обране",
             "rating": "Оцінка",
@@ -71,8 +71,8 @@ class BookForm(BootstrapFormMixin, forms.ModelForm):
         }
         help_texts = {
             "published_year": "За бажанням: рік видання або перевидання.",
-            "cover_image": "JPG, PNG, WEBP або GIF. Якщо додати і файл, і посилання, буде показано файл.",
-            "cover_url": "Встав пряме посилання на зображення обкладинки, якщо не хочеш завантажувати файл.",
+            "cover_image": "Додай обкладинку файлом або посиланням. ",
+            "cover_url": "Встав пряме посилання на зображення.",
             "rating": "Вкажи число від 1 до 5, якщо вже маєш оцінку.",
         }
         widgets = {

@@ -21,19 +21,41 @@
 
             <div class="row g-4">
                 {% for field in form %}
-                    <div class="{% if field.name == 'description' or field.name == 'shelves' or field.name == 'cover_image' or field.name == 'cover_url' %}col-12{% elif field.name == 'is_favorite' %}col-12{% else %}col-md-6{% endif %}">
-                        {% if field.field.widget.input_type == 'checkbox' %}
-                            <label class="inline-check" for="{{ field.id_for_label }}">
+                    {% if field.name == 'cover_url' %}
+                    {% elif field.name == 'cover_image' %}
+                        <div class="col-12">
+                            <div class="cover-field-group">
+                                <span class="form-label cover-field-title">Обкладинка</span>
+                                <div class="cover-field-options">
+                                    <div>
+                                        <label class="form-label" for="{{ field.id_for_label }}">Файл</label>
+                                        {{ field }}
+                                    </div>
+                                    <div>
+                                        <label class="form-label" for="{{ form.cover_url.id_for_label }}">Посилання</label>
+                                        {{ form.cover_url }}
+                                    </div>
+                                </div>
+                                {% if field.help_text %}<div class="form-text">{{ field.help_text }}</div>{% endif %}
+                                {% for error in field.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+                                {% for error in form.cover_url.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+                            </div>
+                        </div>
+                    {% else %}
+                        <div class="{% if field.name == 'description' or field.name == 'shelves' %}col-12{% elif field.name == 'is_favorite' %}col-12{% else %}col-md-6{% endif %}">
+                            {% if field.field.widget.input_type == 'checkbox' %}
+                                <label class="inline-check" for="{{ field.id_for_label }}">
+                                    {{ field }}
+                                    <span>{{ field.label }}</span>
+                                </label>
+                            {% else %}
+                                <label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
                                 {{ field }}
-                                <span>{{ field.label }}</span>
-                            </label>
-                        {% else %}
-                            <label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
-                            {{ field }}
-                        {% endif %}
-                        {% if field.help_text %}<div class="form-text">{{ field.help_text }}</div>{% endif %}
-                        {% for error in field.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
-                    </div>
+                                {% endif %}
+                            {% if field.help_text %}<div class="form-text">{{ field.help_text }}</div>{% endif %}
+                            {% for error in field.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+                        </div>
+                    {% endif %}
                 {% endfor %}
             </div>
 
