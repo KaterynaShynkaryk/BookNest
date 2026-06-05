@@ -2,7 +2,7 @@ from django.contrib.auth import login, logout
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils.http import url_has_allowed_host_and_scheme
-from .forms import BookForm, UkrainianUserCreationForm
+from .forms import BookForm, BookProgressForm, UkrainianUserCreationForm
 from .models import Book
 
 
@@ -30,18 +30,58 @@ def register(request):
 
 @login_required
 def book_list(request):
+    search_query = request.GET.get("q", "").strip()
     selected_status = request.GET.get("status", "")
+    selected_genre = request.GET.get("genre", "")
+    selected_publisher = request.GET.get("publisher", "")
     favorite_only = request.GET.get("favorite") == "1"
     available_statuses = {status for status, label in Book.Status.choices}
 
-    books = Book.objects.filter(user=request.user).prefetch_related("shelves")
+    user_books = Book.objects.filter(user=request.user)
+    genre_choices = list(
+        user_books.exclude(genre="")
+        .order_by("genre")
+        .values_list("genre", flat=True)
+        .distinct()
+    )
+    publisher_choices = list(
+        user_books.exclude(publisher="")
+        .order_by("publisher")
+        .values_list("publisher", flat=True)
+        .distinct()
+    )
+
+    books = user_books.prefetch_related("shelves")
+    if search_query:
+        books = books.filter(title__icontains=search_query)
+
     if selected_status in available_statuses:
         books = books.filter(status=selected_status)
     else:
         selected_status = ""
 
+    if selected_genre in genre_choices:
+        books = books.filter(genre=selected_genre)
+    else:
+        selected_genre = ""
+
+    if selected_publisher in publisher_choices:
+        books = books.filter(publisher=selected_publisher)
+    else:
+        selected_publisher = ""
+
     if favorite_only:
         books = books.filter(is_favorite=True)
+
+    has_active_filters = any(
+        [
+            search_query,
+            selected_status,
+            selected_genre,
+            selected_publisher,
+            favorite_only,
+        ]
+    )
 
     return render(
         request,
@@ -49,8 +89,14 @@ def book_list(request):
         {
             "books": books,
             "status_choices": Book.Status.choices,
+            "genre_choices": genre_choices,
+            "publisher_choices": publisher_choices,
+            "search_query": search_query,
             "selected_status": selected_status,
+            "selected_genre": selected_genre,
+            "selected_publisher": selected_publisher,
             "favorite_only": favorite_only,
+            "has_active_filters": has_active_filters,
             "displayed_count": books.count(),
         },
     )
@@ -77,7 +123,20 @@ def book_toggle_favorite(request, pk):
 @login_required
 def book_detail(request, pk):
     book = get_object_or_404(Book, pk=pk, user=request.user)
-    return render(request, "library/book_detail.html", {"book": book})
+
+    if request.method == "POST":
+        progress_form = BookProgressForm(request.POST, instance=book)
+        if progress_form.is_valid():
+            progress_form.save()
+            return redirect("book_detail", pk=book.pk)
+    else:
+        progress_form = BookProgressForm(instance=book)
+
+    return render(
+        request,
+        "library/book_detail.html",
+        {"book": book, "progress_form": progress_form},
+    )
 
 
 @login_required

@@ -71,6 +71,14 @@ class Book(models.Model):
     class Meta:
         ordering = ('-created_at',)
 
+    def rating_stars(self):
+        if self.rating is None:
+            return '☆☆☆☆☆'
+
+        full_stars = int(self.rating)
+        empty_stars = 5 - full_stars
+        return '★' * full_stars + '☆' * empty_stars
+
     def __str__(self):
         return f'{self.title} - {self.author}'
 
