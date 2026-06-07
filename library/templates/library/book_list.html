@@ -71,7 +71,7 @@
     <section class="book-grid" aria-label="Список книг">
         {% if books %}
             {% for book in books %}
-                <article class="book-card fade-in" style="animation-delay: {{ forloop.counter0 }}00ms">
+                <article class="book-card book-card--{{ book.status }} fade-in" style="animation-delay: {{ forloop.counter0 }}00ms">
                     <a class="book-card__link" href="{% url 'book_detail' book.pk %}" aria-label="Відкрити деталі книги {{ book.title }}"></a>
                     <div class="status-strip status-strip--{{ book.status }}" aria-hidden="true"></div>
                     <div class="book-card__body">
