@@ -50,23 +50,24 @@
                                 </label>
                             {% else %}
                                 <label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
-                                {{ field }}
                                 {% if field.name == 'genre' and form.genre_options %}
-                                    <div class="existing-value-picker" aria-label="Існуючі жанри">
-                                        <label class="form-label" for="genre-existing-picker">Обрати існуючий жанр</label>
-                                        <select class="form-select" id="genre-existing-picker" data-fill-field="{{ field.id_for_label }}">
-                                            <option value="">Вибрати зі списку</option>
+                                    <div class="combined-value-field" aria-label="Жанр: введіть свій або оберіть існуючий">
+                                        {{ field }}
+                                        <select class="form-select existing-value-select" id="genre-existing-picker" data-fill-field="{{ field.id_for_label }}" aria-label="Обрати існуючий жанр">
+                                            <option value="">Існуючі</option>
                                             {% for genre in form.genre_options %}<option value="{{ genre }}">{{ genre }}</option>{% endfor %}
                                         </select>
                                     </div>
                                 {% elif field.name == 'publisher' and form.publisher_options %}
-                                    <div class="existing-value-picker" aria-label="Існуючі видавництва">
-                                        <label class="form-label" for="publisher-existing-picker">Обрати існуюче видавництво</label>
-                                        <select class="form-select" id="publisher-existing-picker" data-fill-field="{{ field.id_for_label }}">
-                                            <option value="">Вибрати зі списку</option>
+                                    <div class="combined-value-field" aria-label="Видавництво: введіть своє або оберіть існуюче">
+                                        {{ field }}
+                                        <select class="form-select existing-value-select" id="publisher-existing-picker" data-fill-field="{{ field.id_for_label }}" aria-label="Обрати існуюче видавництво">
+                                            <option value="">Існуючі</option>
                                             {% for publisher in form.publisher_options %}<option value="{{ publisher }}">{{ publisher }}</option>{% endfor %}
                                         </select>
                                     </div>
+                                {% else %}
+                                    {{ field }}
                                 {% endif %}
                             {% endif %}
                             {% if field.help_text %}<div class="form-text">{{ field.help_text }}</div>{% endif %}

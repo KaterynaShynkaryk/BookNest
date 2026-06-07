@@ -395,10 +395,12 @@ a:hover {
 }
 
 .book-card {
+    background: linear-gradient(to bottom, var(--card) 0 5px, var(--card) 5px);
     display: flex;
     flex-direction: column;
     min-height: 100%;
     overflow: visible;
+    padding-top: 5px;
     position: relative;
     transition: box-shadow 0.2s ease, transform 0.2s ease;
 }
@@ -421,18 +423,14 @@ a:hover {
     transform: translateY(-1px);
 }
 
-.status-strip {
-    border-radius: 1rem 1rem 0 0;
-    flex-shrink: 0;
-    height: 5px;
-    margin: -1px -1px 0;
-    width: calc(100% + 2px);
-}
+.book-card--planned { background: linear-gradient(to bottom, var(--status-planned-text) 0 5px, var(--card) 5px); }
+.book-card--reading { background: linear-gradient(to bottom, var(--status-reading-text) 0 5px, var(--card) 5px); }
+.book-card--completed { background: linear-gradient(to bottom, var(--status-completed-text) 0 5px, var(--card) 5px); }
+.book-card--failed { background: linear-gradient(to bottom, var(--status-failed-text) 0 5px, var(--card) 5px); }
 
-.status-strip--planned { background: var(--status-planned-text); }
-.status-strip--reading { background: var(--status-reading-text); }
-.status-strip--completed { background: var(--status-completed-text); }
-.status-strip--failed { background: var(--status-failed-text); }
+.status-strip {
+    display: none;
+}
 
 .book-card__body {
     display: flex;
@@ -747,16 +745,27 @@ a:hover {
     margin-top: 0.35rem;
 }
 
-.existing-value-picker {
-    display: grid;
-    gap: 0.35rem;
-    margin-top: 0.65rem;
+.combined-value-field {
+    align-items: stretch;
+    display: flex;
 }
 
-.existing-value-picker .form-label {
+.combined-value-field .form-control {
+    border-radius: 0.7rem 0 0 0.7rem;
+    min-width: 0;
+}
+
+.combined-value-field .existing-value-select {
+    border-left: 0;
+    border-radius: 0 0.7rem 0.7rem 0;
     color: var(--muted-foreground);
-    font-size: 0.75rem;
-    margin-bottom: 0;
+    flex: 0 0 min(42%, 11rem);
+    font-size: 0.85rem;
+}
+
+.combined-value-field:focus-within .form-control,
+.combined-value-field:focus-within .existing-value-select {
+    border-color: color-mix(in srgb, var(--primary) 55%, var(--border));
 }
 
 .cover-field-group {
