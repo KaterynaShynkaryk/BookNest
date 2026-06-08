@@ -1,0 +1,110 @@
+{% extends "base.html" %}
+
+{% block title %}Нотатки{% endblock %}
+
+{% block content %}
+    <a class="back-link" href="{% url 'book_list' %}">← До бібліотеки</a>
+
+    <section class="page-heading fade-in">
+        <div class="page-heading__copy">
+            <h1>Нотатки</h1>
+            <p>Загальні нотатки та нотатки, прив’язані до книг</p>
+        </div>
+    </section>
+
+    <section class="notes-page-layout fade-in delay-1">
+        <form class="book-form-card note-page-form" method="post">
+            {% csrf_token %}
+            <h2>Додати нотатку</h2>
+            {% if form.non_field_errors %}<div class="alert alert-danger" role="alert">{{ form.non_field_errors }}</div>{% endif %}
+
+            <div class="row g-4">
+                <div class="col-md-6">
+                    <label class="form-label" for="{{ form.book.id_for_label }}">{{ form.book.label }}</label>
+                    {{ form.book }}
+                    {% if form.book.help_text %}<div class="form-text">{{ form.book.help_text }}</div>{% endif %}
+                    {% for error in form.book.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label" for="{{ form.page_number.id_for_label }}">{{ form.page_number.label }}</label>
+                    {{ form.page_number }}
+                    {% if form.page_number.help_text %}<div class="form-text">{{ form.page_number.help_text }}</div>{% endif %}
+                    {% for error in form.page_number.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label" for="{{ form.title.id_for_label }}">{{ form.title.label }}</label>
+                    {{ form.title }}
+                    {% for error in form.title.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+                </div>
+                <div class="col-12">
+                    <label class="form-label" for="{{ form.content.id_for_label }}">{{ form.content.label }}</label>
+                    {{ form.content }}
+                    {% for error in form.content.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+                </div>
+            </div>
+
+            <div class="form-actions">
+                <button class="primary-link-button button-submit" type="submit">Зберегти нотатку</button>
+            </div>
+        </form>
+
+        <div class="notes-overview">
+            <section class="detail-section notes-section">
+                <h2>Без книги</h2>
+                {% if general_notes %}
+                    <div class="notes-list">
+                        {% for note in general_notes %}
+                            <article class="note-card">
+                                <div class="note-card__meta">
+                                    {% if note.page_number %}<span>стор. {{ note.page_number }}</span>{% endif %}
+                                    <time datetime="{{ note.created_at|date:'c' }}">{{ note.created_at|date:"d.m.Y" }}</time>
+                                </div>
+                                {% if note.title %}<h3>{{ note.title }}</h3>{% endif %}
+                                <p>{{ note.content }}</p>
+                                <div class="note-card__actions">
+                                    <a class="note-edit-link" href="{% url 'note_update' note.pk %}?next={{ request.get_full_path|urlencode }}">Редагувати</a>
+                                    <form method="post" action="{% url 'note_delete' note.pk %}">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                                        <button class="text-danger-button" type="submit">Видалити</button>
+                                    </form>
+                                </div>
+                            </article>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="note-empty">Загальних нотаток ще немає.</div>
+                {% endif %}
+            </section>
+
+            <section class="detail-section notes-section">
+                <h2>До книг</h2>
+                {% if book_notes %}
+                    <div class="notes-list">
+                        {% for note in book_notes %}
+                            <article class="note-card">
+                                <div class="note-card__meta">
+                                    <a href="{% url 'book_detail' note.book.pk %}">{{ note.book.title }}</a>
+                                    {% if note.page_number %}<span>стор. {{ note.page_number }}</span>{% endif %}
+                                    <time datetime="{{ note.created_at|date:'c' }}">{{ note.created_at|date:"d.m.Y" }}</time>
+                                </div>
+                                {% if note.title %}<h3>{{ note.title }}</h3>{% endif %}
+                                <p>{{ note.content }}</p>
+                                <div class="note-card__actions">
+                                    <a class="note-edit-link" href="{% url 'note_update' note.pk %}?next={{ request.get_full_path|urlencode }}">Редагувати</a>
+                                    <form method="post" action="{% url 'note_delete' note.pk %}">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                                        <button class="text-danger-button" type="submit">Видалити</button>
+                                    </form>
+                                </div>
+                            </article>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="note-empty">Нотаток до книг ще немає.</div>
+                {% endif %}
+            </section>
+        </div>
+    </section>
+{% endblock %}

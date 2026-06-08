@@ -1,9 +1,10 @@
 from django.contrib.auth import login, logout
 from django.contrib.auth.decorators import login_required
+from django.views.decorators.http import require_POST
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils.http import url_has_allowed_host_and_scheme
-from .forms import BookForm, BookProgressForm, UkrainianUserCreationForm
-from .models import Book
+from .forms import BookForm, BookProgressForm, NoteForm, UkrainianUserCreationForm
+from .models import Book, Note
 
 
 def test_page(request):
@@ -26,6 +27,17 @@ def register(request):
         form = UkrainianUserCreationForm()
 
     return render(request, "registration/register.html", {"form": form})
+
+
+def get_safe_redirect_url(request):
+    next_url = request.POST.get("next") or request.GET.get("next")
+    if next_url and url_has_allowed_host_and_scheme(
+            next_url,
+            allowed_hosts={request.get_host()},
+    ):
+        return next_url
+
+    return None
 
 
 @login_required
@@ -132,11 +144,109 @@ def book_detail(request, pk):
     else:
         progress_form = BookProgressForm(instance=book)
 
+    notes = book.notes.filter(user=request.user)
+    note_form = NoteForm(user=request.user, include_book=False)
+
     return render(
         request,
         "library/book_detail.html",
-        {"book": book, "progress_form": progress_form},
+        {
+            "book": book,
+            "progress_form": progress_form,
+            "notes": notes,
+            "note_form": note_form,
+        },
     )
+
+
+@login_required
+@require_POST
+def book_note_create(request, pk):
+    book = get_object_or_404(Book, pk=pk, user=request.user)
+    form = NoteForm(request.POST, user=request.user, include_book=False)
+
+    if form.is_valid():
+        note = form.save(commit=False)
+        note.user = request.user
+        note.book = book
+        note.save()
+        return redirect("book_detail", pk=book.pk)
+
+    return render(
+        request,
+        "library/book_detail.html",
+        {
+            "book": book,
+            "progress_form": BookProgressForm(instance=book),
+            "notes": book.notes.filter(user=request.user),
+            "note_form": form,
+        },
+    )
+
+
+@login_required
+def note_list(request):
+    if request.method == "POST":
+        form = NoteForm(request.POST, user=request.user)
+        if form.is_valid():
+            note = form.save(commit=False)
+            note.user = request.user
+            note.save()
+            return redirect("note_list")
+    else:
+        form = NoteForm(user=request.user)
+
+    notes = Note.objects.filter(user=request.user).select_related("book")
+    return render(
+        request,
+        "library/note_list.html",
+        {
+            "form": form,
+            "general_notes": notes.filter(book__isnull=True),
+            "book_notes": notes.filter(book__isnull=False),
+        },
+    )
+
+
+@login_required
+def note_update(request, pk):
+    note = get_object_or_404(Note, pk=pk, user=request.user)
+    redirect_url = get_safe_redirect_url(request)
+
+    if request.method == "POST":
+        form = NoteForm(request.POST, instance=note, user=request.user)
+        if form.is_valid():
+            form.save()
+            if redirect_url:
+                return redirect(redirect_url)
+            if note.book_id:
+                return redirect("book_detail", pk=note.book_id)
+            return redirect("note_list")
+    else:
+        form = NoteForm(instance=note, user=request.user)
+
+    return render(
+        request,
+        "library/note_form.html",
+        {"form": form, "note": note, "next_url": redirect_url},
+    )
+
+
+@login_required
+@require_POST
+def note_delete(request, pk):
+    note = get_object_or_404(Note, pk=pk, user=request.user)
+    redirect_url = get_safe_redirect_url(request)
+    fallback_book_pk = note.book_id
+    note.delete()
+
+    if redirect_url:
+        return redirect(redirect_url)
+
+    if fallback_book_pk:
+        return redirect("book_detail", pk=fallback_book_pk)
+
+    return redirect("note_list")
 
 
 @login_required

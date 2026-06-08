@@ -3,8 +3,8 @@ from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase
 from django.urls import reverse
 
-from .forms import BookForm, UkrainianAuthenticationForm, UkrainianUserCreationForm
-from .models import Book, Shelf
+from .forms import BookForm, NoteForm, UkrainianAuthenticationForm, UkrainianUserCreationForm
+from .models import Book, Note, Shelf
 
 
 class BookListViewTest(TestCase):
@@ -358,6 +358,218 @@ class BookDetailProgressTests(TestCase):
         self.book.refresh_from_db()
         self.assertIsNone(self.book.rating)
 
+
+
+class NoteFeatureTests(TestCase):
+    def setUp(self):
+        self.user = get_user_model().objects.create_user(
+            username="note-reader",
+            password="test-pass-123",
+        )
+        self.other_user = get_user_model().objects.create_user(
+            username="other-note-reader",
+            password="test-pass-123",
+        )
+        self.book = Book.objects.create(
+            user=self.user,
+            title="Note Book",
+            author="Author One",
+            start_date="2026-01-01",
+            finish_date="2026-01-10",
+        )
+
+    def test_note_form_can_create_general_note_or_user_book_note(self):
+        other_book = Book.objects.create(
+            user=self.other_user,
+            title="Other Book",
+            author="Author Two",
+        )
+
+        form = NoteForm(user=self.user)
+
+        self.assertFalse(form.fields["book"].required)
+        self.assertIn(self.book, form.fields["book"].queryset)
+        self.assertNotIn(other_book, form.fields["book"].queryset)
+
+    def test_detail_page_shows_book_notes_and_not_duplicate_reading_dates(self):
+        Note.objects.create(
+            user=self.user,
+            book=self.book,
+            title="Chapter insight",
+            content="Important quote",
+            page_number=42,
+        )
+        Note.objects.create(user=self.user, content="General thought")
+        Note.objects.create(
+            user=self.other_user,
+            book=self.book,
+            content="Hidden note",
+        )
+
+        self.client.force_login(self.user)
+        response = self.client.get(reverse("book_detail", args=[self.book.pk]))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Нотатки до книги")
+        self.assertContains(response, "Chapter insight")
+        self.assertContains(response, "Important quote")
+        self.assertContains(response, "стор. 42")
+        self.assertContains(response, "Редагувати")
+        self.assertNotContains(response, "General thought")
+        self.assertNotContains(response, "Hidden note")
+        self.assertNotContains(response, "Почато читати</small>")
+        self.assertNotContains(response, "Закінчено читати</small>")
+        self.assertContains(response, 'name="start_date"')
+        self.assertContains(response, 'value="2026-01-01"')
+        self.assertContains(response, 'name="finish_date"')
+        self.assertContains(response, 'value="2026-01-10"')
+
+    def test_user_can_add_and_delete_book_note(self):
+        self.client.force_login(self.user)
+
+        response = self.client.post(
+            reverse("book_note_create", args=[self.book.pk]),
+            {"title": "My title", "content": "New book note", "page_number": "7"},
+        )
+
+        self.assertRedirects(response, reverse("book_detail", args=[self.book.pk]))
+        note = Note.objects.get(content="New book note")
+        self.assertEqual(note.user, self.user)
+        self.assertEqual(note.book, self.book)
+        self.assertEqual(note.title, "My title")
+        self.assertEqual(note.page_number, 7)
+
+        response = self.client.post(reverse("note_delete", args=[note.pk]))
+
+        self.assertRedirects(response, reverse("book_detail", args=[self.book.pk]))
+        self.assertFalse(Note.objects.filter(pk=note.pk).exists())
+
+    def test_user_cannot_add_note_to_other_users_book_or_delete_other_users_note(self):
+        other_book = Book.objects.create(
+            user=self.other_user,
+            title="Other Book",
+            author="Author Two",
+        )
+        other_note = Note.objects.create(
+            user=self.other_user,
+            book=other_book,
+            content="Private note",
+        )
+
+        self.client.force_login(self.user)
+
+        response = self.client.post(
+            reverse("book_note_create", args=[other_book.pk]),
+            {"content": "Should not save"},
+        )
+        self.assertEqual(response.status_code, 404)
+        self.assertFalse(Note.objects.filter(content="Should not save").exists())
+
+        response = self.client.post(reverse("note_delete", args=[other_note.pk]))
+        self.assertEqual(response.status_code, 404)
+        self.assertTrue(Note.objects.filter(pk=other_note.pk).exists())
+
+    def test_general_notes_page_creates_and_lists_general_and_book_notes(self):
+        Note.objects.create(user=self.user, book=self.book, content="Book note")
+        Note.objects.create(user=self.other_user, content="Other hidden note")
+
+        self.client.force_login(self.user)
+        response = self.client.post(
+            reverse("note_list"),
+            {"book": "", "title": "General title", "content": "General note", "page_number": ""},
+        )
+
+        self.assertRedirects(response, reverse("note_list"))
+        note = Note.objects.get(content="General note")
+        self.assertEqual(note.user, self.user)
+        self.assertEqual(note.title, "General title")
+        self.assertIsNone(note.book)
+
+        response = self.client.get(reverse("note_list"))
+        self.assertContains(response, "Без книги")
+        self.assertContains(response, "До книг")
+        self.assertContains(response, "BookNest")
+        self.assertContains(response, 'class="app-sidebar"')
+        self.assertContains(response, "📚︎ Бібліотека")
+        self.assertContains(response, "📝︎ Нотатки")
+        self.assertContains(response, "▦ Полички")
+        self.assertContains(response, 'class="is-active" href="/notes/"')
+        self.assertNotContains(response, "sidebar-brand")
+        with open("static/css/styles.css", encoding="utf-8") as styles:
+            css = styles.read()
+        self.assertIn("justify-content: center", css)
+        self.assertIn(".sidebar-nav a.is-active", css)
+        self.assertIn("color: var(--primary)", css)
+        self.assertIn("justify-content: space-between", css)
+        self.assertIn("max-width: 940px", css)
+        self.assertNotIn(".has-sidebar .nav-actions", css)
+        content = response.content.decode()
+        self.assertLess(content.index("Сторінка"), content.index("Заголовок"))
+        self.assertContains(response, "General title")
+        self.assertContains(response, "General note")
+        self.assertContains(response, "Book note")
+        self.assertNotContains(response, "Other hidden note")
+
+    def test_user_can_edit_note_title_content_and_book_link(self):
+        note = Note.objects.create(
+            user=self.user,
+            book=self.book,
+            title="Old title",
+            content="Old content",
+            page_number=5,
+        )
+
+        self.client.force_login(self.user)
+        response = self.client.get(reverse("note_update", args=[note.pk]))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Редагувати нотатку")
+        self.assertContains(response, 'value="Old title"')
+        self.assertContains(response, "Old content")
+        content = response.content.decode()
+        self.assertLess(content.index("Сторінка"), content.index("Заголовок"))
+
+        response = self.client.post(
+            reverse("note_update", args=[note.pk]),
+            {
+                "book": "",
+                "title": "Updated title",
+                "content": "Updated content",
+                "page_number": "9",
+            },
+        )
+
+        self.assertRedirects(response, reverse("note_list"))
+        note.refresh_from_db()
+        self.assertIsNone(note.book)
+        self.assertEqual(note.title, "Updated title")
+        self.assertEqual(note.content, "Updated content")
+        self.assertEqual(note.page_number, 9)
+
+    def test_user_cannot_edit_other_users_note(self):
+        other_note = Note.objects.create(
+            user=self.other_user,
+            title="Other title",
+            content="Private note",
+        )
+
+        self.client.force_login(self.user)
+        response = self.client.get(reverse("note_update", args=[other_note.pk]))
+
+        self.assertEqual(response.status_code, 404)
+
+    def test_book_notes_are_deleted_with_book_but_general_notes_remain(self):
+        book_note = Note.objects.create(
+            user=self.user,
+            book=self.book,
+            content="Book note",
+        )
+        general_note = Note.objects.create(user=self.user, content="General note")
+
+        self.book.delete()
+
+        self.assertFalse(Note.objects.filter(pk=book_note.pk).exists())
+        self.assertTrue(Note.objects.filter(pk=general_note.pk).exists())
 
 
 class BookFormTests(TestCase):

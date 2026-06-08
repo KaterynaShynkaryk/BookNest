@@ -33,8 +33,6 @@
                 {% if book.publisher %}<div class="meta-row"><span>🏛︎</span><div><small>Видавництво</small><strong>{{ book.publisher }}</strong></div></div>{% endif %}
                 {% if book.published_year %}<div class="meta-row"><span>🕒︎</span><div><small>Рік видання</small><strong>{{ book.published_year }}</strong></div></div>{% endif %}
                 <div class="meta-row"><span>👤︎</span><div><small>Автор</small><strong>{{ book.author }}</strong></div></div>
-                {% if book.start_date %}<div class="meta-row"><span>◇</span><div><small>Почато читати</small><strong>{{ book.start_date }}</strong></div></div>{% endif %}
-                {% if book.finish_date %}<div class="meta-row"><span>◇</span><div><small>Закінчено читати</small><strong>{{ book.finish_date }}</strong></div></div>{% endif %}
             </div>
 
             {% if book.shelves.all %}
@@ -54,6 +52,64 @@
                     <p>{{ book.description }}</p>
                 </section>
             {% endif %}
+
+            <section class="detail-section notes-section">
+                <div class="section-heading-row">
+                    <div>
+                        <h2>Нотатки до книги</h2>
+                        <p>Зберігайте цитати, думки або враження саме для цієї книги.</p>
+                    </div>
+                    <a class="reset-link" href="{% url 'note_list' %}">Усі нотатки</a>
+                </div>
+
+                <form class="note-form" method="post" action="{% url 'book_note_create' book.pk %}">
+                    {% csrf_token %}
+                    <div class="note-form-grid">
+                        <div>
+                            <label class="form-label" for="{{ note_form.page_number.id_for_label }}">{{ note_form.page_number.label }}</label>
+                            {{ note_form.page_number }}
+                            {% if note_form.page_number.help_text %}<div class="form-text">{{ note_form.page_number.help_text }}</div>{% endif %}
+                            {% for error in note_form.page_number.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+                        </div>
+                        <div>
+                            <label class="form-label" for="{{ note_form.title.id_for_label }}">{{ note_form.title.label }}</label>
+                            {{ note_form.title }}
+                            {% for error in note_form.title.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+                        </div>
+                        <div class="note-content-field">
+                            <label class="form-label" for="{{ note_form.content.id_for_label }}">{{ note_form.content.label }}</label>
+                            {{ note_form.content }}
+                            {% for error in note_form.content.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+                        </div>
+                    </div>
+                    <button class="primary-link-button button-submit note-submit" type="submit">Додати нотатку</button>
+                </form>
+
+                {% if notes %}
+                    <div class="notes-list">
+                        {% for note in notes %}
+                            <article class="note-card">
+                                <div class="note-card__meta">
+                                    {% if note.page_number %}<span>стор. {{ note.page_number }}</span>{% endif %}
+                                    <time datetime="{{ note.created_at|date:'c' }}">{{ note.created_at|date:"d.m.Y" }}</time>
+                                </div>
+                                {% if note.title %}<h3>{{ note.title }}</h3>{% endif %}
+                                <p>{{ note.content }}</p>
+                                <div class="note-card__actions">
+                                    <a class="note-edit-link" href="{% url 'note_update' note.pk %}?next={{ request.get_full_path|urlencode }}">Редагувати</a>
+                                    <form method="post" action="{% url 'note_delete' note.pk %}">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                                        <button class="text-danger-button" type="submit">Видалити</button>
+                                    </form>
+                                </div>
+                            </article>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="note-empty">Нотаток до цієї книги ще немає.</div>
+                {% endif %}
+            </section>
         </div>
 
         <aside class="detail-sidebar">
@@ -104,12 +160,6 @@
                 <a class="action-link primary-action" href="{% url 'book_update' book.pk %}"><span class="mirrored-icon" aria-hidden="true">✎</span> Редагувати</a>
                 <a class="action-link danger-action" href="{% url 'book_delete' book.pk %}">🗙 Видалити книгу</a>
             </div>
-            {% if not book.description %}
-                <div class="note-box">
-                    <h2>Нотатка</h2>
-                    <p>Опису ще немає. Додайте його під час редагування, щоб зберегти враження від книги.</p>
-                </div>
-            {% endif %}
         </aside>
     </section>
 

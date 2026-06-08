@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+
+{% block title %}Редагувати нотатку{% endblock %}
+
+{% block content %}
+    <a class="back-link" href="{% if next_url %}{{ next_url }}{% elif note.book %}{% url 'book_detail' note.book.pk %}{% else %}{% url 'note_list' %}{% endif %}">← Назад</a>
+
+    <section class="form-shell fade-in">
+        <div class="form-heading">
+            <h1>Редагувати нотатку</h1>
+            <p>Оновіть заголовок, текст, сторінку або прив’язку до книги.</p>
+        </div>
+
+        <form class="book-form-card note-page-form" method="post">
+            {% csrf_token %}
+            {% if next_url %}<input type="hidden" name="next" value="{{ next_url }}">{% endif %}
+            {% if form.non_field_errors %}<div class="alert alert-danger" role="alert">{{ form.non_field_errors }}</div>{% endif %}
+
+            <div class="row g-4">
+                <div class="col-md-6">
+                    <label class="form-label" for="{{ form.book.id_for_label }}">{{ form.book.label }}</label>
+                    {{ form.book }}
+                    {% if form.book.help_text %}<div class="form-text">{{ form.book.help_text }}</div>{% endif %}
+                    {% for error in form.book.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label" for="{{ form.page_number.id_for_label }}">{{ form.page_number.label }}</label>
+                    {{ form.page_number }}
+                    {% if form.page_number.help_text %}<div class="form-text">{{ form.page_number.help_text }}</div>{% endif %}
+                    {% for error in form.page_number.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label" for="{{ form.title.id_for_label }}">{{ form.title.label }}</label>
+                    {{ form.title }}
+                    {% for error in form.title.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+                </div>
+                <div class="col-12">
+                    <label class="form-label" for="{{ form.content.id_for_label }}">{{ form.content.label }}</label>
+                    {{ form.content }}
+                    {% for error in form.content.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+                </div>
+            </div>
+
+            <div class="form-actions">
+                <button class="primary-link-button button-submit" type="submit">Зберегти зміни</button>
+                <a class="nav-link-button" href="{% if next_url %}{{ next_url }}{% elif note.book %}{% url 'book_detail' note.book.pk %}{% else %}{% url 'note_list' %}{% endif %}">Скасувати</a>
+            </div>
+        </form>
+    </section>
+{% endblock %}

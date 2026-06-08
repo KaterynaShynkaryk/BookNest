@@ -109,9 +109,12 @@ class Note(models.Model):
     book = models.ForeignKey(
         Book,
         on_delete=models.CASCADE,
-        related_name = 'notes',
+        related_name='notes',
+        null=True,
+        blank=True,
     )
 
+    title = models.CharField(max_length=150, blank=True)
     content = models.TextField()
     page_number = models.PositiveIntegerField(null=True, blank=True)
 
@@ -122,4 +125,10 @@ class Note(models.Model):
         ordering = ['-created_at']
 
     def __str__(self):
-        return f'Note for {self.book.title}'
+        if self.title:
+            return self.title
+
+        if self.book_id:
+            return f'Note for {self.book.title}'
+
+        return 'General note'
