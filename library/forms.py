@@ -32,6 +32,23 @@ class BootstrapFormMixin:
                 widget.attrs.setdefault("class", "form-control")
 
 
+def validate_reading_fields(form, cleaned_data):
+    status = cleaned_data.get("status")
+    rating = cleaned_data.get("rating")
+    start_date = cleaned_data.get("start_date")
+    finish_date = cleaned_data.get("finish_date")
+
+    if status != Book.Status.COMPLETED:
+        if rating is not None:
+            form.add_error("rating", "Оцінку можна ставити тільки для прочитаних книг.")
+        if finish_date:
+            form.add_error("finish_date", "Дату завершення можна вказати тільки для прочитаних книг.")
+    elif start_date and finish_date and finish_date < start_date:
+        form.add_error("finish_date", "Дата завершення не може бути раніше дати початку.")
+
+    return cleaned_data
+
+
 class BookProgressForm(BootstrapFormMixin, forms.ModelForm):
     rating = forms.TypedChoiceField(
         label="Оцінка",
@@ -68,17 +85,7 @@ class BookProgressForm(BootstrapFormMixin, forms.ModelForm):
 
     def clean(self):
         cleaned_data = super().clean()
-        status = cleaned_data.get("status")
-        rating = cleaned_data.get("rating")
-        finish_date = cleaned_data.get("finish_date")
-
-        if status != Book.Status.COMPLETED:
-            if rating is not None:
-                self.add_error("rating", "Оцінку можна ставити тільки для прочитаних книг.")
-            if finish_date:
-                self.add_error("finish_date", "Дату завершення можна вказати тільки для прочитаних книг.")
-
-        return cleaned_data
+        return validate_reading_fields(self, cleaned_data)
 
 
 class BookForm(BootstrapFormMixin, forms.ModelForm):
@@ -123,17 +130,8 @@ class BookForm(BootstrapFormMixin, forms.ModelForm):
 
     def clean(self):
         cleaned_data = super().clean()
-        status = cleaned_data.get("status")
-        rating = cleaned_data.get("rating")
-        finish_date = cleaned_data.get("finish_date")
+        return validate_reading_fields(self, cleaned_data)
 
-        if status != Book.Status.COMPLETED:
-            if rating is not None:
-                self.add_error("rating", "Оцінку можна ставити тільки для прочитаних книг.")
-            if finish_date:
-                self.add_error("finish_date", "Дату завершення можна вказати тільки для прочитаних книг.")
-
-        return cleaned_data
 
     class Meta:
         model = Book

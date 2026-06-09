@@ -3,7 +3,7 @@ from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase
 from django.urls import reverse
 
-from .forms import BookForm, NoteForm, UkrainianAuthenticationForm, UkrainianUserCreationForm
+from .forms import BookForm, BookProgressForm, NoteForm, UkrainianAuthenticationForm, UkrainianUserCreationForm
 from .models import Book, Note, Shelf
 
 
@@ -358,6 +358,53 @@ class BookDetailProgressTests(TestCase):
         self.book.refresh_from_db()
         self.assertIsNone(self.book.rating)
 
+    def test_finish_date_cannot_be_before_start_date_on_detail_page(self):
+        self.client.force_login(self.user)
+        response = self.client.post(
+            reverse("book_detail", args=[self.book.pk]),
+            {
+                "status": Book.Status.COMPLETED,
+                "start_date": "2026-02-10",
+                "finish_date": "2026-02-01",
+                "rating": "4",
+            },
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Дата завершення не може бути раніше дати початку.")
+        self.book.refresh_from_db()
+        self.assertIsNone(self.book.finish_date)
+
+    def test_progress_form_rejects_rating_outside_star_range(self):
+        for invalid_rating in ("0", "6", "abc"):
+            with self.subTest(invalid_rating=invalid_rating):
+                form = BookProgressForm(
+                    data={
+                        "status": Book.Status.COMPLETED,
+                        "start_date": "2026-01-01",
+                        "finish_date": "2026-01-10",
+                        "rating": invalid_rating,
+                    },
+                    instance=self.book,
+                )
+
+                self.assertFalse(form.is_valid())
+                self.assertIn("rating", form.errors)
+
+    def test_progress_form_allows_empty_rating_for_completed_book(self):
+        form = BookProgressForm(
+            data={
+                "status": Book.Status.COMPLETED,
+                "start_date": "2026-01-01",
+                "finish_date": "2026-01-10",
+                "rating": "",
+            },
+            instance=self.book,
+        )
+
+        self.assertTrue(form.is_valid(), form.errors)
+        self.assertIsNone(form.cleaned_data["rating"])
+
 
 
 class NoteFeatureTests(TestCase):
@@ -558,6 +605,25 @@ class NoteFeatureTests(TestCase):
 
         self.assertEqual(response.status_code, 404)
 
+    def test_detail_and_notes_pages_show_helpful_empty_states(self):
+        self.client.force_login(self.user)
+
+        detail_response = self.client.get(reverse("book_detail", args=[self.book.pk]))
+        self.assertContains(
+            detail_response,
+            "Нотаток до цієї книги ще немає. Додайте першу нотатку у формі вище.",
+        )
+
+        notes_response = self.client.get(reverse("note_list"))
+        self.assertContains(
+            notes_response,
+            "Загальних нотаток ще немає. Додайте першу нотатку у формі зліва.",
+        )
+        self.assertContains(
+            notes_response,
+            "Нотаток до книг ще немає. Оберіть книгу у формі або додайте нотатку зі сторінки книги.",
+        )
+
     def test_book_notes_are_deleted_with_book_but_general_notes_remain(self):
         book_note = Note.objects.create(
             user=self.user,
@@ -649,6 +715,50 @@ class BookFormTests(TestCase):
             form.fields["cover_image"].help_text,
             "Додай обкладинку файлом або посиланням. Якщо заповнити обидва варіанти, буде показано файл.",
         )
+
+    def test_book_form_rejects_finish_date_before_start_date(self):
+        form = BookForm(
+            data={
+                "title": "Invalid Dates",
+                "author": "Author One",
+                "status": Book.Status.COMPLETED,
+                "start_date": "2026-02-10",
+                "finish_date": "2026-02-01",
+                "rating": "4",
+            },
+        )
+
+        self.assertFalse(form.is_valid())
+        self.assertIn("finish_date", form.errors)
+        self.assertIn("Дата завершення не може бути раніше дати початку.", form.errors["finish_date"])
+
+    def test_book_form_rejects_rating_outside_star_range(self):
+        for invalid_rating in ("0", "6", "abc"):
+            with self.subTest(invalid_rating=invalid_rating):
+                form = BookForm(
+                    data={
+                        "title": "Invalid Rating",
+                        "author": "Author One",
+                        "status": Book.Status.COMPLETED,
+                        "rating": invalid_rating,
+                    },
+                )
+
+                self.assertFalse(form.is_valid())
+                self.assertIn("rating", form.errors)
+
+    def test_book_form_allows_empty_rating_for_completed_book(self):
+        form = BookForm(
+            data={
+                "title": "No Rating",
+                "author": "Author One",
+                "status": Book.Status.COMPLETED,
+                "rating": "",
+            },
+        )
+
+        self.assertTrue(form.is_valid(), form.errors)
+        self.assertIsNone(form.cleaned_data["rating"])
 
     def test_auth_forms_labels_are_ukrainian(self):
         login_form = UkrainianAuthenticationForm()
