@@ -12,9 +12,9 @@ class BookAdmin(admin.ModelAdmin):
 
 @admin.register(Note)
 class NoteAdmin(admin.ModelAdmin):
-    list_display = ('book', 'user', 'page_number', 'created_at')
-    search_fields = ('book__title', 'content')
-    list_filter = ('created_at',)
+    list_display = ('title', 'book', 'user', 'page_number', 'created_at')
+    search_fields = ('title', 'book__title', 'content')
+    list_filter = ('book', 'created_at')
 
 
 @admin.register(Shelf)

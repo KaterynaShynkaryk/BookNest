@@ -1,7 +1,7 @@
 from django import forms
 from django.contrib.auth.forms import AuthenticationForm, UserCreationForm
 
-from .models import Book, Shelf
+from .models import Book, Note, Shelf
 
 
 def format_star_rating(value):
@@ -57,8 +57,8 @@ class BookProgressForm(BootstrapFormMixin, forms.ModelForm):
             "rating": "Оцінку можна ставити тільки для прочитаних книг.",
         }
         widgets = {
-            "start_date": forms.DateInput(attrs={"type": "date"}),
-            "finish_date": forms.DateInput(attrs={"type": "date"}),
+            "start_date": forms.DateInput(format="%Y-%m-%d", attrs={"type": "date"}),
+            "finish_date": forms.DateInput(format="%Y-%m-%d", attrs={"type": "date"}),
         }
 
     def __init__(self, *args, **kwargs):
@@ -184,10 +184,48 @@ class BookForm(BootstrapFormMixin, forms.ModelForm):
             "published_year": forms.NumberInput(attrs={"min": 0, "placeholder": "Наприклад, 2024"}),
             "cover_image": forms.FileInput(attrs={"accept": "image/*"}),
             "cover_url": forms.URLInput(attrs={"placeholder": "https://example.com/cover.jpg"}),
-            "start_date": forms.DateInput(attrs={"type": "date"}),
-            "finish_date": forms.DateInput(attrs={"type": "date"}),
+            "start_date": forms.DateInput(format="%Y-%m-%d", attrs={"type": "date"}),
+            "finish_date": forms.DateInput(format="%Y-%m-%d", attrs={"type": "date"}),
             "description": forms.Textarea(attrs={"placeholder": "Коротко про книгу, настрій або очікування"}),
         }
+
+
+class NoteForm(BootstrapFormMixin, forms.ModelForm):
+    class Meta:
+        model = Note
+        fields = ["book", "title", "content", "page_number"]
+        labels = {
+            "book": "Книга",
+            "title": "Заголовок",
+            "content": "Нотатка",
+            "page_number": "Сторінка",
+        }
+        help_texts = {
+            "book": "Необов’язково: залиш порожнім, якщо нотатка не стосується конкретної книги.",
+            "page_number": "Необов’язково, якщо нотатка не прив’язана до сторінки.",
+        }
+        widgets = {
+            "title": forms.TextInput(attrs={"placeholder": "Необов’язково"}),
+            "content": forms.Textarea(
+                attrs={
+                    "rows": 3,
+                    "placeholder": "Запишіть думку, цитату або враження...",
+                },
+            ),
+        }
+    def __init__(self, *args, user=None, include_book=True, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        if include_book:
+            self.fields["book"].required = False
+            self.fields["book"].queryset = (
+                Book.objects.filter(user=user) if user is not None else Book.objects.none()
+            )
+            self.fields["book"].empty_label = "Без книги"
+        else:
+            self.fields.pop("book")
+
+        self.apply_bootstrap_styles()
 
 
 class UkrainianAuthenticationForm(BootstrapFormMixin, AuthenticationForm):
