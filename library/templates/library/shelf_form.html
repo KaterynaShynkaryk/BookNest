@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+
+{% block title %}{% if mode == "create" %}Додати поличку{% else %}Редагувати поличку{% endif %}{% endblock %}
+
+{% block content %}
+    <a class="back-link" href="{% url 'shelf_list' %}">← До поличок</a>
+
+    <section class="form-shell fade-in shelf-form-shell">
+        <div class="form-heading">
+            <h1>{% if mode == "create" %}Додати поличку{% else %}Редагувати поличку{% endif %}</h1>
+            <p>{% if mode == "create" %}Створіть нову колекцію для книг.{% else %}Оновіть назву полички.{% endif %}</p>
+        </div>
+
+        <form class="book-form-card shelf-form-card" method="post">
+            {% csrf_token %}
+            {% if form.non_field_errors %}<div class="alert alert-danger" role="alert">{{ form.non_field_errors }}</div>{% endif %}
+
+            <div class="mb-4">
+                <label class="form-label" for="{{ form.name.id_for_label }}">{{ form.name.label }}</label>
+                {{ form.name }}
+                {% for error in form.name.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+            </div>
+
+            <div class="form-actions">
+                <button class="primary-link-button button-submit" type="submit">{% if mode == "create" %}Створити поличку{% else %}Зберегти зміни{% endif %}</button>
+                <a class="nav-link-button" href="{% url 'shelf_list' %}">Скасувати</a>
+            </div>
+        </form>
+    </section>
+{% endblock %}

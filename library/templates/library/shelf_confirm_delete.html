@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+
+{% block title %}Видалити поличку{% endblock %}
+
+{% block content %}
+    <section class="delete-shell fade-in">
+        <div class="delete-card">
+            <div class="warning-icon" aria-hidden="true">!</div>
+            <h1>Видалити поличку?</h1>
+            <p class="delete-lead">Ви збираєтесь видалити поличку:</p>
+            <p class="delete-title">{{ shelf.name }}</p>
+            <p class="delete-note">Книги не будуть видалені з бібліотеки, але зв’язок із цією поличкою буде прибрано.</p>
+
+            <form class="delete-actions" method="post">
+                {% csrf_token %}
+                <button class="danger-submit" type="submit">🗙 Так, видалити</button>
+                <a class="nav-link-button" href="{% url 'shelf_list' %}">← Ні, повернутися</a>
+            </form>
+        </div>
+    </section>
+{% endblock %}

@@ -187,7 +187,35 @@ class BookForm(BootstrapFormMixin, forms.ModelForm):
             "description": forms.Textarea(attrs={"placeholder": "Коротко про книгу, настрій або очікування"}),
         }
 
+class ShelfForm(BootstrapFormMixin, forms.ModelForm):
+    class Meta:
+        model = Shelf
+        fields = ["name"]
+        labels = {"name": "Назва полички"}
+        widgets = {
+            "name": forms.TextInput(attrs={"placeholder": "Наприклад, Фентезі або Купити"}),
+        }
 
+    def __init__(self, *args, user=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.user = user
+        self.apply_bootstrap_styles()
+
+    def clean_name(self):
+        name = self.cleaned_data["name"].strip()
+        if not name:
+            raise forms.ValidationError("Введіть назву полички.")
+
+        if self.user is not None:
+            duplicate_shelves = Shelf.objects.filter(user=self.user)
+            if self.instance.pk:
+                duplicate_shelves = duplicate_shelves.exclude(pk=self.instance.pk)
+            if any(shelf.name.casefold() == name.casefold() for shelf in duplicate_shelves):
+                raise forms.ValidationError("Поличка з такою назвою вже існує.")
+
+        return name
+
+    
 class NoteForm(BootstrapFormMixin, forms.ModelForm):
     class Meta:
         model = Note

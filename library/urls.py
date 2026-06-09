@@ -15,6 +15,10 @@ from .views import (
     note_list,
     note_update,
     register,
+    shelf_create,
+    shelf_delete,
+    shelf_list,
+    shelf_update,
     test_page,
 )
 
@@ -28,6 +32,10 @@ urlpatterns = [
     path("books/<int:pk>/edit/", book_update, name="book_update"),
     path("books/<int:pk>/delete/", book_delete, name="book_delete"),
     path("notes/", note_list, name="note_list"),
+    path("shelves/", shelf_list, name="shelf_list"),
+    path("shelves/add/", shelf_create, name="shelf_create"),
+    path("shelves/<int:pk>/edit/", shelf_update, name="shelf_update"),
+    path("shelves/<int:pk>/delete/", shelf_delete, name="shelf_delete"),
     path("notes/<int:pk>/edit/", note_update, name="note_update"),
     path("notes/<int:pk>/delete/", note_delete, name="note_delete"),
     path("test/", test_page, name="test_page"),

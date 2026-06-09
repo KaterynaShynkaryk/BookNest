@@ -1,10 +1,11 @@
 from django.contrib.auth import login, logout
 from django.contrib.auth.decorators import login_required
+from django.db.models import Prefetch
 from django.views.decorators.http import require_POST
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils.http import url_has_allowed_host_and_scheme
-from .forms import BookForm, BookProgressForm, NoteForm, UkrainianUserCreationForm
-from .models import Book, Note
+from .forms import BookForm, BookProgressForm, NoteForm, ShelfForm, UkrainianUserCreationForm
+from .models import Book, Note, Shelf
 
 
 def test_page(request):
@@ -182,6 +183,77 @@ def book_note_create(request, pk):
             "note_form": form,
         },
     )
+
+
+@login_required
+def shelf_list(request):
+    shelves = (
+        Shelf.objects.filter(user=request.user)
+        .prefetch_related(
+            Prefetch(
+                "books",
+                queryset=Book.objects.filter(user=request.user).order_by("title"),
+            )
+        )
+    )
+
+    return render(
+        request,
+        "library/shelf_list.html",
+        {
+            "shelves": shelves,
+            "shelf_count": shelves.count(),
+        },
+    )
+
+
+@login_required
+def shelf_create(request):
+    if request.method == "POST":
+        form = ShelfForm(request.POST, user=request.user)
+        if form.is_valid():
+            shelf = form.save(commit=False)
+            shelf.user = request.user
+            shelf.save()
+            return redirect("shelf_list")
+    else:
+        form = ShelfForm(user=request.user)
+
+    return render(
+        request,
+        "library/shelf_form.html",
+        {"form": form, "mode": "create"},
+    )
+
+
+@login_required
+def shelf_update(request, pk):
+    shelf = get_object_or_404(Shelf, pk=pk, user=request.user)
+
+    if request.method == "POST":
+        form = ShelfForm(request.POST, instance=shelf, user=request.user)
+        if form.is_valid():
+            form.save()
+            return redirect("shelf_list")
+    else:
+        form = ShelfForm(instance=shelf, user=request.user)
+
+    return render(
+        request,
+        "library/shelf_form.html",
+        {"form": form, "shelf": shelf, "mode": "update"},
+    )
+
+
+@login_required
+def shelf_delete(request, pk):
+    shelf = get_object_or_404(Shelf, pk=pk, user=request.user)
+
+    if request.method == "POST":
+        shelf.delete()
+        return redirect("shelf_list")
+
+    return render(request, "library/shelf_confirm_delete.html", {"shelf": shelf})
 
 
 @login_required

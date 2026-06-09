@@ -3,7 +3,7 @@ from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase
 from django.urls import reverse
 
-from .forms import BookForm, BookProgressForm, NoteForm, UkrainianAuthenticationForm, UkrainianUserCreationForm
+from .forms import BookForm, BookProgressForm, NoteForm, ShelfForm, UkrainianAuthenticationForm, UkrainianUserCreationForm
 from .models import Book, Note, Shelf
 
 
@@ -56,6 +56,55 @@ class BookListViewTest(TestCase):
         self.assertContains(response, "Заплановано")
         self.assertContains(response, "Читаю")
         self.assertContains(response, "Закинуто")
+
+    def test_book_card_shows_shelves_next_to_status(self):
+        shelf = Shelf.objects.create(user=self.user, name="Фентезі")
+        book = Book.objects.create(
+            user=self.user,
+            title="Shelf Book",
+            author="Author One",
+            status=Book.Status.READING,
+        )
+        book.shelves.add(shelf)
+
+        self.client.force_login(self.user)
+        response = self.client.get(reverse("book_list"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'class="book-meta-row"')
+        self.assertContains(response, 'aria-label="Полички книги"')
+        self.assertContains(response, "Читаю")
+        self.assertContains(response, "Фентезі")
+        content = response.content.decode()
+        self.assertLess(content.index("Читаю"), content.index("Фентезі"))
+
+    def test_library_empty_state_is_compact_and_actionable(self):
+        self.client.force_login(self.user)
+        response = self.client.get(reverse("book_list"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'class="empty-state library-empty-state"')
+        self.assertContains(response, 'class="empty-state__icon"')
+        self.assertContains(response, "Бібліотека порожня")
+        self.assertContains(response, "Додайте першу книгу, щоб почати збирати свою цифрову бібліотеку.")
+        self.assertContains(response, "Додати книгу")
+        self.assertNotContains(response, "Ваша бібліотека поки порожня")
+        self.assertNotContains(response, "empty-book")
+        with open("static/css/styles.css", encoding="utf-8") as styles:
+            css = styles.read()
+        self.assertIn(".empty-state__icon", css)
+        self.assertIn("font-size: 2.75rem", css)
+
+    def test_filtered_library_empty_state_is_compact_and_clear(self):
+        self.client.force_login(self.user)
+        response = self.client.get(reverse("book_list"), {"q": "missing"})
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'class="empty-state library-empty-state"')
+        self.assertContains(response, "Книг не знайдено")
+        self.assertContains(response, "Змініть пошук або скиньте фільтри")
+        self.assertContains(response, "Скинути фільтри")
+        self.assertNotContains(response, "Немає книг за цим запитом")
 
     def test_book_can_be_filtered_by_status(self):
         Book.objects.create(
@@ -306,6 +355,128 @@ class BookListViewTest(TestCase):
         self.assertContains(response, 'event.target.closest(".book-card__link")')
 
 
+class ShelfListViewTests(TestCase):
+    def setUp(self):
+        self.user = get_user_model().objects.create_user(
+            username="shelf-reader",
+            password="test-pass-123",
+        )
+        self.other_user = get_user_model().objects.create_user(
+            username="other-shelf-reader",
+            password="test-pass-123",
+        )
+
+    def test_shelf_list_shows_only_current_users_shelves_and_books(self):
+        fantasy = Shelf.objects.create(user=self.user, name="Фентезі")
+        classics = Shelf.objects.create(user=self.user, name="Класика")
+        hidden_shelf = Shelf.objects.create(user=self.other_user, name="Чужа поличка")
+        first_book = Book.objects.create(user=self.user, title="Абетка магії", author="Автор Один")
+        second_book = Book.objects.create(user=self.user, title="Замок", author="Автор Два")
+        hidden_book = Book.objects.create(user=self.other_user, title="Чужа книга", author="Автор Три")
+        fantasy.books.add(second_book, first_book)
+        classics.books.add(first_book)
+        hidden_shelf.books.add(hidden_book)
+
+        self.client.force_login(self.user)
+        response = self.client.get(reverse("shelf_list"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "library/shelf_list.html")
+        self.assertEqual(response.context["shelf_count"], 2)
+        self.assertContains(response, "Фентезі")
+        self.assertContains(response, "Класика")
+        self.assertContains(response, "Книг: 2")
+        self.assertContains(response, "Книг: 1")
+        self.assertContains(response, "Абетка магії")
+        self.assertContains(response, "Замок")
+        self.assertContains(response, 'class="is-active" href="/shelves/"')
+        self.assertNotContains(response, "Чужа поличка")
+        self.assertNotContains(response, "Чужа книга")
+
+    def test_shelf_list_has_empty_state(self):
+        self.client.force_login(self.user)
+        response = self.client.get(reverse("shelf_list"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context["shelf_count"], 0)
+        self.assertContains(response, "Поличок ще немає")
+        self.assertContains(response, "Створіть першу поличку, щоб групувати книги за настроєм, жанром або планами.")
+        self.assertContains(response, 'class="empty-state shelf-empty-state"')
+        self.assertContains(response, 'class="shelf-empty-icon"')
+        self.assertContains(response, "До бібліотеки")
+        self.assertNotContains(response, "empty-book")
+        self.assertNotContains(response, "Створення поличок додамо наступним кроком")
+        with open("static/css/styles.css", encoding="utf-8") as styles:
+            css = styles.read()
+        self.assertIn(".shelf-empty-state", css)
+        self.assertIn(".shelf-empty-icon", css)
+        self.assertIn("font-size: 2.75rem", css)
+
+    def test_user_can_create_shelf(self):
+        self.client.force_login(self.user)
+        response = self.client.post(reverse("shelf_create"), {"name": "  Манґа  "})
+
+        self.assertRedirects(response, reverse("shelf_list"))
+        shelf = Shelf.objects.get(user=self.user)
+        self.assertEqual(shelf.name, "Манґа")
+
+    def test_create_shelf_shows_validation_errors(self):
+        Shelf.objects.create(user=self.user, name="Фентезі")
+
+        self.client.force_login(self.user)
+        response = self.client.post(reverse("shelf_create"), {"name": "фентезі"})
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "library/shelf_form.html")
+        self.assertContains(response, "Поличка з такою назвою вже існує.")
+        self.assertEqual(Shelf.objects.filter(user=self.user).count(), 1)
+
+    def test_user_can_update_own_shelf(self):
+        shelf = Shelf.objects.create(user=self.user, name="Старе")
+
+        self.client.force_login(self.user)
+        response = self.client.post(reverse("shelf_update", args=[shelf.pk]), {"name": "Нове"})
+
+        self.assertRedirects(response, reverse("shelf_list"))
+        shelf.refresh_from_db()
+        self.assertEqual(shelf.name, "Нове")
+
+    def test_user_cannot_update_other_users_shelf(self):
+        shelf = Shelf.objects.create(user=self.other_user, name="Чужа")
+
+        self.client.force_login(self.user)
+        response = self.client.post(reverse("shelf_update", args=[shelf.pk]), {"name": "Нова"})
+
+        self.assertEqual(response.status_code, 404)
+        shelf.refresh_from_db()
+        self.assertEqual(shelf.name, "Чужа")
+
+    def test_user_can_delete_own_shelf_without_deleting_books(self):
+        shelf = Shelf.objects.create(user=self.user, name="Видалити")
+        book = Book.objects.create(user=self.user, title="Book", author="Author")
+        book.shelves.add(shelf)
+
+        self.client.force_login(self.user)
+        get_response = self.client.get(reverse("shelf_delete", args=[shelf.pk]))
+        self.assertEqual(get_response.status_code, 200)
+        self.assertContains(get_response, "Книги не будуть видалені")
+
+        response = self.client.post(reverse("shelf_delete", args=[shelf.pk]))
+
+        self.assertRedirects(response, reverse("shelf_list"))
+        self.assertFalse(Shelf.objects.filter(pk=shelf.pk).exists())
+        self.assertTrue(Book.objects.filter(pk=book.pk).exists())
+
+    def test_user_cannot_delete_other_users_shelf(self):
+        shelf = Shelf.objects.create(user=self.other_user, name="Чужа")
+
+        self.client.force_login(self.user)
+        response = self.client.post(reverse("shelf_delete", args=[shelf.pk]))
+
+        self.assertEqual(response.status_code, 404)
+        self.assertTrue(Shelf.objects.filter(pk=shelf.pk).exists())
+
+
 
 class BookDetailProgressTests(TestCase):
     def setUp(self):
@@ -540,6 +711,7 @@ class NoteFeatureTests(TestCase):
         self.assertContains(response, "📚︎ Бібліотека")
         self.assertContains(response, "📝︎ Нотатки")
         self.assertContains(response, "▦ Полички")
+        self.assertContains(response, 'href="/shelves/"')
         self.assertContains(response, 'class="is-active" href="/notes/"')
         self.assertNotContains(response, "sidebar-brand")
         with open("static/css/styles.css", encoding="utf-8") as styles:
@@ -613,6 +785,7 @@ class NoteFeatureTests(TestCase):
             detail_response,
             "Нотаток до цієї книги ще немає. Додайте першу нотатку у формі вище.",
         )
+        self.assertContains(detail_response, 'class="note-empty__icon"')
 
         notes_response = self.client.get(reverse("note_list"))
         self.assertContains(
@@ -636,6 +809,29 @@ class NoteFeatureTests(TestCase):
 
         self.assertFalse(Note.objects.filter(pk=book_note.pk).exists())
         self.assertTrue(Note.objects.filter(pk=general_note.pk).exists())
+
+
+    class ShelfFormTests(TestCase):
+        def test_shelf_form_rejects_duplicate_name_for_same_user(self):
+            user = get_user_model().objects.create_user(username="shelf-form-reader")
+            other = get_user_model().objects.create_user(username="other-shelf-form-reader")
+            Shelf.objects.create(user=user, name="Фентезі")
+            Shelf.objects.create(user=other, name="Фентезі")
+
+            form = ShelfForm(data={"name": " фентезі "}, user=user)
+
+            self.assertFalse(form.is_valid())
+            self.assertIn("Поличка з такою назвою вже існує.", form.errors["name"])
+
+        def test_shelf_form_allows_same_name_for_different_user(self):
+            owner = get_user_model().objects.create_user(username="owner-shelf-form-reader")
+            other = get_user_model().objects.create_user(username="allowed-shelf-form-reader")
+            Shelf.objects.create(user=owner, name="Фентезі")
+
+            form = ShelfForm(data={"name": "Фентезі"}, user=other)
+
+            self.assertTrue(form.is_valid(), form.errors)
+            self.assertEqual(form.cleaned_data["name"], "Фентезі")
 
 
 class BookFormTests(TestCase):
