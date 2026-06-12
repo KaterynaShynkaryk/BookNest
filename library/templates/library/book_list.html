@@ -23,10 +23,10 @@
                 placeholder="Пошук за назвою"
             >
 
-            <details class="filter-menu" {% if selected_status or selected_genre or selected_publisher or favorite_only %}open{% endif %}>
+            <details class="filter-menu" {% if selected_status or selected_genre or selected_publisher or selected_series or favorite_only %}open{% endif %}>
                 <summary class="filter-menu__toggle">
                     <span>Фільтри</span>
-                    {% if selected_status or selected_genre or selected_publisher or favorite_only %}<span class="filter-dot" aria-label="Фільтри активні"></span>{% endif %}
+                    {% if selected_status or selected_genre or selected_publisher or selected_series or favorite_only %}<span class="filter-dot" aria-label="Фільтри активні"></span>{% endif %}
                     <span class="filter-chevron" aria-hidden="true"></span>
                 </summary>
 
@@ -49,6 +49,13 @@
                         <option value="">Усі видавництва</option>
                         {% for publisher in publisher_choices %}
                             <option value="{{ publisher }}" {% if selected_publisher == publisher %}selected{% endif %}>{{ publisher }}</option>
+                        {% endfor %}
+                    </select>
+
+                    <select class="form-select compact-select" id="series-filter" name="series" aria-label="Серія" onchange="this.form.submit()">
+                        <option value="">Усі серії</option>
+                        {% for series in series_choices %}
+                            <option value="{{ series }}" {% if selected_series == series %}selected{% endif %}>{{ series }}</option>
                         {% endfor %}
                     </select>
 

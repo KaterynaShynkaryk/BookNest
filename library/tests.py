@@ -173,13 +173,14 @@ class BookListViewTest(TestCase):
         self.assertContains(response, "Dune Messiah")
         self.assertNotContains(response, "Foundation")
 
-    def test_books_can_be_filtered_by_genre_and_publisher(self):
+    def test_books_can_be_filtered_by_genre_publisher_and_series(self):
         Book.objects.create(
             user=self.user,
             title="Fantasy Press Book",
             author="Author One",
             genre="Fantasy",
             publisher="Book Press",
+            series="Chronicles",
         )
         Book.objects.create(
             user=self.user,
@@ -187,26 +188,30 @@ class BookListViewTest(TestCase):
             author="Author Two",
             genre="Sci-Fi",
             publisher="Book Press",
+            series="Chronicles",
         )
         Book.objects.create(
             user=self.user,
             title="Fantasy House Book",
             author="Author Three",
-            genre="Fantasy",
+            genre="Fantasy, Romance",
             publisher="Story House",
+            series="Standalone",
         )
 
         self.client.force_login(self.user)
         response = self.client.get(
             reverse("book_list"),
-            {"genre": "Fantasy", "publisher": "Book Press"},
+            {"genre": "Fantasy", "publisher": "Book Press", "series": "Chronicles"},
         )
 
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.context["selected_genre"], "Fantasy")
         self.assertEqual(response.context["selected_publisher"], "Book Press")
-        self.assertEqual(response.context["genre_choices"], ["Fantasy", "Sci-Fi"])
+        self.assertEqual(response.context["selected_series"], "Chronicles")
+        self.assertEqual(response.context["genre_choices"], ["Fantasy", "Romance", "Sci-Fi"])
         self.assertEqual(response.context["publisher_choices"], ["Book Press", "Story House"])
+        self.assertEqual(response.context["series_choices"], ["Chronicles", "Standalone"])
         self.assertEqual(response.context["displayed_count"], 1)
         self.assertContains(response, "Fantasy Press Book")
         self.assertNotContains(response, "Sci Fi Press Book")
@@ -220,6 +225,7 @@ class BookListViewTest(TestCase):
             status=Book.Status.COMPLETED,
             genre="Sci-Fi",
             publisher="Ace",
+            series="Dune",
             is_favorite=True,
         )
         Book.objects.create(
@@ -229,6 +235,7 @@ class BookListViewTest(TestCase):
             status=Book.Status.READING,
             genre="Sci-Fi",
             publisher="Ace",
+            series="Dune",
             is_favorite=True,
         )
         Book.objects.create(
@@ -238,6 +245,7 @@ class BookListViewTest(TestCase):
             status=Book.Status.COMPLETED,
             genre="Sci-Fi",
             publisher="Penguin",
+            series="Dune",
             is_favorite=True,
         )
         Book.objects.create(
@@ -247,6 +255,7 @@ class BookListViewTest(TestCase):
             status=Book.Status.COMPLETED,
             genre="Reference",
             publisher="Ace",
+            series="Reference Shelf",
             is_favorite=False,
         )
 
@@ -258,6 +267,7 @@ class BookListViewTest(TestCase):
                 "status": Book.Status.COMPLETED,
                 "genre": "Sci-Fi",
                 "publisher": "Ace",
+                "series": "Dune",
                 "favorite": "1",
             },
         )
@@ -267,6 +277,7 @@ class BookListViewTest(TestCase):
         self.assertEqual(response.context["selected_status"], Book.Status.COMPLETED)
         self.assertEqual(response.context["selected_genre"], "Sci-Fi")
         self.assertEqual(response.context["selected_publisher"], "Ace")
+        self.assertEqual(response.context["selected_series"], "Dune")
         self.assertTrue(response.context["favorite_only"])
         self.assertTrue(response.context["has_active_filters"])
         self.assertEqual(response.context["displayed_count"], 1)
@@ -287,7 +298,19 @@ class BookListViewTest(TestCase):
         response = self.client.get(reverse("book_list"))
 
         self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'class="book-cover book-cover--sm"')
+        self.assertNotContains(response, 'class="book-cover-frame book-cover--sm"')
         self.assertContains(response, 'src="https://example.com/cover.jpg"')
+
+    def test_book_cover_has_no_decorative_left_stripe(self):
+        with open("static/css/styles.css", encoding="utf-8") as styles:
+            css = styles.read()
+
+        self.assertIn(".book-cover img", css)
+        self.assertNotIn(".book-cover-frame", css)
+        self.assertNotIn("left: 18%", css)
+        self.assertNotIn("linear-gradient(135deg", css)
+        self.assertNotIn("left: -10px", css)
 
     def test_favorite_toggle_changes_book_favorite_state(self):
         book = Book.objects.create(
@@ -390,6 +413,12 @@ class ShelfListViewTests(TestCase):
         self.assertContains(response, "Абетка магії")
         self.assertContains(response, "Замок")
         self.assertContains(response, 'class="is-active" href="/shelves/"')
+        self.assertContains(response, 'class="book-actions-menu shelf-actions-menu"')
+        self.assertContains(response, "⋯")
+        self.assertContains(response, '<span class="mirrored-icon" aria-hidden="true">✎</span> Редагувати')
+        self.assertContains(response, "🗙 Видалити")
+        self.assertContains(response, 'event.target.closest(".shelf-actions-menu")')
+        self.assertNotContains(response, 'class="shelf-card__icon"')
         self.assertNotContains(response, "Чужа поличка")
         self.assertNotContains(response, "Чужа книга")
 
@@ -512,6 +541,26 @@ class BookDetailProgressTests(TestCase):
         self.assertEqual(str(self.book.finish_date), "2026-01-10")
         self.assertEqual(self.book.rating, 3)
         self.assertEqual(self.book.rating_stars(), "★★★☆☆")
+
+    def test_detail_page_avoids_duplicate_author_and_rating_in_main_content(self):
+        self.book.status = Book.Status.COMPLETED
+        self.book.rating = 4
+        self.book.genre = "Fantasy"
+        self.book.publisher = "Book Press"
+        self.book.series = "Series One"
+        self.book.save()
+
+        self.client.force_login(self.user)
+        response = self.client.get(reverse("book_detail", args=[self.book.pk]))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Author One")
+        self.assertNotContains(response, 'class="detail-rating"')
+        self.assertNotContains(response, "<small>Автор</small>")
+        self.assertContains(response, "Fantasy")
+        self.assertContains(response, "Book Press")
+        self.assertContains(response, "Серія")
+        self.assertContains(response, "Series One")
 
     def test_rating_is_allowed_only_for_completed_books(self):
         self.client.force_login(self.user)
@@ -853,6 +902,7 @@ class BookFormTests(TestCase):
         self.assertEqual(form.fields["title"].label, "Назва книги")
         self.assertEqual(form.fields["author"].label, "Автор")
         self.assertEqual(form.fields["publisher"].label, "Видавництво")
+        self.assertEqual(form.fields["series"].label, "Серія")
         self.assertEqual(form.fields["published_year"].label, "Рік видання")
         self.assertEqual(form.fields["cover_image"].label, "Обкладинка")
         self.assertEqual(form.fields["cover_url"].label, "Посилання")
@@ -956,6 +1006,20 @@ class BookFormTests(TestCase):
         self.assertTrue(form.is_valid(), form.errors)
         self.assertIsNone(form.cleaned_data["rating"])
 
+    def test_book_form_normalizes_multiple_genres(self):
+        form = BookForm(
+            data={
+                "title": "Multi Genre",
+                "author": "Author One",
+                "genre": " Fantasy; fantasy, Romance , ",
+                "status": Book.Status.PLANNED,
+            },
+        )
+
+        self.assertTrue(form.is_valid(), form.errors)
+        self.assertEqual(form.cleaned_data["genre"], "Fantasy, Romance")
+        self.assertIn("кілька жанрів", form.fields["genre"].help_text)
+
     def test_auth_forms_labels_are_ukrainian(self):
         login_form = UkrainianAuthenticationForm()
         register_form = UkrainianUserCreationForm()
@@ -976,6 +1040,66 @@ class BookFormTests(TestCase):
 
         self.assertIn(owner_shelf, form.fields["shelves"].queryset)
         self.assertNotIn(other_shelf, form.fields["shelves"].queryset)
+        self.assertEqual(form.fields["shelves"].widget.__class__.__name__, "CheckboxSelectMultiple")
+        self.assertEqual(form.fields["shelves"].widget.attrs["class"], "checkbox-list")
+        self.assertIn("зніміть усі позначки", form.fields["shelves"].help_text)
+
+    def test_book_update_page_renders_shelf_checkboxes_without_clear_button(self):
+        user = get_user_model().objects.create_user(username="shelf-checkboxes", password="test-pass-123")
+        shelf = Shelf.objects.create(user=user, name="Fantasy")
+        book = Book.objects.create(
+            user=user,
+            title="Shelf Checkbox Book",
+            author="Author One",
+            status=Book.Status.PLANNED,
+        )
+        book.shelves.add(shelf)
+
+        self.client.force_login(user)
+        response = self.client.get(reverse("book_update", args=[book.pk]))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'class="checkbox-fieldset"')
+        self.assertContains(response, 'class="checkbox-list"')
+        self.assertContains(response, 'type="checkbox"')
+        self.assertContains(response, "Fantasy")
+        self.assertNotContains(response, "Прибрати всі полички")
+        with open("static/css/styles.css", encoding="utf-8") as styles:
+            css = styles.read()
+        self.assertIn('.checkbox-list input[type="checkbox"]', css)
+        self.assertIn('.checkbox-list input[type="checkbox"]:checked', css)
+
+    def test_book_update_can_clear_all_shelves(self):
+        user = get_user_model().objects.create_user(username="clear-shelves", password="test-pass-123")
+        shelf = Shelf.objects.create(user=user, name="Fantasy")
+        book = Book.objects.create(
+            user=user,
+            title="Shelf Book",
+            author="Author One",
+            status=Book.Status.PLANNED,
+        )
+        book.shelves.add(shelf)
+
+        self.client.force_login(user)
+        response = self.client.post(
+            reverse("book_update", args=[book.pk]),
+            {
+                "title": book.title,
+                "author": book.author,
+                "genre": "",
+                "publisher": "",
+                "published_year": "",
+                "cover_url": "",
+                "status": Book.Status.PLANNED,
+                "start_date": "",
+                "finish_date": "",
+                "rating": "",
+                "description": "",
+            },
+        )
+
+        self.assertRedirects(response, reverse("book_detail", args=[book.pk]))
+        self.assertEqual(book.shelves.count(), 0)
 
     def test_genre_and_publisher_inputs_suggest_current_user_values(self):
         User = get_user_model()
@@ -987,13 +1111,15 @@ class BookFormTests(TestCase):
             author="Author One",
             genre="Fantasy",
             publisher="Book Press",
+            series="Chronicles",
         )
         Book.objects.create(
             user=owner,
             title="Owner Sci-Fi",
             author="Author Two",
-            genre="Sci-Fi",
+            genre="Sci-Fi, Fantasy",
             publisher="Story House",
+            series="Saga",
         )
         Book.objects.create(
             user=other,
@@ -1001,14 +1127,40 @@ class BookFormTests(TestCase):
             author="Author Three",
             genre="Horror",
             publisher="Other Press",
+            series="Hidden Series",
         )
 
         form = BookForm(user=owner)
 
         self.assertEqual(form.genre_options, ["Fantasy", "Sci-Fi"])
         self.assertEqual(form.publisher_options, ["Book Press", "Story House"])
+        self.assertEqual(form.series_options, ["Chronicles", "Saga"])
         self.assertNotIn("list", form.fields["genre"].widget.attrs)
         self.assertNotIn("list", form.fields["publisher"].widget.attrs)
+        self.assertNotIn("list", form.fields["series"].widget.attrs)
+
+    def test_update_page_renders_existing_series_picker(self):
+        user = get_user_model().objects.create_user(username="series-picker", password="test-pass-123")
+        existing_book = Book.objects.create(
+            user=user,
+            title="Existing Series Book",
+            author="Author One",
+            series="The Expanse",
+        )
+        Book.objects.create(
+            user=user,
+            title="Editable Book",
+            author="Author Two",
+        )
+
+        self.client.force_login(user)
+        response = self.client.get(reverse("book_update", args=[existing_book.pk]))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'name="series"')
+        self.assertContains(response, 'id="series-existing-picker"')
+        self.assertContains(response, 'aria-label="Обрати існуючу серію"')
+        self.assertContains(response, "The Expanse")
 
     def test_create_page_renders_empty_form_for_get_request(self):
         user = get_user_model().objects.create_user(
@@ -1028,7 +1180,11 @@ class BookFormTests(TestCase):
         self.assertContains(response, 'name="cover_url"')
         self.assertNotContains(response, 'list="genre-options"')
         self.assertNotContains(response, 'list="publisher-options"')
+        self.assertNotContains(response, 'list="series-options"')
+        self.assertContains(response, 'name="series"')
         self.assertContains(response, 'enctype="multipart/form-data"')
+        self.assertContains(response, "Поличок ще немає")
+        self.assertNotContains(response, "Прибрати всі полички")
 
 
     def test_create_page_renders_existing_genre_and_publisher_suggestions(self):
@@ -1052,6 +1208,7 @@ class BookFormTests(TestCase):
         self.assertContains(response, 'id="genre-existing-picker"')
         self.assertContains(response, '<option value="Fantasy">Fantasy</option>')
         self.assertContains(response, 'data-fill-field="id_genre"')
+        self.assertContains(response, 'data-append-value="true"')
         self.assertContains(response, 'id="publisher-existing-picker"')
         self.assertContains(response, '<option value="Book Press">Book Press</option>')
         self.assertContains(response, 'data-fill-field="id_publisher"')

@@ -24,6 +24,7 @@ class Book(models.Model):
     author = models.CharField(max_length=255)
     genre = models.CharField(max_length=100, blank=True)
     publisher = models.CharField(max_length=150, blank=True)
+    series = models.CharField(max_length=150, blank=True)
 
     status = models.CharField(
         max_length=20,

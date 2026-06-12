@@ -23,12 +23,13 @@
                             <h2>{{ shelf.name }}</h2>
                             <p>Книг: {{ shelf.books.all|length }}</p>
                         </div>
-                        <span class="shelf-card__icon" aria-hidden="true">▦</span>
-                    </div>
-
-                    <div class="shelf-card__actions">
-                        <a href="{% url 'shelf_update' shelf.pk %}">Редагувати</a>
-                        <a class="danger-link" href="{% url 'shelf_delete' shelf.pk %}">Видалити</a>
+                        <details class="book-actions-menu shelf-actions-menu">
+                            <summary aria-label="Дії для полички {{ shelf.name }}">⋯</summary>
+                            <nav class="book-actions" aria-label="Дії для полички {{ shelf.name }}">
+                                <a href="{% url 'shelf_update' shelf.pk %}"><span class="mirrored-icon" aria-hidden="true">✎</span> Редагувати</a>
+                                <a class="danger-link" href="{% url 'shelf_delete' shelf.pk %}">🗙 Видалити</a>
+                            </nav>
+                        </details>
                     </div>
 
                     {% if shelf.books.all %}
@@ -60,4 +61,31 @@
             </div>
         </div>
     {% endif %}
+    <script>
+        (() => {
+            const actionMenus = document.querySelectorAll(".shelf-actions-menu");
+            if (!actionMenus.length) return;
+
+            const closeMenus = (exceptMenu = null) => {
+                actionMenus.forEach((menu) => {
+                    if (menu !== exceptMenu) {
+                        menu.open = false;
+                    }
+                });
+            };
+
+            actionMenus.forEach((menu) => {
+                menu.addEventListener("toggle", () => {
+                    if (menu.open) {
+                        closeMenus(menu);
+                    }
+                });
+            });
+
+            document.addEventListener("click", (event) => {
+                if (event.target.closest(".shelf-actions-menu")) return;
+                closeMenus();
+            });
+        })();
+    </script>
 {% endblock %}

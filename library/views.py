@@ -4,7 +4,7 @@ from django.db.models import Prefetch
 from django.views.decorators.http import require_POST
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils.http import url_has_allowed_host_and_scheme
-from .forms import BookForm, BookProgressForm, NoteForm, ShelfForm, UkrainianUserCreationForm
+from .forms import BookForm, BookProgressForm, NoteForm, ShelfForm, UkrainianUserCreationForm, split_genres
 from .models import Book, Note, Shelf
 
 
@@ -47,20 +47,34 @@ def book_list(request):
     selected_status = request.GET.get("status", "")
     selected_genre = request.GET.get("genre", "")
     selected_publisher = request.GET.get("publisher", "")
+    selected_series = request.GET.get("series", "")
     favorite_only = request.GET.get("favorite") == "1"
     available_statuses = {status for status, label in Book.Status.choices}
 
     user_books = Book.objects.filter(user=request.user)
-    genre_choices = list(
+    genre_choices = []
+    seen_genres = set()
+    for genre_value in (
         user_books.exclude(genre="")
         .order_by("genre")
         .values_list("genre", flat=True)
         .distinct()
-    )
+    ):
+        for genre in split_genres(genre_value):
+            genre_key = genre.casefold()
+            if genre_key not in seen_genres:
+                genre_choices.append(genre)
+                seen_genres.add(genre_key)
     publisher_choices = list(
         user_books.exclude(publisher="")
         .order_by("publisher")
         .values_list("publisher", flat=True)
+        .distinct()
+    )
+    series_choices = list(
+        user_books.exclude(series="")
+        .order_by("series")
+        .values_list("series", flat=True)
         .distinct()
     )
 
@@ -74,7 +88,7 @@ def book_list(request):
         selected_status = ""
 
     if selected_genre in genre_choices:
-        books = books.filter(genre=selected_genre)
+        books = books.filter(genre__icontains=selected_genre)
     else:
         selected_genre = ""
 
@@ -82,6 +96,11 @@ def book_list(request):
         books = books.filter(publisher=selected_publisher)
     else:
         selected_publisher = ""
+
+    if selected_series in series_choices:
+        books = books.filter(series=selected_series)
+    else:
+        selected_series = ""
 
     if favorite_only:
         books = books.filter(is_favorite=True)
@@ -92,6 +111,7 @@ def book_list(request):
             selected_status,
             selected_genre,
             selected_publisher,
+            selected_series,
             favorite_only,
         ]
     )
@@ -104,10 +124,12 @@ def book_list(request):
             "status_choices": Book.Status.choices,
             "genre_choices": genre_choices,
             "publisher_choices": publisher_choices,
+            "series_choices": series_choices,
             "search_query": search_query,
             "selected_status": selected_status,
             "selected_genre": selected_genre,
             "selected_publisher": selected_publisher,
+            "selected_series": selected_series,
             "favorite_only": favorite_only,
             "has_active_filters": has_active_filters,
             "displayed_count": books.count(),

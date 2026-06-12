@@ -13,6 +13,24 @@ def format_star_rating(value):
 
 
 RATING_CHOICES = [(value, "★") for value in range(5, 0, -1)]
+GENRE_SEPARATOR = ", "
+
+
+def split_genres(value):
+    return [genre.strip() for genre in value.replace(";", ",").split(",") if genre.strip()]
+
+
+def normalize_genre_list(value):
+    genres = []
+    seen = set()
+
+    for genre in split_genres(value):
+        genre_key = genre.casefold()
+        if genre_key not in seen:
+            genres.append(genre)
+            seen.add(genre_key)
+
+    return GENRE_SEPARATOR.join(genres)
 
 
 class BootstrapFormMixin:
@@ -24,6 +42,8 @@ class BootstrapFormMixin:
 
             if isinstance(widget, forms.CheckboxInput):
                 widget.attrs.setdefault("class", "form-check-input")
+            elif isinstance(widget, forms.CheckboxSelectMultiple):
+                widget.attrs.setdefault("class", "checkbox-list")
             elif isinstance(widget, forms.RadioSelect):
                 widget.attrs.setdefault("class", "rating-radio-list")
             elif isinstance(widget, forms.Select):
@@ -102,6 +122,7 @@ class BookForm(BootstrapFormMixin, forms.ModelForm):
         super().__init__(*args, **kwargs)
         self.fields["status"].help_text = "Обери один із статусів читання."
         shelves_field = self.fields["shelves"]
+        shelves_field.widget = forms.CheckboxSelectMultiple()
         user_books = Book.objects.none()
 
         if user is not None:
@@ -110,23 +131,41 @@ class BookForm(BootstrapFormMixin, forms.ModelForm):
         else:
             shelves_field.queryset = Shelf.objects.none()
 
-        self.genre_options = list(
+        genre_options = []
+        seen_genres = set()
+        genre_values = (
             user_books.exclude(genre="")
             .order_by("genre")
             .values_list("genre", flat=True)
             .distinct()
         )
+        for genre_value in genre_values:
+            for genre in split_genres(genre_value):
+                genre_key = genre.casefold()
+                if genre_key not in seen_genres:
+                    genre_options.append(genre)
+                    seen_genres.add(genre_key)
+        self.genre_options = genre_options
         self.publisher_options = list(
             user_books.exclude(publisher="")
             .order_by("publisher")
             .values_list("publisher", flat=True)
             .distinct()
         )
+        self.series_options = list(
+            user_books.exclude(series="")
+            .order_by("series")
+            .values_list("series", flat=True)
+            .distinct()
+        )
 
         shelves_field.required = False
-        shelves_field.help_text = "Полички — окрема категоризація книг, незалежна від статусу читання."
+        shelves_field.help_text = "Позначте потрібні полички. Щоб прибрати книгу з поличок, зніміть усі позначки."
         self.apply_bootstrap_styles()
         self.fields["description"].widget.attrs.setdefault("rows", 4)
+
+    def clean_genre(self):
+        return normalize_genre_list(self.cleaned_data.get("genre", ""))
 
     def clean(self):
         cleaned_data = super().clean()
@@ -140,6 +179,7 @@ class BookForm(BootstrapFormMixin, forms.ModelForm):
             "author",
             "genre",
             "publisher",
+            "series",
             "published_year",
             "cover_image",
             "cover_url",
@@ -156,6 +196,7 @@ class BookForm(BootstrapFormMixin, forms.ModelForm):
             "author": "Автор",
             "genre": "Жанр",
             "publisher": "Видавництво",
+            "series": "Серія",
             "published_year": "Рік видання",
             "cover_image": "Обкладинка",
             "cover_url": "Посилання",
@@ -168,6 +209,7 @@ class BookForm(BootstrapFormMixin, forms.ModelForm):
             "shelves": "Полички",
         }
         help_texts = {
+            "genre": "Можна додати кілька жанрів через кому, наприклад: фентезі, роман.",
             "published_year": "За бажанням: рік видання або перевидання.",
             "cover_image": "Додай обкладинку файлом або посиланням. Якщо заповнити обидва варіанти, буде показано файл.",
             "cover_url": "Встав пряме посилання на зображення.",
@@ -177,8 +219,9 @@ class BookForm(BootstrapFormMixin, forms.ModelForm):
         widgets = {
             "title": forms.TextInput(attrs={"placeholder": "Наприклад, Місто"}),
             "author": forms.TextInput(attrs={"placeholder": "Наприклад, Валер'ян Підмогильний"}),
-            "genre": forms.TextInput(attrs={"placeholder": "Роман, нон-фікшн, фантастика..."}),
+            "genre": forms.TextInput(attrs={"placeholder": "Фентезі, роман, нон-фікшн..."}),
             "publisher": forms.TextInput(attrs={"placeholder": "Назва видавництва"}),
+            "series": forms.TextInput(attrs={"placeholder": "Назва серії книг"}),
             "published_year": forms.NumberInput(attrs={"min": 0, "placeholder": "Наприклад, 2024"}),
             "cover_image": forms.FileInput(attrs={"accept": "image/*"}),
             "cover_url": forms.URLInput(attrs={"placeholder": "https://example.com/cover.jpg"}),
