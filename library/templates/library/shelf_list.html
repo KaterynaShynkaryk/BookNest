@@ -26,6 +26,7 @@
                         <details class="book-actions-menu shelf-actions-menu">
                             <summary aria-label="Дії для полички {{ shelf.name }}">⋯</summary>
                             <nav class="book-actions" aria-label="Дії для полички {{ shelf.name }}">
+                                <a href="{% url 'shelf_books' shelf.pk %}">📚︎ Книги</a>
                                 <a href="{% url 'shelf_update' shelf.pk %}"><span class="mirrored-icon" aria-hidden="true">✎</span> Редагувати</a>
                                 <a class="danger-link" href="{% url 'shelf_delete' shelf.pk %}">🗙 Видалити</a>
                             </nav>
@@ -33,19 +34,34 @@
                     </div>
 
                     {% if shelf.books.all %}
-                        <ul class="shelf-book-list" aria-label="Книги на поличці {{ shelf.name }}">
+                        <div class="shelf-cover-grid" aria-label="Останні книги на поличці {{ shelf.name }}">
                             {% for book in shelf.books.all|slice:":4" %}
-                                <li>
-                                    <a href="{% url 'book_detail' book.pk %}">{{ book.title }}</a>
-                                    <span>{{ book.author }}</span>
-                                </li>
+                                <a class="shelf-cover-tile" href="{% url 'book_detail' book.pk %}" aria-label="Відкрити книгу {{ book.title }}">
+                                    {% if book.cover_image %}
+                                        <img src="{{ book.cover_image.url }}" alt="Обкладинка книги {{ book.title }}">
+                                    {% elif book.cover_url %}
+                                        <img src="{{ book.cover_url }}" alt="Обкладинка книги {{ book.title }}">
+                                    {% else %}
+                                        <span>{{ book.title|slice:":1" }}</span>
+                                    {% endif %}
+                                </a>
                             {% endfor %}
-                        </ul>
-                        {% if shelf.books.all|length > 4 %}
-                            <p class="shelf-card__more">+ ще {{ shelf.books.all|length|add:"-4" }}</p>
-                        {% endif %}
+                        </div>
+                        <div class="shelf-card__footer">
+                            {% if shelf.books.all|length > 4 %}
+                                <p class="shelf-card__more">+ ще {{ shelf.books.all|length|add:"-4" }}</p>
+                            {% endif %}
+                            <a class="shelf-card__manage-link" href="{% url 'shelf_books' shelf.pk %}">Керувати книгами</a>
+                        </div>
                     {% else %}
-                        <div class="note-empty"><span class="note-empty__icon" aria-hidden="true">☷︎</span><span>На цій поличці ще немає книг.</span></div>
+                        <div class="shelf-card-empty-state" role="status">
+                            <span class="shelf-card-empty-state__icon" aria-hidden="true">☷︎</span>
+                            <div>
+                                <h3>Поличка порожня</h3>
+                                <p>Оберіть існуючі книги з бібліотеки, щоб додати їх на поличку.</p>
+                            </div>
+                            <a class="nav-link-button shelf-card-empty-state__action" href="{% url 'shelf_books' shelf.pk %}">Додати книгу</a>
+                        </div>
                     {% endif %}
                 </article>
             {% endfor %}

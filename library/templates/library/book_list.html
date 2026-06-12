@@ -23,44 +23,70 @@
                 placeholder="Пошук за назвою"
             >
 
-            <details class="filter-menu" {% if selected_status or selected_genre or selected_publisher or selected_series or favorite_only %}open{% endif %}>
+            <details class="filter-menu" {% if selected_statuses or selected_genres or selected_publishers or selected_series or favorite_only %}open{% endif %}>
                 <summary class="filter-menu__toggle">
                     <span>Фільтри</span>
-                    {% if selected_status or selected_genre or selected_publisher or selected_series or favorite_only %}<span class="filter-dot" aria-label="Фільтри активні"></span>{% endif %}
+                    {% if selected_statuses or selected_genres or selected_publishers or selected_series or favorite_only %}<span class="filter-dot" aria-label="Фільтри активні"></span>{% endif %}
                     <span class="filter-chevron" aria-hidden="true"></span>
                 </summary>
 
                 <div class="filter-menu__panel">
-                    <select class="form-select compact-select" id="status-filter" name="status" aria-label="Статус читання" onchange="this.form.submit()">
-                        <option value="">Усі статуси</option>
-                        {% for value, label in status_choices %}
-                            <option value="{{ value }}" {% if selected_status == value %}selected{% endif %}>{{ label }}</option>
-                        {% endfor %}
-                    </select>
+                    <fieldset class="filter-checkbox-group">
+                        <legend>Статус читання</legend>
+                        <div class="filter-checkbox-list">
+                            {% for value, label in status_choices %}
+                                <label class="filter-checkbox-option">
+                                    <input type="checkbox" name="status" value="{{ value }}" {% if value in selected_statuses %}checked{% endif %}>
+                                    <span>{{ label }}</span>
+                                </label>
+                            {% endfor %}
+                        </div>
+                    </fieldset>
 
-                    <select class="form-select compact-select" id="genre-filter" name="genre" aria-label="Жанр" onchange="this.form.submit()">
-                        <option value="">Усі жанри</option>
-                        {% for genre in genre_choices %}
-                            <option value="{{ genre }}" {% if selected_genre == genre %}selected{% endif %}>{{ genre }}</option>
-                        {% endfor %}
-                    </select>
+                    {% if genre_choices %}
+                        <fieldset class="filter-checkbox-group">
+                            <legend>Жанр</legend>
+                            <div class="filter-checkbox-list">
+                                {% for genre in genre_choices %}
+                                    <label class="filter-checkbox-option">
+                                        <input type="checkbox" name="genre" value="{{ genre }}" {% if genre in selected_genres %}checked{% endif %}>
+                                        <span>{{ genre }}</span>
+                                    </label>
+                                {% endfor %}
+                            </div>
+                        </fieldset>
+                    {% endif %}
 
-                    <select class="form-select compact-select" id="publisher-filter" name="publisher" aria-label="Видавництво" onchange="this.form.submit()">
-                        <option value="">Усі видавництва</option>
-                        {% for publisher in publisher_choices %}
-                            <option value="{{ publisher }}" {% if selected_publisher == publisher %}selected{% endif %}>{{ publisher }}</option>
-                        {% endfor %}
-                    </select>
+                    {% if publisher_choices %}
+                        <fieldset class="filter-checkbox-group">
+                            <legend>Видавництво</legend>
+                            <div class="filter-checkbox-list">
+                                {% for publisher in publisher_choices %}
+                                    <label class="filter-checkbox-option">
+                                        <input type="checkbox" name="publisher" value="{{ publisher }}" {% if publisher in selected_publishers %}checked{% endif %}>
+                                        <span>{{ publisher }}</span>
+                                    </label>
+                                {% endfor %}
+                            </div>
+                        </fieldset>
+                    {% endif %}
 
-                    <select class="form-select compact-select" id="series-filter" name="series" aria-label="Серія" onchange="this.form.submit()">
-                        <option value="">Усі серії</option>
-                        {% for series in series_choices %}
-                            <option value="{{ series }}" {% if selected_series == series %}selected{% endif %}>{{ series }}</option>
-                        {% endfor %}
-                    </select>
+                    {% if series_choices %}
+                        <fieldset class="filter-checkbox-group">
+                            <legend>Серія</legend>
+                            <div class="filter-checkbox-list">
+                                {% for series in series_choices %}
+                                    <label class="filter-checkbox-option">
+                                        <input type="checkbox" name="series" value="{{ series }}" {% if series in selected_series %}checked{% endif %}>
+                                        <span>{{ series }}</span>
+                                    </label>
+                                {% endfor %}
+                            </div>
+                        </fieldset>
+                    {% endif %}
 
-                    <label class="favorite-filter">
-                        <input class="form-check-input" type="checkbox" name="favorite" value="1" {% if favorite_only %}checked{% endif %} onchange="this.form.submit()">
+                    <label class="filter-checkbox-option favorite-filter">
+                        <input type="checkbox" name="favorite" value="1" {% if favorite_only %}checked{% endif %}>
                         <span>Улюблені</span>
                     </label>
                 </div>

@@ -42,9 +42,13 @@ class BookListViewTest(TestCase):
         self.assertNotIn("status_shelves", response.context)
         self.assertNotIn("status_counts", response.context)
         self.assertEqual(response.context["displayed_count"], 3)
-        self.assertEqual(response.context["selected_status"], "")
+        self.assertEqual(response.context["selected_statuses"], [])
         self.assertFalse(response.context["favorite_only"])
         self.assertEqual(response.context["status_choices"], Book.Status.choices)
+        self.assertContains(response, 'class="filter-checkbox-group"')
+        self.assertContains(response, 'name="status"')
+        self.assertNotContains(response, 'id="status-filter"')
+        self.assertNotContains(response, 'id="genre-filter"')
         self.assertContains(response, "Planned Book")
         self.assertContains(response, "Reading Book")
         self.assertContains(response, "Abandoned Book")
@@ -124,7 +128,7 @@ class BookListViewTest(TestCase):
         response = self.client.get(reverse("book_list"), {"status": Book.Status.READING})
 
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.context["selected_status"], Book.Status.READING)
+        self.assertEqual(response.context["selected_statuses"], [Book.Status.READING])
         self.assertEqual(response.context["displayed_count"], 1)
         self.assertContains(response, "Reading Book")
         self.assertNotContains(response, "Planned Book")
@@ -206,9 +210,9 @@ class BookListViewTest(TestCase):
         )
 
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.context["selected_genre"], "Fantasy")
-        self.assertEqual(response.context["selected_publisher"], "Book Press")
-        self.assertEqual(response.context["selected_series"], "Chronicles")
+        self.assertEqual(response.context["selected_genres"], ["Fantasy"])
+        self.assertEqual(response.context["selected_publishers"], ["Book Press"])
+        self.assertEqual(response.context["selected_series"], ["Chronicles"])
         self.assertEqual(response.context["genre_choices"], ["Fantasy", "Romance", "Sci-Fi"])
         self.assertEqual(response.context["publisher_choices"], ["Book Press", "Story House"])
         self.assertEqual(response.context["series_choices"], ["Chronicles", "Standalone"])
@@ -216,6 +220,56 @@ class BookListViewTest(TestCase):
         self.assertContains(response, "Fantasy Press Book")
         self.assertNotContains(response, "Sci Fi Press Book")
         self.assertNotContains(response, "Fantasy House Book")
+
+    def test_books_can_be_filtered_by_multiple_checkbox_values(self):
+        Book.objects.create(
+            user=self.user,
+            title="Completed Fantasy",
+            author="Author One",
+            status=Book.Status.COMPLETED,
+            genre="Fantasy",
+            publisher="Book Press",
+            series="Chronicles",
+        )
+        Book.objects.create(
+            user=self.user,
+            title="Reading Sci-Fi",
+            author="Author Two",
+            status=Book.Status.READING,
+            genre="Sci-Fi",
+            publisher="Story House",
+            series="Saga",
+        )
+        Book.objects.create(
+            user=self.user,
+            title="Planned Mystery",
+            author="Author Three",
+            status=Book.Status.PLANNED,
+            genre="Mystery",
+            publisher="Hidden Press",
+            series="Standalone",
+        )
+
+        self.client.force_login(self.user)
+        response = self.client.get(
+            reverse("book_list"),
+            {
+                "status": [Book.Status.COMPLETED, Book.Status.READING],
+                "genre": ["Fantasy", "Sci-Fi"],
+                "publisher": ["Book Press", "Story House"],
+                "series": ["Chronicles", "Saga"],
+            },
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context["selected_statuses"], [Book.Status.COMPLETED, Book.Status.READING])
+        self.assertEqual(response.context["selected_genres"], ["Fantasy", "Sci-Fi"])
+        self.assertEqual(response.context["selected_publishers"], ["Book Press", "Story House"])
+        self.assertEqual(response.context["selected_series"], ["Chronicles", "Saga"])
+        self.assertEqual(response.context["displayed_count"], 2)
+        self.assertContains(response, "Completed Fantasy")
+        self.assertContains(response, "Reading Sci-Fi")
+        self.assertNotContains(response, "Planned Mystery")
 
     def test_search_and_filters_are_combined_in_one_query(self):
         Book.objects.create(
@@ -274,10 +328,10 @@ class BookListViewTest(TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.context["search_query"], "dune")
-        self.assertEqual(response.context["selected_status"], Book.Status.COMPLETED)
-        self.assertEqual(response.context["selected_genre"], "Sci-Fi")
-        self.assertEqual(response.context["selected_publisher"], "Ace")
-        self.assertEqual(response.context["selected_series"], "Dune")
+        self.assertEqual(response.context["selected_statuses"], [Book.Status.COMPLETED])
+        self.assertEqual(response.context["selected_genres"], ["Sci-Fi"])
+        self.assertEqual(response.context["selected_publishers"], ["Ace"])
+        self.assertEqual(response.context["selected_series"], ["Dune"])
         self.assertTrue(response.context["favorite_only"])
         self.assertTrue(response.context["has_active_filters"])
         self.assertEqual(response.context["displayed_count"], 1)
@@ -410,11 +464,15 @@ class ShelfListViewTests(TestCase):
         self.assertContains(response, "Класика")
         self.assertContains(response, "Книг: 2")
         self.assertContains(response, "Книг: 1")
+        self.assertContains(response, 'class="shelf-cover-grid"')
+        self.assertContains(response, 'class="shelf-cover-tile"')
         self.assertContains(response, "Абетка магії")
         self.assertContains(response, "Замок")
+        self.assertNotContains(response, 'class="shelf-book-list"')
         self.assertContains(response, 'class="is-active" href="/shelves/"')
         self.assertContains(response, 'class="book-actions-menu shelf-actions-menu"')
         self.assertContains(response, "⋯")
+        self.assertContains(response, "📚︎ Книги")
         self.assertContains(response, '<span class="mirrored-icon" aria-hidden="true">✎</span> Редагувати')
         self.assertContains(response, "🗙 Видалити")
         self.assertContains(response, 'event.target.closest(".shelf-actions-menu")')
@@ -440,6 +498,84 @@ class ShelfListViewTests(TestCase):
         self.assertIn(".shelf-empty-state", css)
         self.assertIn(".shelf-empty-icon", css)
         self.assertIn("font-size: 2.75rem", css)
+
+    def test_shelf_list_shows_empty_state_for_shelf_without_books(self):
+        Shelf.objects.create(user=self.user, name="Порожня")
+
+        self.client.force_login(self.user)
+        response = self.client.get(reverse("shelf_list"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Порожня")
+        self.assertContains(response, "Книг: 0")
+        self.assertContains(response, 'class="shelf-card-empty-state"')
+        self.assertContains(response, 'class="shelf-card-empty-state__icon"')
+        self.assertContains(response, "Поличка порожня")
+        self.assertContains(response, "Оберіть існуючі книги з бібліотеки, щоб додати їх на поличку.")
+        self.assertContains(response, f'href="/shelves/{Shelf.objects.get(name="Порожня").pk}/books/"')
+        self.assertNotContains(response, 'class="note-empty"')
+        with open("static/css/styles.css", encoding="utf-8") as styles:
+            css = styles.read()
+        self.assertIn(".shelf-card-empty-state", css)
+        self.assertIn(".shelf-card-empty-state__action", css)
+
+    def test_empty_shelf_add_book_link_opens_existing_book_picker(self):
+        shelf = Shelf.objects.create(user=self.user, name="Порожня")
+        Book.objects.create(user=self.user, title="Доступна книга", author="Автор Один")
+
+        self.client.force_login(self.user)
+        response = self.client.get(reverse("shelf_books", args=[shelf.pk]))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "library/shelf_books.html")
+        self.assertContains(response, "Книги на поличці “Порожня”")
+        self.assertContains(response, 'class="shelf-book-picker"')
+        self.assertContains(response, 'type="checkbox"')
+        self.assertContains(response, 'name="books"')
+        self.assertContains(response, "Доступна книга")
+        self.assertContains(response, "Зберегти поличку")
+        self.assertContains(response, 'class="is-active" href="/shelves/"')
+
+    def test_shelf_book_picker_updates_existing_books_and_ignores_other_users_books(self):
+        shelf = Shelf.objects.create(user=self.user, name="Підібране")
+        first_book = Book.objects.create(user=self.user, title="Моя перша", author="Автор Один")
+        second_book = Book.objects.create(user=self.user, title="Моя друга", author="Автор Два")
+        other_book = Book.objects.create(user=self.other_user, title="Чужа", author="Автор Три")
+        shelf.books.add(first_book)
+
+        self.client.force_login(self.user)
+        response = self.client.post(
+            reverse("shelf_books", args=[shelf.pk]),
+            {"books": [str(second_book.pk), str(other_book.pk)]},
+        )
+
+        self.assertRedirects(response, reverse("shelf_list"))
+        self.assertEqual(list(shelf.books.order_by("title")), [second_book])
+
+    def test_shelf_cards_show_latest_four_book_covers_instead_of_title_list(self):
+        shelf = Shelf.objects.create(user=self.user, name="Обкладинки")
+        books = [
+            Book.objects.create(
+                user=self.user,
+                title=f"Книга {index}",
+                author="Автор",
+                cover_url=f"https://example.com/cover-{index}.jpg",
+            )
+            for index in range(1, 6)
+        ]
+        shelf.books.add(*books)
+
+        self.client.force_login(self.user)
+        response = self.client.get(reverse("shelf_list"))
+
+        self.assertContains(response, 'class="shelf-cover-grid"')
+        self.assertContains(response, 'class="shelf-cover-tile"', count=4)
+        for index in range(2, 6):
+            self.assertContains(response, f"https://example.com/cover-{index}.jpg")
+        self.assertNotContains(response, "https://example.com/cover-1.jpg")
+        self.assertContains(response, "+ ще 1")
+        self.assertContains(response, "Керувати книгами")
+        self.assertNotContains(response, 'class="shelf-book-list"')
 
     def test_user_can_create_shelf(self):
         self.client.force_login(self.user)
@@ -759,7 +895,7 @@ class NoteFeatureTests(TestCase):
         self.assertContains(response, 'class="app-sidebar"')
         self.assertContains(response, "📚︎ Бібліотека")
         self.assertContains(response, "📝︎ Нотатки")
-        self.assertContains(response, "▦ Полички")
+        self.assertContains(response, "☷︎ Полички")
         self.assertContains(response, 'href="/shelves/"')
         self.assertContains(response, 'class="is-active" href="/notes/"')
         self.assertNotContains(response, "sidebar-brand")
@@ -1041,7 +1177,8 @@ class BookFormTests(TestCase):
         self.assertIn(owner_shelf, form.fields["shelves"].queryset)
         self.assertNotIn(other_shelf, form.fields["shelves"].queryset)
         self.assertEqual(form.fields["shelves"].widget.__class__.__name__, "CheckboxSelectMultiple")
-        self.assertEqual(form.fields["shelves"].widget.attrs["class"], "checkbox-list")
+        self.assertEqual(form.shelf_options, [owner_shelf])
+        self.assertEqual(form.selected_shelf_ids, set())
         self.assertIn("зніміть усі позначки", form.fields["shelves"].help_text)
 
     def test_book_update_page_renders_shelf_checkboxes_without_clear_button(self):
@@ -1060,14 +1197,33 @@ class BookFormTests(TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'class="checkbox-fieldset"')
-        self.assertContains(response, 'class="checkbox-list"')
+        self.assertContains(response, 'class="shelf-book-picker shelf-picker"')
+        self.assertContains(response, 'class="shelf-book-option shelf-option"')
         self.assertContains(response, 'type="checkbox"')
+        self.assertContains(response, 'name="shelves"')
+        self.assertContains(response, 'checked')
         self.assertContains(response, "Fantasy")
+        self.assertContains(response, "Поличка")
         self.assertNotContains(response, "Прибрати всі полички")
         with open("static/css/styles.css", encoding="utf-8") as styles:
             css = styles.read()
-        self.assertIn('.checkbox-list input[type="checkbox"]', css)
-        self.assertIn('.checkbox-list input[type="checkbox"]:checked', css)
+        self.assertIn(".shelf-book-option", css)
+        self.assertIn(".shelf-picker", css)
+        self.assertIn(".shelf-option", css)
+
+    def test_book_create_page_renders_shelf_picker_like_shelf_books_page(self):
+        user = get_user_model().objects.create_user(username="book-create-shelf-picker", password="test-pass-123")
+        Shelf.objects.create(user=user, name="Fantasy")
+
+        self.client.force_login(user)
+        response = self.client.get(reverse("book_create"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'class="shelf-book-picker shelf-picker"')
+        self.assertContains(response, 'class="shelf-book-option shelf-option"')
+        self.assertContains(response, 'name="shelves"')
+        self.assertContains(response, "Fantasy")
+        self.assertContains(response, "Поличка")
 
     def test_book_update_can_clear_all_shelves(self):
         user = get_user_model().objects.create_user(username="clear-shelves", password="test-pass-123")
@@ -1100,6 +1256,77 @@ class BookFormTests(TestCase):
 
         self.assertRedirects(response, reverse("book_detail", args=[book.pk]))
         self.assertEqual(book.shelves.count(), 0)
+
+    def test_book_create_rejects_shelves_from_another_user(self):
+        User = get_user_model()
+        owner = User.objects.create_user(username="create-shelf-owner", password="test-pass-123")
+        other = User.objects.create_user(username="create-shelf-other", password="test-pass-123")
+        owner_shelf = Shelf.objects.create(user=owner, name="Owner shelf")
+        other_shelf = Shelf.objects.create(user=other, name="Other shelf")
+
+        self.client.force_login(owner)
+        response = self.client.post(
+            reverse("book_create"),
+            {
+                "title": "Unsafe Shelf Book",
+                "author": "Author One",
+                "genre": "",
+                "publisher": "",
+                "series": "",
+                "published_year": "",
+                "cover_url": "",
+                "status": Book.Status.PLANNED,
+                "start_date": "",
+                "finish_date": "",
+                "rating": "",
+                "description": "",
+                "shelves": [str(owner_shelf.pk), str(other_shelf.pk)],
+            },
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertFalse(response.context["form"].is_valid())
+        self.assertIn("немає серед варіантів вибору", response.context["form"].errors["shelves"][0])
+        self.assertFalse(Book.objects.filter(title="Unsafe Shelf Book").exists())
+
+    def test_book_update_rejects_shelves_from_another_user(self):
+        User = get_user_model()
+        owner = User.objects.create_user(username="update-shelf-owner", password="test-pass-123")
+        other = User.objects.create_user(username="update-shelf-other", password="test-pass-123")
+        owner_shelf = Shelf.objects.create(user=owner, name="Owner shelf")
+        other_shelf = Shelf.objects.create(user=other, name="Other shelf")
+        book = Book.objects.create(
+            user=owner,
+            title="Protected Shelf Book",
+            author="Author One",
+            status=Book.Status.PLANNED,
+        )
+        book.shelves.add(owner_shelf)
+
+        self.client.force_login(owner)
+        response = self.client.post(
+            reverse("book_update", args=[book.pk]),
+            {
+                "title": book.title,
+                "author": book.author,
+                "genre": "",
+                "publisher": "",
+                "series": "",
+                "published_year": "",
+                "cover_url": "",
+                "status": Book.Status.PLANNED,
+                "start_date": "",
+                "finish_date": "",
+                "rating": "",
+                "description": "",
+                "shelves": [str(other_shelf.pk)],
+            },
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertFalse(response.context["form"].is_valid())
+        self.assertIn("немає серед варіантів вибору", response.context["form"].errors["shelves"][0])
+        self.assertEqual(list(book.shelves.all()), [owner_shelf])
 
     def test_genre_and_publisher_inputs_suggest_current_user_values(self):
         User = get_user_model()
@@ -1187,7 +1414,7 @@ class BookFormTests(TestCase):
         self.assertNotContains(response, "Прибрати всі полички")
 
 
-    def test_create_page_renders_existing_genre_and_publisher_suggestions(self):
+    def test_create_page_renders_existing_genre_publisher_and_series_suggestions(self):
         user = get_user_model().objects.create_user(
             username="suggestions",
             password="test-pass-123",
@@ -1198,6 +1425,7 @@ class BookFormTests(TestCase):
             author="Author One",
             genre="Fantasy",
             publisher="Book Press",
+            series="The Expanse",
         )
 
         self.client.force_login(user)
@@ -1212,11 +1440,17 @@ class BookFormTests(TestCase):
         self.assertContains(response, 'id="publisher-existing-picker"')
         self.assertContains(response, '<option value="Book Press">Book Press</option>')
         self.assertContains(response, 'data-fill-field="id_publisher"')
+        self.assertContains(response, 'id="series-existing-picker"')
+        self.assertContains(response, '<option value="The Expanse">The Expanse</option>')
+        self.assertContains(response, 'data-fill-field="id_series"')
+        self.assertContains(response, 'aria-label="Обрати існуючу серію"')
         self.assertContains(response, "Жанр: введіть свій або оберіть існуючий")
         self.assertContains(response, "Видавництво: введіть своє або оберіть існуюче")
+        self.assertContains(response, "Серія: введіть свою або оберіть існуючу")
         self.assertContains(response, "Існуючі")
         self.assertNotContains(response, "Обрати існуючий жанр</label>")
         self.assertNotContains(response, "Обрати існуюче видавництво</label>")
+        self.assertNotContains(response, "Обрати існуючу серію</label>")
         with open("static/css/styles.css", encoding="utf-8") as styles:
             css = styles.read()
         self.assertIn(".combined-value-field", css)

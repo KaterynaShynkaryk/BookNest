@@ -1,6 +1,6 @@
 from django.contrib.auth import login, logout
 from django.contrib.auth.decorators import login_required
-from django.db.models import Prefetch
+from django.db.models import Prefetch, Q
 from django.views.decorators.http import require_POST
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils.http import url_has_allowed_host_and_scheme
@@ -44,10 +44,10 @@ def get_safe_redirect_url(request):
 @login_required
 def book_list(request):
     search_query = request.GET.get("q", "").strip()
-    selected_status = request.GET.get("status", "")
-    selected_genre = request.GET.get("genre", "")
-    selected_publisher = request.GET.get("publisher", "")
-    selected_series = request.GET.get("series", "")
+    selected_statuses = request.GET.getlist("status")
+    selected_genres = request.GET.getlist("genre")
+    selected_publishers = request.GET.getlist("publisher")
+    selected_series = request.GET.getlist("series")
     favorite_only = request.GET.get("favorite") == "1"
     available_statuses = {status for status, label in Book.Status.choices}
 
@@ -82,25 +82,24 @@ def book_list(request):
     if search_query:
         books = books.filter(title__icontains=search_query)
 
-    if selected_status in available_statuses:
-        books = books.filter(status=selected_status)
-    else:
-        selected_status = ""
+    selected_statuses = [status for status in selected_statuses if status in available_statuses]
+    if selected_statuses:
+        books = books.filter(status__in=selected_statuses)
 
-    if selected_genre in genre_choices:
-        books = books.filter(genre__icontains=selected_genre)
-    else:
-        selected_genre = ""
+    selected_genres = [genre for genre in selected_genres if genre in genre_choices]
+    if selected_genres:
+        genre_query = Q()
+        for genre in selected_genres:
+            genre_query |= Q(genre__icontains=genre)
+        books = books.filter(genre_query)
 
-    if selected_publisher in publisher_choices:
-        books = books.filter(publisher=selected_publisher)
-    else:
-        selected_publisher = ""
+    selected_publishers = [publisher for publisher in selected_publishers if publisher in publisher_choices]
+    if selected_publishers:
+        books = books.filter(publisher__in=selected_publishers)
 
-    if selected_series in series_choices:
-        books = books.filter(series=selected_series)
-    else:
-        selected_series = ""
+    selected_series = [series for series in selected_series if series in series_choices]
+    if selected_series:
+        books = books.filter(series__in=selected_series)
 
     if favorite_only:
         books = books.filter(is_favorite=True)
@@ -108,9 +107,9 @@ def book_list(request):
     has_active_filters = any(
         [
             search_query,
-            selected_status,
-            selected_genre,
-            selected_publisher,
+            selected_statuses,
+            selected_genres,
+            selected_publishers,
             selected_series,
             favorite_only,
         ]
@@ -126,9 +125,9 @@ def book_list(request):
             "publisher_choices": publisher_choices,
             "series_choices": series_choices,
             "search_query": search_query,
-            "selected_status": selected_status,
-            "selected_genre": selected_genre,
-            "selected_publisher": selected_publisher,
+            "selected_statuses": selected_statuses,
+            "selected_genres": selected_genres,
+            "selected_publishers": selected_publishers,
             "selected_series": selected_series,
             "favorite_only": favorite_only,
             "has_active_filters": has_active_filters,
@@ -214,7 +213,7 @@ def shelf_list(request):
         .prefetch_related(
             Prefetch(
                 "books",
-                queryset=Book.objects.filter(user=request.user).order_by("title"),
+                queryset=Book.objects.filter(user=request.user).order_by("-created_at"),
             )
         )
     )
@@ -264,6 +263,29 @@ def shelf_update(request, pk):
         request,
         "library/shelf_form.html",
         {"form": form, "shelf": shelf, "mode": "update"},
+    )
+
+
+@login_required
+def shelf_books(request, pk):
+    shelf = get_object_or_404(Shelf, pk=pk, user=request.user)
+    books = Book.objects.filter(user=request.user).order_by("title")
+
+    if request.method == "POST":
+        selected_books = books.filter(pk__in=request.POST.getlist("books"))
+        shelf.books.set(selected_books)
+        return redirect("shelf_list")
+
+    selected_book_ids = set(shelf.books.values_list("pk", flat=True))
+
+    return render(
+        request,
+        "library/shelf_books.html",
+        {
+            "shelf": shelf,
+            "books": books,
+            "selected_book_ids": selected_book_ids,
+        },
     )
 
 

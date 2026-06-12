@@ -120,6 +120,7 @@ class BookForm(BootstrapFormMixin, forms.ModelForm):
 
     def __init__(self, *args, user=None, **kwargs):
         super().__init__(*args, **kwargs)
+        self.user = user
         self.fields["status"].help_text = "Обери один із статусів читання."
         shelves_field = self.fields["shelves"]
         shelves_field.widget = forms.CheckboxSelectMultiple()
@@ -159,6 +160,23 @@ class BookForm(BootstrapFormMixin, forms.ModelForm):
             .distinct()
         )
 
+        self.shelf_options = list(shelves_field.queryset)
+        if self.is_bound:
+            shelf_field_name = self.add_prefix("shelves")
+            if hasattr(self.data, "getlist"):
+                selected_shelves = self.data.getlist(shelf_field_name)
+            else:
+                selected_shelves = self.data.get(shelf_field_name, [])
+                if isinstance(selected_shelves, str):
+                    selected_shelves = [selected_shelves]
+            self.selected_shelf_ids = set(selected_shelves)
+        elif self.instance.pk:
+            self.selected_shelf_ids = set(
+                str(pk) for pk in self.instance.shelves.values_list("pk", flat=True)
+            )
+        else:
+            self.selected_shelf_ids = set()
+
         shelves_field.required = False
         shelves_field.help_text = "Позначте потрібні полички. Щоб прибрати книгу з поличок, зніміть усі позначки."
         self.apply_bootstrap_styles()
@@ -166,6 +184,16 @@ class BookForm(BootstrapFormMixin, forms.ModelForm):
 
     def clean_genre(self):
         return normalize_genre_list(self.cleaned_data.get("genre", ""))
+
+    def clean_shelves(self):
+        shelves = self.cleaned_data.get("shelves")
+        if not shelves:
+            return shelves
+
+        if self.user is None or shelves.exclude(user=self.user).exists():
+            raise forms.ValidationError("Можна обирати тільки власні полички.")
+
+        return shelves
 
     def clean(self):
         cleaned_data = super().clean()

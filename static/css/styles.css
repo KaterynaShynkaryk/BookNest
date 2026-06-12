@@ -328,9 +328,11 @@ a:hover {
     border-radius: 1rem;
     box-shadow: var(--shadow-hover);
     display: grid;
-    gap: 0.65rem;
+    gap: 0.9rem;
     left: 0;
-    min-width: min(22rem, 88vw);
+    max-height: min(70vh, 36rem);
+    min-width: min(24rem, 88vw);
+    overflow-y: auto;
     padding: 0.85rem;
     position: absolute;
     top: calc(100% + 0.5rem);
@@ -342,6 +344,55 @@ a:hover {
 .form-check-input:focus {
     border-color: var(--primary);
     box-shadow: 0 0 0 0.22rem color-mix(in srgb, var(--primary) 22%, transparent);
+}
+
+.filter-checkbox-group {
+    border: 0;
+    display: grid;
+    gap: 0.45rem;
+    margin: 0;
+    padding: 0;
+}
+
+.filter-checkbox-group legend {
+    color: var(--muted-foreground);
+    font-size: 0.76rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    margin: 0;
+    text-transform: uppercase;
+}
+
+.filter-checkbox-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.45rem;
+}
+
+.filter-checkbox-option {
+    align-items: center;
+    background: color-mix(in srgb, var(--muted) 36%, transparent);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    color: color-mix(in srgb, var(--foreground) 78%, transparent);
+    cursor: pointer;
+    display: inline-flex;
+    font-size: 0.82rem;
+    font-weight: 600;
+    gap: 0.42rem;
+    padding: 0.42rem 0.65rem;
+}
+
+.filter-checkbox-option:has(input:checked) {
+    background: color-mix(in srgb, var(--primary-soft) 70%, var(--card));
+    border-color: color-mix(in srgb, var(--primary) 40%, var(--border));
+    color: var(--primary);
+}
+
+.filter-checkbox-option input {
+    accent-color: var(--primary);
+    height: 0.95rem;
+    width: 0.95rem;
 }
 
 .favorite-filter,
@@ -1536,35 +1587,158 @@ a:hover {
 }
 
 
-.shelf-book-list {
+.shelf-cover-grid {
     display: grid;
     gap: 0.65rem;
-    list-style: none;
-    margin: 0;
-    padding: 0;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
 }
 
-.shelf-book-list li {
-    border-top: 1px solid var(--border);
-    display: grid;
-    gap: 0.1rem;
-    padding-top: 0.65rem;
+.shelf-cover-tile {
+    align-items: center;
+    aspect-ratio: 3 / 4;
+    background: var(--primary-soft);
+    border-radius: 0.75rem;
+    color: var(--primary);
+    display: inline-flex;
+    font-family: Georgia, "Times New Roman", serif;
+    font-size: 1.25rem;
+    font-weight: 700;
+    justify-content: center;
+    overflow: hidden;
+    width: 100%;
 }
 
-.shelf-book-list a {
-    color: var(--foreground);
-    font-size: 0.9rem;
-    font-weight: 600;
+.shelf-cover-tile:hover {
+    box-shadow: 0 0.6rem 1.2rem color-mix(in srgb, var(--primary) 16%, transparent);
+    transform: translateY(-2px);
 }
 
-.shelf-book-list a:hover {
+.shelf-cover-tile img {
+    display: block;
+    height: 100%;
+    object-fit: cover;
+    width: 100%;
+}
+
+.shelf-card__footer {
+    align-items: center;
+    display: flex;
+    gap: 0.75rem;
+    justify-content: space-between;
+}
+
+.shelf-card__more,
+.shelf-card__manage-link {
+    color: var(--muted-foreground);
+    font-size: 0.78rem;
+}
+
+.shelf-card__manage-link {
+    font-weight: 700;
+    margin-left: auto;
+}
+
+.shelf-card__manage-link:hover {
     color: var(--primary);
 }
 
-.shelf-book-list span,
-.shelf-card__more {
+.shelf-card-empty-state {
+    align-items: center;
+    background: color-mix(in srgb, var(--muted) 42%, transparent);
+    border: 1px dashed color-mix(in srgb, var(--primary) 24%, var(--border));
+    border-radius: 0.9rem;
     color: var(--muted-foreground);
-    font-size: 0.78rem;
+    display: grid;
+    gap: 0.85rem;
+    grid-template-columns: auto minmax(0, 1fr);
+    padding: 1rem;
+}
+
+.shelf-card-empty-state__icon {
+    align-items: center;
+    background: color-mix(in srgb, var(--primary-soft) 72%, transparent);
+    border-radius: 999px;
+    color: var(--primary);
+    display: inline-flex;
+    font-size: 1.35rem;
+    height: 2.5rem;
+    justify-content: center;
+    line-height: 1;
+    width: 2.5rem;
+}
+
+.shelf-card-empty-state h3 {
+    color: var(--foreground);
+    font-size: 0.95rem;
+    font-weight: 700;
+    margin: 0 0 0.2rem;
+}
+
+.shelf-card-empty-state p {
+    font-size: 0.82rem;
+    margin: 0;
+}
+
+.shelf-card-empty-state__action {
+    grid-column: 1 / -1;
+    justify-content: center;
+}
+
+.shelf-books-form {
+    display: grid;
+    gap: 1.5rem;
+}
+
+.shelf-book-picker {
+    display: grid;
+    gap: 0.85rem;
+}
+
+.shelf-book-option {
+    align-items: center;
+    background: color-mix(in srgb, var(--card) 88%, transparent);
+    border: 1px solid var(--border);
+    border-radius: 0.95rem;
+    cursor: pointer;
+    display: grid;
+    gap: 0.85rem;
+    grid-template-columns: auto auto minmax(0, 1fr);
+    padding: 0.85rem;
+}
+
+.shelf-book-option:has(input:checked) {
+    background: color-mix(in srgb, var(--primary-soft) 55%, var(--card));
+    border-color: color-mix(in srgb, var(--primary) 40%, var(--border));
+}
+
+.shelf-book-option input {
+    accent-color: var(--primary);
+    height: 1.1rem;
+    width: 1.1rem;
+}
+
+.shelf-book-option__copy {
+    display: grid;
+    gap: 0.15rem;
+    min-width: 0;
+}
+
+.shelf-book-option__copy strong {
+    color: var(--foreground);
+    font-size: 0.95rem;
+}
+
+.shelf-book-option__copy small {
+    color: var(--muted-foreground);
+    font-size: 0.8rem;
+}
+
+.shelf-picker {
+    gap: 0.65rem;
+}
+
+.shelf-option {
+    grid-template-columns: auto minmax(0, 1fr);
 }
 
 .page-heading__actions,

@@ -45,9 +45,19 @@
                         <div class="{% if field.name == 'description' or field.name == 'shelves' or field.name == 'rating' %}col-12{% elif field.name == 'is_favorite' %}col-12{% else %}col-md-6{% endif %}{% if field.name == 'rating' or field.name == 'finish_date' %} gated-field{% endif %}"{% if field.name == 'rating' or field.name == 'finish_date' %} data-completed-only{% endif %}>
                             {% if field.name == 'shelves' %}
                                 <span class="form-label">{{ field.label }}</span>
-                                <<div class="checkbox-fieldset">
-                                    {% if field.field.queryset %}
-                                        {{ field }}
+                                <div class="checkbox-fieldset">
+                                    {% if form.shelf_options %}
+                                        <div class="shelf-book-picker shelf-picker" aria-label="Оберіть полички для книги">
+                                            {% for shelf in form.shelf_options %}
+                                                <label class="shelf-book-option shelf-option" for="shelf-{{ shelf.pk }}">
+                                                    <input id="shelf-{{ shelf.pk }}" type="checkbox" name="{{ field.html_name }}" value="{{ shelf.pk }}" {% if shelf.pk|stringformat:"s" in form.selected_shelf_ids %}checked{% endif %}>
+                                                    <span class="shelf-book-option__copy">
+                                                        <strong>{{ shelf.name }}</strong>
+                                                        <small>Поличка</small>
+                                                    </span>
+                                                </label>
+                                            {% endfor %}
+                                        </div>
                                     {% else %}
                                         <p class="checkbox-empty-note">Поличок ще немає.</p>
                                     {% endif %}
@@ -82,6 +92,7 @@
                                             <option value="">Існуючі</option>
                                             {% for series in form.series_options %}<option value="{{ series }}">{{ series }}</option>{% endfor %}
                                         </select>
+                                    </div>
                                 {% else %}
                                     {{ field }}
                                 {% endif %}
