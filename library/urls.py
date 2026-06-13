@@ -1,10 +1,9 @@
-from django.contrib.auth import views as auth_views
 from django.urls import path
-
-from .forms import UkrainianAuthenticationForm
 
 from .views import (
     book_create,
+    book_create_manual,
+    book_create_search,
     book_delete,
     book_detail,
     book_list,
@@ -14,6 +13,7 @@ from .views import (
     note_delete,
     note_list,
     note_update,
+    logout_view,
     register,
     shelf_create,
     shelf_books,
@@ -21,12 +21,15 @@ from .views import (
     shelf_list,
     shelf_update,
     test_page,
+    UkrainianLoginView,
 )
 
 urlpatterns = [
     path("", book_list, name="book_list"),
     path("books/", book_list, name="book_list"),
     path("books/add/", book_create, name="book_create"),
+    path("books/add/search/", book_create_search, name="book_create_search"),
+    path("books/add/manual/", book_create_manual, name="book_create_manual"),
     path("books/<int:pk>/", book_detail, name="book_detail"),
     path("books/<int:pk>/notes/add/", book_note_create, name="book_note_create"),
     path("books/<int:pk>/favorite/", book_toggle_favorite, name="book_toggle_favorite"),
@@ -43,10 +46,6 @@ urlpatterns = [
     path("test/", test_page, name="test_page"),
     path("register/", register, name="register"),
     path("auth/register/", register, name="auth_register"),
-    path(
-        "auth/login/",
-        auth_views.LoginView.as_view(authentication_form=UkrainianAuthenticationForm),
-        name="login",
-    ),
-    path("auth/logout/", auth_views.LogoutView.as_view(), name="logout"),
+    path("auth/login/", UkrainianLoginView.as_view(), name="login"),
+    path("auth/logout/", logout_view, name="logout"),
 ]

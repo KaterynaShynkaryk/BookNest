@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+
+{% block title %}Додати книгу{% endblock %}
+
+{% block content %}
+    <a class="back-link" href="{% url 'book_list' %}">← До бібліотеки</a>
+
+    <section class="form-shell fade-in">
+        <div class="form-heading">
+            <h1>Додати книгу</h1>
+            <p>Спочатку знайдіть книгу за назвою в Open Library або перейдіть до ручного додавання.</p>
+        </div>
+
+        <nav class="create-book-tabs" aria-label="Спосіб додавання книги">
+            <a class="create-book-tab is-active" href="{% url 'book_create_search' %}">Пошук за назвою</a>
+            <a class="create-book-tab" href="{% url 'book_create_manual' %}">Додати вручну</a>
+        </nav>
+
+        <form class="book-search-card" method="get" action="{% url 'book_create_search' %}">
+            <label class="form-label" for="book-title-search">Назва книги</label>
+            <div class="book-search-row">
+                <input
+                    class="form-control"
+                    id="book-title-search"
+                    name="q"
+                    type="search"
+                    value="{{ search_query }}"
+                    placeholder="Наприклад, Дюна або The Hobbit"
+                    required
+                >
+                <button class="primary-link-button button-submit" type="submit">Знайти</button>
+            </div>
+            <p class="form-text">Дані підтягуються з Open Library. Перед збереженням їх можна відредагувати.</p>
+        </form>
+
+        {% if has_searched %}
+            <section class="book-search-results" aria-label="Результати пошуку книг">
+                <div class="section-heading-row">
+                    <div>
+                        <h2>Результати пошуку</h2>
+                        <p>Оберіть потрібну книгу, щоб перенести дані у форму додавання.</p>
+                    </div>
+                    <a class="nav-link-button" href="{% url 'book_create_manual' %}">Не знайшли? Додати вручну</a>
+                </div>
+
+                {% if search_results %}
+                    <div class="book-search-result-grid">
+                        {% for result in search_results %}
+                            <article class="book-search-result-card">
+                                <div class="book-cover book-cover--sm">
+                                    {% if result.cover_url %}
+                                        <img src="{{ result.cover_url }}" alt="Обкладинка книги {{ result.title }}">
+                                    {% else %}
+                                        <span>{{ result.title|slice:":1" }}</span>
+                                    {% endif %}
+                                </div>
+                                <div class="book-search-result-card__content">
+                                    <h3>{{ result.title }}</h3>
+                                    {% if result.author %}<p>{{ result.author }}</p>{% endif %}
+                                    <div class="book-search-result-card__meta">
+                                        {% if result.published_year %}<span>{{ result.published_year }}</span>{% endif %}
+                                        {% if result.publisher %}<span>{{ result.publisher }}</span>{% endif %}
+                                    </div>
+                                    {% if result.genre %}<p class="book-search-result-card__genres">{{ result.genre }}</p>{% endif %}
+                                    <div class="book-search-result-card__actions">
+                                        <a
+                                            class="primary-link-button"
+                                            href="{% url 'book_create_manual' %}?title={{ result.title|urlencode }}&author={{ result.author|urlencode }}&publisher={{ result.publisher|urlencode }}&published_year={{ result.published_year|urlencode }}&genre={{ result.genre|urlencode }}&cover_url={{ result.cover_url|urlencode }}"
+                                        >Обрати</a>
+                                        {% if result.external_url %}<a class="reset-link" href="{{ result.external_url }}" target="_blank" rel="noopener noreferrer">Open Library</a>{% endif %}
+                                    </div>
+                                </div>
+                            </article>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="empty-state book-search-empty-state">
+                        <div class="empty-state__icon" aria-hidden="true">⌕</div>
+                        <h2>Нічого не знайдено</h2>
+                        <p>Спробуйте іншу назву або додайте книгу вручну.</p>
+                        <a class="primary-link-button" href="{% url 'book_create_manual' %}">Додати вручну</a>
+                    </div>
+                {% endif %}
+            </section>
+        {% endif %}
+    </section>
+{% endblock %}

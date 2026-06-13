@@ -58,6 +58,9 @@ def validate_reading_fields(form, cleaned_data):
     start_date = cleaned_data.get("start_date")
     finish_date = cleaned_data.get("finish_date")
 
+    if status == Book.Status.WISHLIST and start_date:
+        form.add_error("start_date", "Дату початку не можна вказувати для бажанки.")
+
     if status != Book.Status.COMPLETED:
         if rating is not None:
             form.add_error("rating", "Оцінку можна ставити тільки для прочитаних книг.")
@@ -90,6 +93,7 @@ class BookProgressForm(BootstrapFormMixin, forms.ModelForm):
             "rating": "Оцінка",
         }
         help_texts = {
+            "start_date": "Недоступно, коли статус книги — «Бажанка».",
             "finish_date": "Доступно, коли статус книги — «Прочитано».",
             "rating": "Оцінку можна ставити тільки для прочитаних книг.",
         }

@@ -13,6 +13,13 @@
             <p>Заповніть основну інформацію — усе інше можна доповнити пізніше.</p>
         </div>
 
+        {% if mode == "create" %}
+            <nav class="create-book-tabs" aria-label="Спосіб додавання книги">
+                <a class="create-book-tab" href="{% url 'book_create_search' %}">Пошук за назвою</a>
+                <a class="create-book-tab is-active" href="{% url 'book_create_manual' %}">Додати вручну</a>
+            </nav>
+        {% endif %}
+
         <form method="post" enctype="multipart/form-data" novalidate class="book-form-card">
             {% csrf_token %}
             {% if form.non_field_errors %}
@@ -42,7 +49,7 @@
                             </div>
                         </div>
                     {% else %}
-                        <div class="{% if field.name == 'description' or field.name == 'shelves' or field.name == 'rating' %}col-12{% elif field.name == 'is_favorite' %}col-12{% else %}col-md-6{% endif %}{% if field.name == 'rating' or field.name == 'finish_date' %} gated-field{% endif %}"{% if field.name == 'rating' or field.name == 'finish_date' %} data-completed-only{% endif %}>
+                        <div class="{% if field.name == 'description' or field.name == 'shelves' or field.name == 'rating' %}col-12{% elif field.name == 'is_favorite' %}col-12{% else %}col-md-6{% endif %}{% if field.name == 'rating' or field.name == 'finish_date' or field.name == 'start_date' %} gated-field{% endif %}"{% if field.name == 'rating' or field.name == 'finish_date' %} data-completed-only{% elif field.name == 'start_date' %} data-not-wishlist{% endif %}>
                             {% if field.name == 'shelves' %}
                                 <span class="form-label">{{ field.label }}</span>
                                 <div class="checkbox-fieldset">
@@ -120,7 +127,9 @@
 
             const status = form.querySelector("[name='status']");
             const completedOnlyFields = form.querySelectorAll("[data-completed-only]");
+            const notWishlistFields = form.querySelectorAll("[data-not-wishlist]");
             const completedValue = "completed";
+            const wishlistValue = "wishlist";
 
             const syncCompletedFields = () => {
                 const isCompleted = status.value === completedValue;
@@ -132,8 +141,20 @@
                 });
             };
 
+            const syncWishlistFields = () => {
+                const isWishlist = status.value === wishlistValue;
+                notWishlistFields.forEach((field) => {
+                    field.classList.toggle("is-muted", isWishlist);
+                    field.querySelectorAll("input, select, textarea").forEach((input) => {
+                        input.disabled = isWishlist;
+                    });
+                });
+            };
+
             status.addEventListener("change", syncCompletedFields);
+            status.addEventListener("change", syncWishlistFields);
             syncCompletedFields();
+            syncWishlistFields();
 
             form.querySelectorAll("select[data-fill-field]").forEach((select) => {
                 select.addEventListener("change", () => {

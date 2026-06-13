@@ -131,9 +131,10 @@
                 </label>
 
                 <div class="progress-dates">
-                    <div class="progress-field">
+                    <div class="progress-field gated-field" data-not-wishlist>
                         <label class="form-label" for="{{ progress_form.start_date.id_for_label }}">{{ progress_form.start_date.label }}</label>
                         {{ progress_form.start_date }}
+                        {% if progress_form.start_date.help_text %}<div class="form-text">{{ progress_form.start_date.help_text }}</div>{% endif %}
                         {% for error in progress_form.start_date.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
                     </div>
                     <div class="progress-field gated-field" data-completed-only>
@@ -169,7 +170,9 @@
 
             const status = form.querySelector("[name='status']");
             const completedOnlyFields = form.querySelectorAll("[data-completed-only]");
+            const notWishlistFields = form.querySelectorAll("[data-not-wishlist]");
             const completedValue = "completed";
+            const wishlistValue = "wishlist";
 
             const syncCompletedFields = () => {
                 const isCompleted = status.value === completedValue;
@@ -181,8 +184,20 @@
                 });
             };
 
+            const syncWishlistFields = () => {
+                const isWishlist = status.value === wishlistValue;
+                notWishlistFields.forEach((field) => {
+                    field.classList.toggle("is-muted", isWishlist);
+                    field.querySelectorAll("input, select, textarea").forEach((input) => {
+                        input.disabled = isWishlist;
+                    });
+                });
+            };
+
             status.addEventListener("change", syncCompletedFields);
+            status.addEventListener("change", syncWishlistFields);
             syncCompletedFields();
+            syncWishlistFields();
         })();
     </script>
 {% endblock %}

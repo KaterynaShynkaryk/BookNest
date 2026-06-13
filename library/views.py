@@ -1,10 +1,21 @@
+from django.contrib import messages
 from django.contrib.auth import login, logout
 from django.contrib.auth.decorators import login_required
+from django.contrib.auth.views import LoginView
 from django.db.models import Prefetch, Q
 from django.views.decorators.http import require_POST
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils.http import url_has_allowed_host_and_scheme
-from .forms import BookForm, BookProgressForm, NoteForm, ShelfForm, UkrainianUserCreationForm, split_genres
+from .forms import (
+    BookForm,
+    BookProgressForm,
+    NoteForm,
+    ShelfForm,
+    UkrainianAuthenticationForm,
+    UkrainianUserCreationForm,
+    split_genres,
+)
+from .book_lookup import BookLookupError, search_open_library_books
 from .models import Book, Note, Shelf
 
 
@@ -14,7 +25,16 @@ def test_page(request):
 
 def logout_view(request):
     logout(request)
+    messages.success(request, "Ви вийшли з акаунту.")
     return redirect("login")
+
+
+class UkrainianLoginView(LoginView):
+    authentication_form = UkrainianAuthenticationForm
+
+    def form_valid(self, form):
+        messages.success(self.request, "Ви успішно увійшли.")
+        return super().form_valid(form)
 
 
 def register(request):
@@ -23,6 +43,7 @@ def register(request):
         if form.is_valid():
             user = form.save()
             login(request, user)
+            messages.success(request, "Акаунт створено. Ласкаво просимо до BookNest!")
             return redirect("book_list")
     else:
         form = UkrainianUserCreationForm()
@@ -162,6 +183,7 @@ def book_detail(request, pk):
         progress_form = BookProgressForm(request.POST, instance=book)
         if progress_form.is_valid():
             progress_form.save()
+            messages.success(request, "Прогрес читання оновлено.")
             return redirect("book_detail", pk=book.pk)
     else:
         progress_form = BookProgressForm(instance=book)
@@ -192,6 +214,7 @@ def book_note_create(request, pk):
         note.user = request.user
         note.book = book
         note.save()
+        messages.success(request, "Нотатку додано до книги.")
         return redirect("book_detail", pk=book.pk)
 
     return render(
@@ -236,6 +259,7 @@ def shelf_create(request):
             shelf = form.save(commit=False)
             shelf.user = request.user
             shelf.save()
+            messages.success(request, f"Поличку «{shelf.name}» створено.")
             return redirect("shelf_list")
     else:
         form = ShelfForm(user=request.user)
@@ -254,7 +278,8 @@ def shelf_update(request, pk):
     if request.method == "POST":
         form = ShelfForm(request.POST, instance=shelf, user=request.user)
         if form.is_valid():
-            form.save()
+            shelf = form.save()
+            messages.success(request, f"Поличку «{shelf.name}» оновлено.")
             return redirect("shelf_list")
     else:
         form = ShelfForm(instance=shelf, user=request.user)
@@ -274,6 +299,7 @@ def shelf_books(request, pk):
     if request.method == "POST":
         selected_books = books.filter(pk__in=request.POST.getlist("books"))
         shelf.books.set(selected_books)
+        messages.success(request, f"Книги на поличці «{shelf.name}» оновлено.")
         return redirect("shelf_list")
 
     selected_book_ids = set(shelf.books.values_list("pk", flat=True))
@@ -294,7 +320,9 @@ def shelf_delete(request, pk):
     shelf = get_object_or_404(Shelf, pk=pk, user=request.user)
 
     if request.method == "POST":
+        shelf_name = shelf.name
         shelf.delete()
+        messages.success(request, f"Поличку «{shelf_name}» видалено.")
         return redirect("shelf_list")
 
     return render(request, "library/shelf_confirm_delete.html", {"shelf": shelf})
@@ -308,6 +336,7 @@ def note_list(request):
             note = form.save(commit=False)
             note.user = request.user
             note.save()
+            messages.success(request, "Нотатку додано.")
             return redirect("note_list")
     else:
         form = NoteForm(user=request.user)
@@ -333,6 +362,7 @@ def note_update(request, pk):
         form = NoteForm(request.POST, instance=note, user=request.user)
         if form.is_valid():
             form.save()
+            messages.success(request, "Нотатку оновлено.")
             if redirect_url:
                 return redirect(redirect_url)
             if note.book_id:
@@ -355,6 +385,7 @@ def note_delete(request, pk):
     redirect_url = get_safe_redirect_url(request)
     fallback_book_pk = note.book_id
     note.delete()
+    messages.success(request, "Нотатку видалено.")
 
     if redirect_url:
         return redirect(redirect_url)
@@ -367,6 +398,48 @@ def note_delete(request, pk):
 
 @login_required
 def book_create(request):
+    return redirect("book_create_search")
+
+
+def get_book_initial_from_query(request):
+    allowed_fields = ["title", "author", "genre", "publisher", "published_year", "cover_url"]
+    initial = {}
+    for field in allowed_fields:
+        value = request.GET.get(field, "").strip()
+        if value:
+            initial[field] = value
+
+    if initial:
+        initial.setdefault("status", Book.Status.PLANNED)
+
+    return initial
+
+
+@login_required
+def book_create_search(request):
+    search_query = request.GET.get("q", "").strip()
+    search_results = []
+    has_searched = bool(search_query)
+
+    if search_query:
+        try:
+            search_results = search_open_library_books(search_query)
+        except BookLookupError as error:
+            messages.error(request, str(error))
+
+    return render(
+        request,
+        "library/book_search.html",
+        {
+            "search_query": search_query,
+            "search_results": search_results,
+            "has_searched": has_searched,
+        },
+    )
+
+
+@login_required
+def book_create_manual(request):
     if request.method == "POST":
         form = BookForm(request.POST, request.FILES, user=request.user)
         if form.is_valid():
@@ -374,9 +447,10 @@ def book_create(request):
             book.user = request.user
             book.save()
             form.save_m2m()
+            messages.success(request, f"Книгу «{book.title}» додано до бібліотеки.")
             return redirect("book_list")
     else:
-        form = BookForm(user=request.user)
+        form = BookForm(user=request.user, initial=get_book_initial_from_query(request))
 
     return render(request, "library/book_form.html", {"form": form, "mode": "create"})
 
@@ -392,6 +466,7 @@ def book_update(request, pk):
             book.user = request.user
             book.save()
             form.save_m2m()
+            messages.success(request, f"Книгу «{book.title}» оновлено.")
             return redirect("book_detail", pk=book.pk)
     else:
         form = BookForm(instance=book, user=request.user)
@@ -404,7 +479,9 @@ def book_delete(request, pk):
     book = get_object_or_404(Book, pk=pk, user=request.user)
 
     if request.method == "POST":
+        book_title = book.title
         book.delete()
+        messages.success(request, f"Книгу «{book_title}» видалено.")
         return redirect("book_list")
 
     return render(request, "library/book_confirm_delete.html", {"book": book})

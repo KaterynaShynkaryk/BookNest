@@ -5,6 +5,7 @@ from django.db import models
 
 class Book(models.Model):
     class Status(models.TextChoices):
+        WISHLIST = 'wishlist', 'Бажанка'
         PLANNED = 'planned', 'Заплановано'
         READING = 'reading', 'Читаю'
         COMPLETED = 'completed', 'Прочитано'
