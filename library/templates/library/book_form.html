@@ -43,7 +43,26 @@
                         </div>
                     {% else %}
                         <div class="{% if field.name == 'description' or field.name == 'shelves' or field.name == 'rating' %}col-12{% elif field.name == 'is_favorite' %}col-12{% else %}col-md-6{% endif %}{% if field.name == 'rating' or field.name == 'finish_date' %} gated-field{% endif %}"{% if field.name == 'rating' or field.name == 'finish_date' %} data-completed-only{% endif %}>
-                            {% if field.field.widget.input_type == 'checkbox' %}
+                            {% if field.name == 'shelves' %}
+                                <span class="form-label">{{ field.label }}</span>
+                                <div class="checkbox-fieldset">
+                                    {% if form.shelf_options %}
+                                        <div class="shelf-book-picker shelf-picker" aria-label="Оберіть полички для книги">
+                                            {% for shelf in form.shelf_options %}
+                                                <label class="shelf-book-option shelf-option" for="shelf-{{ shelf.pk }}">
+                                                    <input id="shelf-{{ shelf.pk }}" type="checkbox" name="{{ field.html_name }}" value="{{ shelf.pk }}" {% if shelf.pk|stringformat:"s" in form.selected_shelf_ids %}checked{% endif %}>
+                                                    <span class="shelf-book-option__copy">
+                                                        <strong>{{ shelf.name }}</strong>
+                                                        <small>Поличка</small>
+                                                    </span>
+                                                </label>
+                                            {% endfor %}
+                                        </div>
+                                    {% else %}
+                                        <p class="checkbox-empty-note">Поличок ще немає.</p>
+                                    {% endif %}
+                                </div>
+                            {% elif field.field.widget.input_type == 'checkbox' %}
                                 <label class="inline-check" for="{{ field.id_for_label }}">
                                     {{ field }}
                                     <span>{{ field.label }}</span>
@@ -53,7 +72,7 @@
                                 {% if field.name == 'genre' and form.genre_options %}
                                     <div class="combined-value-field" aria-label="Жанр: введіть свій або оберіть існуючий">
                                         {{ field }}
-                                        <select class="form-select existing-value-select" id="genre-existing-picker" data-fill-field="{{ field.id_for_label }}" aria-label="Обрати існуючий жанр">
+                                        <select class="form-select existing-value-select" id="genre-existing-picker" data-fill-field="{{ field.id_for_label }}" data-append-value="true" aria-label="Додати існуючий жанр">
                                             <option value="">Існуючі</option>
                                             {% for genre in form.genre_options %}<option value="{{ genre }}">{{ genre }}</option>{% endfor %}
                                         </select>
@@ -64,6 +83,14 @@
                                         <select class="form-select existing-value-select" id="publisher-existing-picker" data-fill-field="{{ field.id_for_label }}" aria-label="Обрати існуюче видавництво">
                                             <option value="">Існуючі</option>
                                             {% for publisher in form.publisher_options %}<option value="{{ publisher }}">{{ publisher }}</option>{% endfor %}
+                                        </select>
+                                    </div>
+                                {% elif field.name == 'series' and form.series_options %}
+                                    <div class="combined-value-field" aria-label="Серія: введіть свою або оберіть існуючу">
+                                        {{ field }}
+                                        <select class="form-select existing-value-select" id="series-existing-picker" data-fill-field="{{ field.id_for_label }}" aria-label="Обрати існуючу серію">
+                                            <option value="">Існуючі</option>
+                                            {% for series in form.series_options %}<option value="{{ series }}">{{ series }}</option>{% endfor %}
                                         </select>
                                     </div>
                                 {% else %}
@@ -113,7 +140,20 @@
                     const input = document.getElementById(select.dataset.fillField);
                     if (!input || !select.value) return;
 
-                    input.value = select.value;
+                    if (select.dataset.appendValue === "true") {
+                        const values = input.value
+                            .split(",")
+                            .map((value) => value.trim())
+                            .filter(Boolean);
+                        const hasValue = values.some((value) => value.toLocaleLowerCase() === select.value.toLocaleLowerCase());
+                        if (!hasValue) {
+                            values.push(select.value);
+                        }
+                        input.value = values.join(", ");
+                        select.value = "";
+                    } else {
+                        input.value = select.value;
+                    }
                     input.focus();
                 });
             });

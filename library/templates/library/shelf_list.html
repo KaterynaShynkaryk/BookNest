@@ -1,0 +1,107 @@
+{% extends "base.html" %}
+
+{% block title %}Полички{% endblock %}
+
+{% block content %}
+    <section class="page-heading fade-in">
+        <div class="page-heading__copy">
+            <h1>Полички</h1>
+            <p>Окремі колекції для ваших книг</p>
+        </div>
+        <div class="page-heading__actions">
+            <span class="visible-count">Усього: <strong>{{ shelf_count }}</strong></span>
+            <a class="primary-link-button" href="{% url 'shelf_create' %}">+ Додати поличку</a>
+        </div>
+    </section>
+
+    {% if shelves %}
+        <section class="shelf-grid fade-in delay-1" aria-label="Список поличок">
+            {% for shelf in shelves %}
+                <article class="shelf-card">
+                    <div class="shelf-card__header">
+                        <div>
+                            <h2>{{ shelf.name }}</h2>
+                            <p>Книг: {{ shelf.books.all|length }}</p>
+                        </div>
+                        <details class="book-actions-menu shelf-actions-menu">
+                            <summary aria-label="Дії для полички {{ shelf.name }}">⋯</summary>
+                            <nav class="book-actions" aria-label="Дії для полички {{ shelf.name }}">
+                                <a href="{% url 'shelf_books' shelf.pk %}">📚︎ Книги</a>
+                                <a href="{% url 'shelf_update' shelf.pk %}"><span class="mirrored-icon" aria-hidden="true">✎</span> Редагувати</a>
+                                <a class="danger-link" href="{% url 'shelf_delete' shelf.pk %}">🗙 Видалити</a>
+                            </nav>
+                        </details>
+                    </div>
+
+                    {% if shelf.books.all %}
+                        <div class="shelf-cover-grid" aria-label="Останні книги на поличці {{ shelf.name }}">
+                            {% for book in shelf.books.all|slice:":4" %}
+                                <a class="shelf-cover-tile" href="{% url 'book_detail' book.pk %}" aria-label="Відкрити книгу {{ book.title }}">
+                                    {% if book.cover_image %}
+                                        <img src="{{ book.cover_image.url }}" alt="Обкладинка книги {{ book.title }}">
+                                    {% elif book.cover_url %}
+                                        <img src="{{ book.cover_url }}" alt="Обкладинка книги {{ book.title }}">
+                                    {% else %}
+                                        <span>{{ book.title|slice:":1" }}</span>
+                                    {% endif %}
+                                </a>
+                            {% endfor %}
+                        </div>
+                        <div class="shelf-card__footer">
+                            {% if shelf.books.all|length > 4 %}
+                                <p class="shelf-card__more">+ ще {{ shelf.books.all|length|add:"-4" }}</p>
+                            {% endif %}
+                            <a class="shelf-card__manage-link" href="{% url 'shelf_books' shelf.pk %}">Керувати книгами</a>
+                        </div>
+                    {% else %}
+                        <div class="shelf-card-empty-state" role="status">
+                            <span class="shelf-card-empty-state__icon" aria-hidden="true">☷︎</span>
+                            <div>
+                                <h3>Поличка порожня</h3>
+                                <p>Оберіть існуючі книги з бібліотеки, щоб додати їх на поличку.</p>
+                            </div>
+                            <a class="nav-link-button shelf-card-empty-state__action" href="{% url 'shelf_books' shelf.pk %}">Додати книгу</a>
+                        </div>
+                    {% endif %}
+                </article>
+            {% endfor %}
+        </section>
+    {% else %}
+        <div class="empty-state shelf-empty-state">
+            <div class="shelf-empty-icon" aria-hidden="true">☷</div>
+            <h2>Поличок ще немає</h2>
+            <p>Створіть першу поличку, щоб групувати книги за настроєм, жанром або планами.</p>
+            <div class="empty-actions">
+                <a class="primary-link-button" href="{% url 'shelf_create' %}">Додати поличку</a>
+                <a class="nav-link-button" href="{% url 'book_list' %}">До бібліотеки</a>
+            </div>
+        </div>
+    {% endif %}
+    <script>
+        (() => {
+            const actionMenus = document.querySelectorAll(".shelf-actions-menu");
+            if (!actionMenus.length) return;
+
+            const closeMenus = (exceptMenu = null) => {
+                actionMenus.forEach((menu) => {
+                    if (menu !== exceptMenu) {
+                        menu.open = false;
+                    }
+                });
+            };
+
+            actionMenus.forEach((menu) => {
+                menu.addEventListener("toggle", () => {
+                    if (menu.open) {
+                        closeMenus(menu);
+                    }
+                });
+            });
+
+            document.addEventListener("click", (event) => {
+                if (event.target.closest(".shelf-actions-menu")) return;
+                closeMenus();
+            });
+        })();
+    </script>
+{% endblock %}

@@ -24,7 +24,6 @@
                         <span class="status-label status-label--{{ book.status }}">{{ book.get_status_display }}</span>
                         {% if book.is_favorite %}<span class="favorite-label">♥ Улюблена</span>{% endif %}
                     </div>
-                    {% if book.rating %}<p class="detail-rating" aria-label="Оцінка {{ book.rating }} з 5">{{ book.rating_stars }}</p>{% endif %}
                 </div>
             </div>
 
@@ -32,7 +31,7 @@
                 {% if book.genre %}<div class="meta-row"><span>🎭︎</span><div><small>Жанр</small><strong>{{ book.genre }}</strong></div></div>{% endif %}
                 {% if book.publisher %}<div class="meta-row"><span>🏛︎</span><div><small>Видавництво</small><strong>{{ book.publisher }}</strong></div></div>{% endif %}
                 {% if book.published_year %}<div class="meta-row"><span>🕒︎</span><div><small>Рік видання</small><strong>{{ book.published_year }}</strong></div></div>{% endif %}
-                <div class="meta-row"><span>👤︎</span><div><small>Автор</small><strong>{{ book.author }}</strong></div></div>
+                {% if book.series %}<div class="meta-row"><span>⏭︎</span><div><small>Серія</small><strong>{{ book.series }}</strong></div></div>{% endif %}
             </div>
 
             {% if book.shelves.all %}
@@ -40,7 +39,7 @@
                     <h2>Полиці</h2>
                     <div class="shelf-tags">
                         {% for shelf in book.shelves.all %}
-                            <span>{{ shelf.name }}</span>
+                            <span>{{ shelf.name|cut:"<" }}</span>
                         {% endfor %}
                     </div>
                 </section>
@@ -107,7 +106,7 @@
                         {% endfor %}
                     </div>
                 {% else %}
-                    <div class="note-empty">Нотаток до цієї книги ще немає. Додайте першу нотатку у формі вище.</div>
+                    <div class="note-empty"><span class="note-empty__icon" aria-hidden="true">📝</span><span>Нотаток до цієї книги ще немає. Додайте першу нотатку у формі вище.</span></div>
                 {% endif %}
             </section>
         </div>

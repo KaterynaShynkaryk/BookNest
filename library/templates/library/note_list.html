@@ -3,7 +3,6 @@
 {% block title %}Нотатки{% endblock %}
 
 {% block content %}
-    <a class="back-link" href="{% url 'book_list' %}">← До бібліотеки</a>
 
     <section class="page-heading fade-in">
         <div class="page-heading__copy">
@@ -73,7 +72,7 @@
                         {% endfor %}
                     </div>
                 {% else %}
-                    <div class="note-empty">Загальних нотаток ще немає. Додайте першу нотатку у формі зліва.</div>
+                    <div class="note-empty"><span class="note-empty__icon" aria-hidden="true">📝</span><span>Загальних нотаток ще немає. Додайте першу нотатку у формі зліва.</span></div>
                 {% endif %}
             </section>
 
@@ -102,7 +101,7 @@
                         {% endfor %}
                     </div>
                 {% else %}
-                    <div class="note-empty">Нотаток до книг ще немає. Оберіть книгу у формі або додайте нотатку зі сторінки книги.</div>
+                    <div class="note-empty"><span class="note-empty__icon" aria-hidden="true">📝</span><span>Нотаток до книг ще немає. Оберіть книгу у формі або додайте нотатку зі сторінки книги.</span></div>
                 {% endif %}
             </section>
         </div>

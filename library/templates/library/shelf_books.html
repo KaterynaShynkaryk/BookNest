@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+
+{% block title %}Книги на поличці {{ shelf.name }}{% endblock %}
+
+{% block content %}
+    <a class="back-link" href="{% url 'shelf_list' %}">← До поличок</a>
+
+    <section class="form-shell fade-in">
+        <div class="form-heading">
+            <h1>Книги на поличці “{{ shelf.name }}”</h1>
+            <p>Позначте існуючі книги, які мають бути на цій поличці.</p>
+        </div>
+
+        {% if books %}
+            <form method="post" class="shelf-books-form">
+                {% csrf_token %}
+                <div class="shelf-book-picker" aria-label="Оберіть книги для полички {{ shelf.name }}">
+                    {% for book in books %}
+                        <label class="shelf-book-option" for="book-{{ book.pk }}">
+                            <input id="book-{{ book.pk }}" type="checkbox" name="books" value="{{ book.pk }}" {% if book.pk in selected_book_ids %}checked{% endif %}>
+                            <span class="book-cover book-cover--sm" aria-hidden="true">
+                                {% if book.cover_image %}
+                                    <img src="{{ book.cover_image.url }}" alt="">
+                                {% elif book.cover_url %}
+                                    <img src="{{ book.cover_url }}" alt="">
+                                {% else %}
+                                    <span>{{ book.title|slice:":1" }}</span>
+                                {% endif %}
+                            </span>
+                            <span class="shelf-book-option__copy">
+                                <strong>{{ book.title }}</strong>
+                                <small>{{ book.author }}</small>
+                            </span>
+                        </label>
+                    {% endfor %}
+                </div>
+
+                <div class="form-actions">
+                    <button class="primary-link-button button-submit" type="submit">Зберегти поличку</button>
+                    <a class="nav-link-button" href="{% url 'shelf_list' %}">Скасувати</a>
+                </div>
+            </form>
+        {% else %}
+            <div class="empty-state shelf-books-empty-state">
+                <div class="empty-state__icon" aria-hidden="true">📚︎</div>
+                <h2>У бібліотеці ще немає книг</h2>
+                <p>Спочатку додайте книгу до бібліотеки, а потім поверніться, щоб покласти її на поличку.</p>
+                <div class="empty-actions">
+                    <a class="primary-link-button" href="{% url 'book_create' %}">Додати книгу</a>
+                    <a class="nav-link-button" href="{% url 'shelf_list' %}">До поличок</a>
+                </div>
+            </div>
+        {% endif %}
+    </section>
+{% endblock %}
