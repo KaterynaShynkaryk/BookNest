@@ -409,11 +409,15 @@ a:hover {
     padding: 1.25rem;
 }
 
-.book-search-row {
-    align-items: center;
+.book-search-fields {
+    align-items: end;
     display: grid;
     gap: 0.75rem;
     grid-template-columns: minmax(0, 1fr) auto;
+}
+
+.book-url-import-field {
+    margin-top: 0.9rem;
 }
 
 .book-search-results {

@@ -8,7 +8,7 @@
     <section class="form-shell fade-in">
         <div class="form-heading">
             <h1>Додати книгу</h1>
-            <p>Спочатку знайдіть книгу за назвою в Open Library або перейдіть до ручного додавання.</p>
+            <p>Спочатку знайдіть книгу за назвою в Google Books або перейдіть до ручного додавання.</p>
         </div>
 
         <nav class="create-book-tabs" aria-label="Спосіб додавання книги">
@@ -17,20 +17,33 @@
         </nav>
 
         <form class="book-search-card" method="get" action="{% url 'book_create_search' %}">
-            <label class="form-label" for="book-title-search">Назва книги</label>
-            <div class="book-search-row">
-                <input
-                    class="form-control"
-                    id="book-title-search"
-                    name="q"
-                    type="search"
-                    value="{{ search_query }}"
-                    placeholder="Наприклад, Дюна або The Hobbit"
-                    required
-                >
+            <div class="book-search-fields">
+                <div>
+                    <label class="form-label" for="book-title-search">Назва книги</label>
+                    <input
+                        class="form-control"
+                        id="book-title-search"
+                        name="q"
+                        type="search"
+                        value="{{ search_query }}"
+                        placeholder="Наприклад, Дюна або The Hobbit"
+                    >
+                </div>
                 <button class="primary-link-button button-submit" type="submit">Знайти</button>
             </div>
-            <p class="form-text">Дані підтягуються з Open Library. Перед збереженням їх можна відредагувати.</p>
+            <div class="book-url-import-field">
+                <label class="form-label" for="book-url-import">Посилання на сторінку книги</label>
+                <input
+                    class="form-control"
+                    id="book-url-import"
+                    name="book_url"
+                    type="url"
+                    value="{{ book_url }}"
+                    placeholder="Наприклад, сторінка книги на Yakaboo, Readeat або сайті видавництва"
+                >
+            </div>
+            <p class="form-text">Можна ввести назву або посилання на сторінку книги. Посилання часто краще працює для українських книгарень, бо BookNest пробує прочитати метадані напряму зі сторінки.</p>
+            <p class="form-text">Спершу шукаємо в Google Books, а якщо сервіс недоступний — пробуємо Open Library. Перед збереженням дані можна відредагувати.</p>
         </form>
 
         {% if has_searched %}
@@ -63,11 +76,13 @@
                                     </div>
                                     {% if result.genre %}<p class="book-search-result-card__genres">{{ result.genre }}</p>{% endif %}
                                     <div class="book-search-result-card__actions">
-                                        <a
-                                            class="primary-link-button"
-                                            href="{% url 'book_create_manual' %}?title={{ result.title|urlencode }}&author={{ result.author|urlencode }}&publisher={{ result.publisher|urlencode }}&published_year={{ result.published_year|urlencode }}&genre={{ result.genre|urlencode }}&cover_url={{ result.cover_url|urlencode }}"
-                                        >Обрати</a>
-                                        {% if result.external_url %}<a class="reset-link" href="{{ result.external_url }}" target="_blank" rel="noopener noreferrer">Open Library</a>{% endif %}
+                                        {% if not result.external_only %}
+                                            <a
+                                                class="primary-link-button"
+                                                href="{% url 'book_create_manual' %}?title={{ result.title|urlencode }}&author={{ result.author|urlencode }}&publisher={{ result.publisher|urlencode }}&published_year={{ result.published_year|urlencode }}&genre={{ result.genre|urlencode }}&cover_url={{ result.cover_url|urlencode }}&description={{ result.description|urlencode }}"
+                                            >Обрати</a>
+                                        {% endif %}
+                                        {% if result.external_url %}<a class="reset-link" href="{{ result.external_url }}" target="_blank" rel="noopener noreferrer">{{ result.source|default:"Джерело" }}</a>{% endif %}
                                     </div>
                                 </div>
                             </article>
@@ -77,7 +92,7 @@
                     <div class="empty-state book-search-empty-state">
                         <div class="empty-state__icon" aria-hidden="true">⌕</div>
                         <h2>Нічого не знайдено</h2>
-                        <p>Спробуйте іншу назву або додайте книгу вручну.</p>
+                        <p>Спробуйте іншу назву або додайте книгу вручну. Якщо зовнішні каталоги недоступні, ручне додавання працює без інтернету.</p>
                         <a class="primary-link-button" href="{% url 'book_create_manual' %}">Додати вручну</a>
                     </div>
                 {% endif %}

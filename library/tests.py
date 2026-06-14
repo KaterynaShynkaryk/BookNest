@@ -8,6 +8,7 @@ from django.test import TestCase
 from django.urls import reverse
 
 from .forms import BookForm, BookProgressForm, NoteForm, ShelfForm, UkrainianAuthenticationForm, UkrainianUserCreationForm
+from .book_lookup import extract_book_metadata
 from .models import Book, Note, Shelf
 
 
@@ -105,7 +106,7 @@ class BookListViewTest(TestCase):
 
         self.assertRedirects(response, reverse("book_create_search"))
 
-    def test_book_search_page_queries_open_library_and_links_to_manual_form(self):
+    def test_book_search_page_queries_google_books_and_links_to_manual_form(self):
         self.client.force_login(self.user)
         results = [
             {
@@ -114,12 +115,13 @@ class BookListViewTest(TestCase):
                 "published_year": 1965,
                 "publisher": "КСД",
                 "genre": "Science fiction, Classics",
-                "cover_url": "https://covers.openlibrary.org/b/id/123-L.jpg",
-                "external_url": "https://openlibrary.org/works/OL1W",
+                "cover_url": "https://books.google.com/books/content?id=abc&printsec=frontcover&img=1",
+                "external_url": "https://books.google.com/books?id=abc",
+                "source": "Google Books",
             }
         ]
 
-        with patch("library.views.search_open_library_books", return_value=results) as search:
+        with patch("library.views.search_books", return_value=results) as search:
             response = self.client.get(reverse("book_create_search"), {"q": "Дюна"})
 
         self.assertEqual(response.status_code, 200)
@@ -127,9 +129,117 @@ class BookListViewTest(TestCase):
         self.assertContains(response, "Результати пошуку")
         self.assertContains(response, "Дюна")
         self.assertContains(response, "Френк Герберт")
+        self.assertContains(response, "Google Books")
         self.assertContains(response, reverse("book_create_manual"))
         self.assertContains(response, "Пошук за назвою")
         self.assertContains(response, "Додати вручну")
+        self.assertNotContains(response, 'name="isbn"')
+
+    def test_book_search_page_shows_title_and_url_import_without_isbn_field(self):
+        self.client.force_login(self.user)
+
+        response = self.client.get(reverse("book_create_search"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'name="q"')
+        self.assertContains(response, 'name="book_url"')
+        self.assertContains(response, "Yakaboo")
+        self.assertContains(response, "Можна ввести назву або посилання")
+        self.assertNotContains(response, 'name="isbn"')
+        self.assertNotContains(response, "ISBN зазвичай")
+
+    def test_book_search_page_can_import_from_book_url(self):
+        self.client.force_login(self.user)
+        results = [
+            {
+                "title": "Мова тіла",
+                "author": "А. К. Тернер",
+                "published_year": "2024",
+                "publisher": "Лабораторія",
+                "genre": "",
+                "cover_url": "https://example.com/body-language.jpg",
+                "description": "Книжка про невербальну комунікацію.",
+                "external_url": "https://www.yakaboo.ua/book.html",
+                "source": "Сторінка книги",
+            }
+        ]
+
+        with patch("library.views.import_book_from_url", return_value=results) as import_from_url:
+            response = self.client.get(
+                reverse("book_create_search"),
+                {"book_url": "https://www.yakaboo.ua/book.html"},
+            )
+
+        self.assertEqual(response.status_code, 200)
+        import_from_url.assert_called_once_with("https://www.yakaboo.ua/book.html")
+        self.assertContains(response, "Мова тіла")
+        self.assertContains(response, "А. К. Тернер")
+        self.assertContains(response, "Сторінка книги")
+        self.assertContains(response, "description=")
+
+    def test_book_url_metadata_can_be_extracted_from_json_ld(self):
+        metadata = extract_book_metadata(
+            '<script type="application/ld+json">'
+            '{"@type":"Product","name":"Мова тіла",'
+            '"image":"https://example.com/cover.jpg","description":"Опис книги",'
+            '"additionalProperty":['
+            '{"name":"Автор","value":"А. К. Тернер"},'
+            '{"name":"Видавництво","value":"Лабораторія"},'
+            '{"name":"Рік видання","value":"2024"}'
+            ']}'
+            "</script>"
+        )
+
+        self.assertEqual(metadata["title"], "Мова тіла")
+        self.assertEqual(metadata["author"], "А. К. Тернер")
+        self.assertEqual(metadata["publisher"], "Лабораторія")
+        self.assertEqual(metadata["published_year"], "2024")
+        self.assertEqual(metadata["cover_url"], "https://example.com/cover.jpg")
+
+    def test_book_url_metadata_falls_back_to_visible_book_details(self):
+        metadata = extract_book_metadata(
+            '<html><head>'
+            '<meta property="og:title" content="Дівчина, яка впала під море | Yakaboo">'
+            '<meta property="og:description" content="Фентезійна історія.">'
+            '<meta property="og:image" content="https://example.com/sea.jpg">'
+            '</head><body>'
+            '<dl><dt>Автор</dt><dd>Аксі О</dd>'
+            '<dt>Видавництво</dt><dd>Рідна мова</dd>'
+            '<dt>Рік видання</dt><dd>2024</dd></dl>'
+            '</body></html>'
+        )
+
+        self.assertEqual(metadata["title"], "Дівчина, яка впала під море")
+        self.assertEqual(metadata["author"], "Аксі О")
+        self.assertEqual(metadata["publisher"], "Рідна мова")
+        self.assertEqual(metadata["published_year"], "2024")
+        self.assertEqual(metadata["cover_url"], "https://example.com/sea.jpg")
+
+    def test_book_url_metadata_does_not_guess_publisher_from_unlabelled_text(self):
+        metadata = extract_book_metadata(
+            '<html><head>'
+            '<meta property="og:title" content="Книга без видавництва">'
+            '<meta property="og:description" content="Опис книги.">'
+            '<meta property="og:image" content="https://example.com/cover.jpg">'
+            '</head><body>'
+            '<script>window.analytics = {publisher: "Некоректне видавництво"};</script>'
+            '<p>Купити книгу на сайті видавництва або в каталозі книгарні.</p>'
+            '</body></html>'
+        )
+
+        self.assertEqual(metadata["title"], "Книга без видавництва")
+        self.assertEqual(metadata["publisher"], "")
+
+    def test_book_search_page_handles_unavailable_catalogs_without_error_flash(self):
+        self.client.force_login(self.user)
+
+        with patch("library.views.search_books", return_value=[]):
+            response = self.client.get(reverse("book_create_search"), {"q": "Рідкісна книга"})
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Нічого не знайдено")
+        self.assertContains(response, "ручне додавання працює без інтернету")
+        self.assertNotContains(response, "Не вдалося отримати дані")
 
     def test_manual_book_form_can_be_prefilled_from_search_result(self):
         self.client.force_login(self.user)
@@ -141,7 +251,7 @@ class BookListViewTest(TestCase):
                 "publisher": "КСД",
                 "published_year": "1965",
                 "genre": "Science fiction",
-                "cover_url": "https://covers.openlibrary.org/b/id/123-L.jpg",
+                "cover_url": "https://books.google.com/books/content?id=abc&printsec=frontcover&img=1",
             },
         )
 

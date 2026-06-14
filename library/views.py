@@ -15,7 +15,7 @@ from .forms import (
     UkrainianUserCreationForm,
     split_genres,
 )
-from .book_lookup import BookLookupError, search_open_library_books
+from .book_lookup import BookLookupError, import_book_from_url, search_books
 from .models import Book, Note, Shelf
 
 
@@ -402,7 +402,15 @@ def book_create(request):
 
 
 def get_book_initial_from_query(request):
-    allowed_fields = ["title", "author", "genre", "publisher", "published_year", "cover_url"]
+    allowed_fields = [
+        "title",
+        "author",
+        "genre",
+        "publisher",
+        "published_year",
+        "cover_url",
+        "description",
+    ]
     initial = {}
     for field in allowed_fields:
         value = request.GET.get(field, "").strip()
@@ -418,20 +426,24 @@ def get_book_initial_from_query(request):
 @login_required
 def book_create_search(request):
     search_query = request.GET.get("q", "").strip()
+    book_url = request.GET.get("book_url", "").strip()
     search_results = []
-    has_searched = bool(search_query)
+    has_searched = bool(search_query or book_url)
 
-    if search_query:
+    if book_url:
         try:
-            search_results = search_open_library_books(search_query)
-        except BookLookupError as error:
-            messages.error(request, str(error))
+            search_results = import_book_from_url(book_url)
+        except BookLookupError:
+            search_results = []
+    elif search_query:
+        search_results = search_books(search_query)
 
     return render(
         request,
         "library/book_search.html",
         {
             "search_query": search_query,
+            "book_url": book_url,
             "search_results": search_results,
             "has_searched": has_searched,
         },
