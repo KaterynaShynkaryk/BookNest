@@ -100,8 +100,6 @@ def book_list(request):
     )
 
     books = user_books.prefetch_related("shelves")
-    if search_query:
-        books = books.filter(title__icontains=search_query)
 
     selected_statuses = [status for status in selected_statuses if status in available_statuses]
     if selected_statuses:
@@ -124,6 +122,15 @@ def book_list(request):
 
     if favorite_only:
         books = books.filter(is_favorite=True)
+
+    if search_query:
+        normalized_query = search_query.casefold()
+        matching_book_ids = [
+            book_id
+            for book_id, title in books.values_list("pk", "title")
+            if normalized_query in title.casefold()
+        ]
+        books = books.filter(pk__in=matching_book_ids)
 
     has_active_filters = any(
         [

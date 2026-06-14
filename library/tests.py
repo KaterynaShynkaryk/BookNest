@@ -473,6 +473,28 @@ class BookListViewTest(TestCase):
         self.assertNotContains(response, "Sci Fi Press Book")
         self.assertNotContains(response, "Fantasy House Book")
 
+    def test_books_can_be_searched_by_ukrainian_title_case_insensitively(self):
+        Book.objects.create(
+            user=self.user,
+            title="Мова тіла",
+            author="А. К. Тернер",
+        )
+        Book.objects.create(
+            user=self.user,
+            title="Дівчина, яка впала під море",
+            author="Аксі О",
+        )
+
+        self.client.force_login(self.user)
+        response = self.client.get(reverse("book_list"), {"q": "мова"})
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context["search_query"], "мова")
+        self.assertTrue(response.context["has_active_filters"])
+        self.assertEqual(response.context["displayed_count"], 1)
+        self.assertContains(response, "Мова тіла")
+        self.assertNotContains(response, "Дівчина, яка впала під море")
+
     def test_books_can_be_filtered_by_multiple_checkbox_values(self):
         Book.objects.create(
             user=self.user,
@@ -678,6 +700,9 @@ class BookListViewTest(TestCase):
         self.assertIn(".status-strip", css)
         self.assertIn("display: none", css)
         self.assertIn("a:not(.book-card__link)", css)
+        self.assertIn(".book-card:has(.book-actions-menu[open])", css)
+        self.assertIn(".book-actions-menu[open]", css)
+        self.assertIn("z-index: 70", css)
         self.assertContains(response, "closeMenus")
         self.assertContains(response, "filterMenus")
         self.assertContains(response, 'event.target.closest(".book-actions-menu, .filter-menu")')
@@ -728,6 +753,9 @@ class ShelfListViewTests(TestCase):
         self.assertContains(response, '<span class="mirrored-icon" aria-hidden="true">✎</span> Редагувати')
         self.assertContains(response, "🗙 Видалити")
         self.assertContains(response, 'event.target.closest(".shelf-actions-menu")')
+        with open("static/css/styles.css", encoding="utf-8") as styles:
+            css = styles.read()
+        self.assertIn(".shelf-card:has(.book-actions-menu[open])", css)
         self.assertNotContains(response, 'class="shelf-card__icon"')
         self.assertNotContains(response, "Чужа поличка")
         self.assertNotContains(response, "Чужа книга")
