@@ -131,7 +131,7 @@ class BookForm(BootstrapFormMixin, forms.ModelForm):
         user_books = Book.objects.none()
 
         if user is not None:
-            shelves_field.queryset = Shelf.objects.filter(user=user)
+            shelves_field.queryset = Shelf.objects.filter(user=user, is_auto_series=False)
             user_books = Book.objects.filter(user=user)
         else:
             shelves_field.queryset = Shelf.objects.none()
@@ -265,8 +265,14 @@ class BookForm(BootstrapFormMixin, forms.ModelForm):
 class ShelfForm(BootstrapFormMixin, forms.ModelForm):
     class Meta:
         model = Shelf
-        fields = ["name"]
-        labels = {"name": "Назва полички"}
+        fields = ["name", "status"]
+        labels = {
+            "name": "Назва полички",
+            "status": "Статус серії",
+        }
+        help_texts = {
+            "status": "Для автоматичних поличок серій: не почато, почато або завершена.",
+        }
         widgets = {
             "name": forms.TextInput(attrs={"placeholder": "Наприклад, Фентезі або Купити"}),
         }
@@ -274,6 +280,8 @@ class ShelfForm(BootstrapFormMixin, forms.ModelForm):
     def __init__(self, *args, user=None, **kwargs):
         super().__init__(*args, **kwargs)
         self.user = user
+        if not getattr(self.instance, "is_auto_series", False):
+            self.fields.pop("status")
         self.apply_bootstrap_styles()
 
     def clean_name(self):

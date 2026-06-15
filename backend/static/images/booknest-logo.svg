@@ -1,0 +1,70 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-labelledby="title desc">
+  <title id="title">BookNest logo</title>
+  <desc id="desc">Minimal blue app icon with a white book and bookmark</desc>
+
+  <defs>
+    <linearGradient id="background" x1="12" y1="10" x2="116" y2="118" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#6d9aad"/>
+      <stop offset="1" stop-color="#3f6f84"/>
+    </linearGradient>
+
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow
+        dx="0"
+        dy="4"
+        stdDeviation="4"
+        flood-color="#244554"
+        flood-opacity="0.25"
+      />
+    </filter>
+  </defs>
+
+  <rect
+    x="4"
+    y="4"
+    width="120"
+    height="120"
+    rx="28"
+    fill="url(#background)"
+  />
+
+  <g filter="url(#shadow)">
+    <!-- Обкладинка книги -->
+    <path
+      d="M28 22h57c9 0 15 6 15 15v63c0 5-4 9-9 9H37c-9 0-14-5-14-13V32c0-6 2-10 5-10z"
+      fill="#ffffff"
+    />
+
+    <!-- М’який згин біля корінця -->
+    <path
+      d="M42 29c-3 22-3 52 0 74"
+      fill="none"
+      stroke="#dbe7ec"
+      stroke-width="3"
+      stroke-linecap="round"
+    />
+
+    <!-- Лінії сторінок -->
+    <path
+      d="M49 95h39"
+      fill="none"
+      stroke="#dbe7ec"
+      stroke-width="3"
+      stroke-linecap="round"
+    />
+
+    <path
+      d="M52 101h33"
+      fill="none"
+      stroke="#e8f0f3"
+      stroke-width="2"
+      stroke-linecap="round"
+    />
+
+    <!-- Закладка -->
+    <path
+      d="M74 22h17v40l-8.5-8-8.5 8z"
+      fill="#f1c66d"
+    />
+  </g>
+</svg>

@@ -22,11 +22,17 @@
                         <div>
                             <h2>{{ shelf.name }}</h2>
                             <p>Книг: {{ shelf.books.all|length }}</p>
+                            {% if shelf.is_auto_series %}
+                                <div class="shelf-series-meta">
+                                    <span class="shelf-auto-label">Автополичка серії</span>
+                                    <span class="shelf-status shelf-status--{{ shelf.status }}">{{ shelf.get_status_display }}</span>
+                                </div>
+                            {% endif %}
                         </div>
                         <details class="book-actions-menu shelf-actions-menu">
                             <summary aria-label="Дії для полички {{ shelf.name }}">⋯</summary>
                             <nav class="book-actions" aria-label="Дії для полички {{ shelf.name }}">
-                                <a href="{% url 'shelf_books' shelf.pk %}">📚︎ Книги</a>
+                                <a href="{% url 'shelf_books' shelf.pk %}">📚︎ Керувати книгами</a>
                                 <a href="{% url 'shelf_update' shelf.pk %}"><span class="mirrored-icon" aria-hidden="true">✎</span> Редагувати</a>
                                 <a class="danger-link" href="{% url 'shelf_delete' shelf.pk %}">🗙 Видалити</a>
                             </nav>
@@ -47,20 +53,18 @@
                                 </a>
                             {% endfor %}
                         </div>
-                        <div class="shelf-card__footer">
-                            {% if shelf.books.all|length > 4 %}
+                        {% if shelf.books.all|length > 4 %}
+                            <div class="shelf-card__footer">
                                 <p class="shelf-card__more">+ ще {{ shelf.books.all|length|add:"-4" }}</p>
-                            {% endif %}
-                            <a class="shelf-card__manage-link" href="{% url 'shelf_books' shelf.pk %}">Керувати книгами</a>
-                        </div>
+                            </div>
+                        {% endif %}
                     {% else %}
                         <div class="shelf-card-empty-state" role="status">
                             <span class="shelf-card-empty-state__icon" aria-hidden="true">☷︎</span>
                             <div>
                                 <h3>Поличка порожня</h3>
-                                <p>Оберіть існуючі книги з бібліотеки, щоб додати їх на поличку.</p>
+                                <p>Оберіть “Керувати книгами” в меню ⋯, щоб додати книги на поличку.</p>
                             </div>
-                            <a class="nav-link-button shelf-card-empty-state__action" href="{% url 'shelf_books' shelf.pk %}">Додати книгу</a>
                         </div>
                     {% endif %}
                 </article>

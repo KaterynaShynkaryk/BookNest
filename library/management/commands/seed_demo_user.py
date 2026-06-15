@@ -2,6 +2,7 @@ from django.contrib.auth import get_user_model
 from django.core.management.base import BaseCommand
 
 from library.models import Book, Note, Shelf
+from library.series_shelves import sync_book_series_shelf
 
 
 DEMO_USERNAME = "demo"
@@ -61,6 +62,7 @@ class Command(BaseCommand):
             },
         )
         dune.shelves.set([fantasy_shelf])
+        sync_book_series_shelf(dune)
 
         hobbit, _ = Book.objects.update_or_create(
             user=user,

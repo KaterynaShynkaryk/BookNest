@@ -17,6 +17,7 @@ from .forms import (
 )
 from .book_lookup import BookLookupError, import_book_from_url, search_books
 from .models import Book, Note, Shelf
+from .series_shelves import cleanup_empty_series_shelves, sync_book_series_shelf
 
 
 def test_page(request):
@@ -67,8 +68,7 @@ def book_list(request):
     search_query = request.GET.get("q", "").strip()
     selected_statuses = request.GET.getlist("status")
     selected_genres = request.GET.getlist("genre")
-    selected_publishers = request.GET.getlist("publisher")
-    selected_series = request.GET.getlist("series")
+    selected_publishers = list(request.GET.getlist("publisher"))
     favorite_only = request.GET.get("favorite") == "1"
     available_statuses = {status for status, label in Book.Status.choices}
 
@@ -92,13 +92,6 @@ def book_list(request):
         .values_list("publisher", flat=True)
         .distinct()
     )
-    series_choices = list(
-        user_books.exclude(series="")
-        .order_by("series")
-        .values_list("series", flat=True)
-        .distinct()
-    )
-
     books = user_books.prefetch_related("shelves")
 
     selected_statuses = [status for status in selected_statuses if status in available_statuses]
@@ -115,10 +108,6 @@ def book_list(request):
     selected_publishers = [publisher for publisher in selected_publishers if publisher in publisher_choices]
     if selected_publishers:
         books = books.filter(publisher__in=selected_publishers)
-
-    selected_series = [series for series in selected_series if series in series_choices]
-    if selected_series:
-        books = books.filter(series__in=selected_series)
 
     if favorite_only:
         books = books.filter(is_favorite=True)
@@ -138,7 +127,6 @@ def book_list(request):
             selected_statuses,
             selected_genres,
             selected_publishers,
-            selected_series,
             favorite_only,
         ]
     )
@@ -151,12 +139,10 @@ def book_list(request):
             "status_choices": Book.Status.choices,
             "genre_choices": genre_choices,
             "publisher_choices": publisher_choices,
-            "series_choices": series_choices,
             "search_query": search_query,
             "selected_statuses": selected_statuses,
             "selected_genres": selected_genres,
             "selected_publishers": selected_publishers,
-            "selected_series": selected_series,
             "favorite_only": favorite_only,
             "has_active_filters": has_active_filters,
             "displayed_count": books.count(),
@@ -429,7 +415,6 @@ def get_book_initial_from_query(request):
 
     return initial
 
-
 @login_required
 def book_create_search(request):
     search_query = request.GET.get("q", "").strip()
@@ -466,6 +451,7 @@ def book_create_manual(request):
             book.user = request.user
             book.save()
             form.save_m2m()
+            sync_book_series_shelf(book)
             messages.success(request, f"Книгу «{book.title}» додано до бібліотеки.")
             return redirect("book_list")
     else:
@@ -485,6 +471,7 @@ def book_update(request, pk):
             book.user = request.user
             book.save()
             form.save_m2m()
+            sync_book_series_shelf(book)
             messages.success(request, f"Книгу «{book.title}» оновлено.")
             return redirect("book_detail", pk=book.pk)
     else:
@@ -499,7 +486,9 @@ def book_delete(request, pk):
 
     if request.method == "POST":
         book_title = book.title
+        user = request.user
         book.delete()
+        cleanup_empty_series_shelves(user)
         messages.success(request, f"Книгу «{book_title}» видалено.")
         return redirect("book_list")
 

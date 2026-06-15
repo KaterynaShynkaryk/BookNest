@@ -594,6 +594,53 @@ a:hover {
     z-index: 1000;
 }
 
+
+.filter-section {
+    border: 1px solid color-mix(in srgb, var(--border) 72%, transparent);
+    border-radius: 0.85rem;
+    display: grid;
+    gap: 0.65rem;
+    padding: 0.65rem;
+}
+
+.filter-section__summary {
+    align-items: center;
+    color: var(--muted-foreground);
+    cursor: pointer;
+    display: flex;
+    font-size: 0.76rem;
+    font-weight: 700;
+    justify-content: space-between;
+    letter-spacing: 0.04em;
+    list-style: none;
+    text-transform: uppercase;
+}
+
+.filter-section__summary::-webkit-details-marker {
+    display: none;
+}
+
+.filter-section__chevron {
+    border: solid currentColor;
+    border-width: 0 2px 2px 0;
+    display: inline-block;
+    height: 0.42rem;
+    margin-top: -0.12rem;
+    transform: rotate(45deg);
+    transform-origin: center;
+    transition: transform 0.18s ease, margin-top 0.18s ease;
+    width: 0.42rem;
+}
+
+.filter-section[open] .filter-section__chevron {
+    margin-top: 0.16rem;
+    transform: rotate(225deg);
+}
+
+.filter-section:not([open]) {
+    gap: 0;
+}
+
 .form-control:focus,
 .form-select:focus,
 .form-check-input:focus {
@@ -1845,6 +1892,7 @@ a:hover {
     display: flex;
     flex-direction: column;
     gap: 1rem;
+    min-height: 16rem;
     padding: 1.2rem;
     position: relative;
 }
@@ -1853,11 +1901,48 @@ a:hover {
     z-index: 30;
 }
 
+.shelf-series-meta {
+    align-items: center;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    margin-top: 0.45rem;
+}
+
+.shelf-auto-label,
+.shelf-status {
+    border-radius: 999px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    padding: 0.25rem 0.55rem;
+}
+
+.shelf-auto-label {
+    background: var(--primary-soft);
+    color: var(--primary);
+}
+
+.shelf-status--not_started {
+    background: var(--muted);
+    color: var(--muted-foreground);
+}
+
+.shelf-status--started {
+    background: var(--status-reading-bg);
+    color: var(--status-reading-text);
+}
+
+.shelf-status--completed {
+    background: var(--status-completed-bg);
+    color: var(--status-completed-text);
+}
+
 .shelf-card__header {
     align-items: flex-start;
     display: flex;
     gap: 1rem;
     justify-content: space-between;
+    min-height: 3.8rem;
 }
 
 .shelf-card h2 {
@@ -1912,22 +1997,13 @@ a:hover {
     align-items: center;
     display: flex;
     gap: 0.75rem;
-    justify-content: space-between;
+    justify-content: flex-start;
+    min-height: 1rem;
 }
 
-.shelf-card__more,
-.shelf-card__manage-link {
+.shelf-card__more {
     color: var(--muted-foreground);
     font-size: 0.78rem;
-}
-
-.shelf-card__manage-link {
-    font-weight: 700;
-    margin-left: auto;
-}
-
-.shelf-card__manage-link:hover {
-    color: var(--primary);
 }
 
 .shelf-card-empty-state {
@@ -1937,6 +2013,7 @@ a:hover {
     border-radius: 0.9rem;
     color: var(--muted-foreground);
     display: grid;
+    flex: 1;
     gap: 0.85rem;
     grid-template-columns: auto minmax(0, 1fr);
     padding: 1rem;
@@ -1965,11 +2042,6 @@ a:hover {
 .shelf-card-empty-state p {
     font-size: 0.82rem;
     margin: 0;
-}
-
-.shelf-card-empty-state__action {
-    grid-column: 1 / -1;
-    justify-content: center;
 }
 
 .shelf-books-form {

@@ -21,6 +21,15 @@
                 {% for error in form.name.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
             </div>
 
+            {% if form.status %}
+                <div class="mb-4">
+                    <label class="form-label" for="{{ form.status.id_for_label }}">{{ form.status.label }}</label>
+                    {{ form.status }}
+                    {% if form.status.help_text %}<div class="form-text">{{ form.status.help_text }}</div>{% endif %}
+                    {% for error in form.status.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+                </div>
+            {% endif %}
+
             <div class="form-actions">
                 <button class="primary-link-button button-submit" type="submit">{% if mode == "create" %}Створити поличку{% else %}Зберегти зміни{% endif %}</button>
                 <a class="nav-link-button" href="{% url 'shelf_list' %}">Скасувати</a>
