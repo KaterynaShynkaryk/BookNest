@@ -269,6 +269,67 @@ class BookListViewTest(TestCase):
         self.assertEqual(metadata["published_year"], "2024")
         self.assertEqual(metadata["cover_url"], "https://example.com/sea.jpg")
 
+    def test_book_url_metadata_extracts_yakaboo_frontend_attribute_labels(self):
+        metadata = extract_book_metadata(
+            '<html><body>'
+            '<script type="application/json">'
+            '{"product":{"title":"Книга з атрибутами",'
+            '"brand":"Yakaboo",'
+            '"attributes":['
+            '{"frontend_label":"Видавництво","value":"Видавництво Старого Лева"},'
+            '{"frontend_label":"Рік видання","value":"2025"},'
+            '{"frontend_label":"Автор","value":"Катерина Єгорушкіна"}'
+            ']}}'
+            '</script>'
+            '</body></html>'
+        )
+
+        self.assertEqual(metadata["title"], "Книга з атрибутами")
+        self.assertEqual(metadata["author"], "Катерина Єгорушкіна")
+        self.assertEqual(metadata["publisher"], "Видавництво Старого Лева")
+        self.assertEqual(metadata["published_year"], "2025")
+        self.assertNotEqual(metadata["publisher"], "Yakaboo")
+
+    def test_book_url_metadata_extracts_yakaboo_values_from_inline_script_state(self):
+        metadata = extract_book_metadata(
+            '<html><head>'
+            '<meta property="og:title" content="Книга з JS state | Yakaboo">'
+            '</head><body>'
+            '<script>'
+            'window.__PRODUCT__ = {'
+            '"characteristics":['
+            '{"label":"Видавництво","value":"Наш Формат"},'
+            '{"label":"Рік видання","value":"2022"}'
+            ']};'
+            '</script>'
+            '</body></html>'
+        )
+
+        self.assertEqual(metadata["title"], "Книга з JS state")
+        self.assertEqual(metadata["publisher"], "Наш Формат")
+        self.assertEqual(metadata["published_year"], "2022")
+
+    def test_book_url_metadata_ignores_yakaboo_publisher_label_placeholder(self):
+        metadata = extract_book_metadata(
+            '<html><head>'
+            '<meta property="og:title" content="Книга з placeholder | Yakaboo">'
+            '</head><body>'
+            '<script>'
+            'window.__PRODUCT__ = {'
+            '"publisher":"book_publisher_label",'
+            '"characteristics":['
+            '{"label":"Видавництво","value":"Видавництво Старого Лева"},'
+            '{"label":"Рік видання","value":"2024"}'
+            ']};'
+            '</script>'
+            '</body></html>'
+        )
+
+        self.assertEqual(metadata["title"], "Книга з placeholder")
+        self.assertEqual(metadata["publisher"], "Видавництво Старого Лева")
+        self.assertEqual(metadata["published_year"], "2024")
+        self.assertNotEqual(metadata["publisher"], "book_publisher_label")
+
     def test_book_url_metadata_does_not_guess_publisher_from_unlabelled_text(self):
         metadata = extract_book_metadata(
             '<html><head>'
