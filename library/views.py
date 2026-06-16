@@ -245,6 +245,22 @@ def shelf_list(request):
 
 
 @login_required
+def shelf_detail(request, pk):
+    shelf = get_object_or_404(Shelf, pk=pk, user=request.user)
+    books = shelf.books.filter(user=request.user).prefetch_related("shelves")
+
+    return render(
+        request,
+        "library/shelf_detail.html",
+        {
+            "shelf": shelf,
+            "books": books,
+            "displayed_count": books.count(),
+        },
+    )
+
+
+@login_required
 def shelf_create(request):
     if request.method == "POST":
         form = ShelfForm(request.POST, user=request.user)

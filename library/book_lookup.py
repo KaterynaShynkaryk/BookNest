@@ -239,6 +239,12 @@ def extract_book_metadata(html, base_url=""):
     if embedded_metadata.get("title"):
         return finalize_metadata(enrich_metadata_from_html(embedded_metadata, html), base_url=base_url)
 
+    open_graph_metadata = metadata_from_open_graph(html)
+    if open_graph_metadata.get("title"):
+        return finalize_metadata(enrich_metadata_from_html(open_graph_metadata, html), base_url=base_url)
+
+    return {}
+
 def extract_json_ld_blocks(html):
     import re
 

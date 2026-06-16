@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+
+{% block title %}{{ shelf.name }}{% endblock %}
+
+{% block content %}
+    <a class="back-link" href="{% url 'shelf_list' %}">← До поличок</a>
+
+    <section class="page-heading fade-in">
+        <div class="page-heading__copy">
+            <h1>{{ shelf.name }}</h1>
+            <p>Книги на цій поличці</p>
+        </div>
+        <div class="page-heading__actions">
+            <span class="visible-count">Показано: <strong>{{ displayed_count }}</strong></span>
+            <details class="book-actions-menu shelf-actions-menu">
+                <summary aria-label="Дії для полички {{ shelf.name }}">⋯</summary>
+                <nav class="book-actions" aria-label="Дії для полички {{ shelf.name }}">
+                    <a href="{% url 'shelf_books' shelf.pk %}">📚︎ Керувати книгами</a>
+                    <a href="{% url 'shelf_update' shelf.pk %}"><span class="mirrored-icon" aria-hidden="true">✎</span> Редагувати</a>
+                    <a class="danger-link" href="{% url 'shelf_delete' shelf.pk %}">🗙 Видалити</a>
+                </nav>
+            </details>
+        </div>
+    </section>
+
+    {% if books %}
+        {% include "library/_book_grid.html" with book_grid_label="Книги на поличці" %}
+    {% else %}
+        <section class="book-grid" aria-label="Книги на поличці">
+            <div class="empty-state library-empty-state">
+                <div class="empty-state__icon" aria-hidden="true">☷︎</div>
+                <h2>Поличка порожня</h2>
+                <p>Додайте книги на цю поличку, щоб бачити їх тут у вигляді карток.</p>
+                <div class="empty-actions">
+                    <a class="primary-link-button" href="{% url 'shelf_books' shelf.pk %}">Керувати книгами</a>
+                    <a class="nav-link-button" href="{% url 'book_list' %}">До бібліотеки</a>
+                </div>
+            </div>
+        </section>
+    {% endif %}
+
+    <script>
+        (() => {
+            const actionMenus = document.querySelectorAll(".book-actions-menu");
+            if (!actionMenus.length) return;
+
+            const closeMenus = (exceptMenu = null) => {
+                actionMenus.forEach((menu) => {
+                    if (menu !== exceptMenu) {
+                        menu.open = false;
+                    }
+                });
+            };
+
+            actionMenus.forEach((menu) => {
+                menu.addEventListener("toggle", () => {
+                    if (menu.open) {
+                        closeMenus(menu);
+                    }
+                });
+            });
+
+            document.addEventListener("click", (event) => {
+                if (event.target.closest(".book-actions-menu")) return;
+                closeMenus();
+            });
+        })();
+    </script>
+{% endblock %}

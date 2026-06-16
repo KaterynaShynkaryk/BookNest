@@ -805,7 +805,19 @@ class BookListViewTest(TestCase):
             css = styles.read()
         self.assertIn("display: block", css)
         self.assertIn("padding-top: 5px", css)
-        self.assertIn(".book-card--completed", css)
+        self.assertIn("align-items: stretch", css)
+        self.assertIn("min-height: 100%", css)
+        self.assertIn("margin-top: auto", css)
+        self.assertIn("bottom: 0", css)
+        self.assertIn("grid-template-columns: repeat(3, minmax(0, 1fr))", css)
+        self.assertIn("flex-direction: row", css)
+        self.assertIn("max-width: 100%", css)
+        self.assertIn("width: auto", css)
+        self.assertIn("padding-left: 1rem", css)
+        self.assertIn("padding-left: 0.5rem", css)
+        self.assertIn(".filter-controls--compact", css)
+        self.assertIn("min-height: 4.6rem", css)
+        self.assertIn("min-height: 2rem", css)
         self.assertIn(".status-strip", css)
         self.assertIn("display: none", css)
         self.assertIn("a:not(.book-card__link)", css)
@@ -849,6 +861,7 @@ class ShelfListViewTests(TestCase):
         self.assertContains(response, "Фентезі")
         self.assertContains(response, "Класика")
         self.assertContains(response, "Книг: 2")
+        self.assertContains(response, 'class="primary-link-button add-book-link" href="/shelves/add/"')
         self.assertContains(response, "Книг: 1")
         self.assertContains(response, 'class="shelf-cover-grid"')
         self.assertContains(response, 'class="shelf-cover-tile"')
@@ -861,6 +874,7 @@ class ShelfListViewTests(TestCase):
         self.assertContains(response, "📚︎ Керувати книгами")
         self.assertContains(response, '<span class="mirrored-icon" aria-hidden="true">✎</span> Редагувати')
         self.assertContains(response, "🗙 Видалити")
+        self.assertNotContains(response, "Відкрити поличку →")
         self.assertContains(response, 'event.target.closest(".shelf-actions-menu")')
         with open("static/css/styles.css", encoding="utf-8") as styles:
             css = styles.read()
@@ -868,6 +882,29 @@ class ShelfListViewTests(TestCase):
         self.assertNotContains(response, 'class="shelf-card__icon"')
         self.assertNotContains(response, "Чужа поличка")
         self.assertNotContains(response, "Чужа книга")
+
+    def test_shelf_detail_shows_shelf_actions_menu_without_open_link(self):
+        shelf = Shelf.objects.create(user=self.user, name="Фентезі")
+        book = Book.objects.create(user=self.user, title="Абетка магії", author="Автор Один")
+        shelf.books.add(book)
+
+        self.client.force_login(self.user)
+        response = self.client.get(reverse("shelf_detail", args=[shelf.pk]))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "library/shelf_detail.html")
+        self.assertContains(response, "Фентезі")
+        self.assertContains(response, "Абетка магії")
+        self.assertContains(response, 'class="book-actions-menu shelf-actions-menu"')
+        self.assertContains(response, "📚︎ Керувати книгами")
+        self.assertContains(response, '<span class="mirrored-icon" aria-hidden="true">✎</span> Редагувати')
+        self.assertContains(response, "🗙 Видалити")
+        self.assertNotContains(response, "Відкрити поличку")
+        with open("static/css/styles.css", encoding="utf-8") as styles:
+            css = styles.read()
+        self.assertIn(".page-heading:has(.book-actions-menu[open])", css)
+        self.assertIn(".page-heading__actions .book-actions-menu", css)
+
 
     def test_shelf_list_has_empty_state(self):
         self.client.force_login(self.user)
@@ -1245,6 +1282,8 @@ class NoteFeatureTests(TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Нотатки до книги")
+        self.assertContains(response, 'class="note-form-toggle"')
+        self.assertContains(response, '+ Додати нотатку')
         self.assertContains(response, "Chapter insight")
         self.assertContains(response, "Important quote")
         self.assertContains(response, "стор. 42")
@@ -1343,6 +1382,8 @@ class NoteFeatureTests(TestCase):
         self.assertContains(response, "General title")
         self.assertContains(response, "General note")
         self.assertContains(response, "Book note")
+        self.assertContains(response, 'class="note-form-toggle note-page-form-toggle"')
+        self.assertContains(response, '+ Додати нотатку')
         self.assertNotContains(response, "Other hidden note")
 
     def test_user_can_edit_note_title_content_and_book_link(self):
@@ -1399,18 +1440,24 @@ class NoteFeatureTests(TestCase):
         detail_response = self.client.get(reverse("book_detail", args=[self.book.pk]))
         self.assertContains(
             detail_response,
-            "Нотаток до цієї книги ще немає. Додайте першу нотатку у формі вище.",
+            "Натисніть “Додати нотатку”, щоб зберегти першу думку про книгу.",
         )
         self.assertContains(detail_response, 'class="note-empty__icon"')
+        with open("static/css/styles.css", encoding="utf-8") as styles:
+            css = styles.read()
+        self.assertIn(".note-form-toggle", css)
+        self.assertIn(".note-form-toggle__button", css)
+        self.assertIn(".notes-page-layout:has(.note-page-form-toggle:not([open]))", css)
+        self.assertIn(".notes-page-layout:has(.note-page-form-toggle[open])", css)
 
         notes_response = self.client.get(reverse("note_list"))
         self.assertContains(
             notes_response,
-            "Загальних нотаток ще немає. Додайте першу нотатку у формі зліва.",
+            "Загальних нотаток ще немає. Натисніть “Додати нотатку”, щоб створити першу.",
         )
         self.assertContains(
             notes_response,
-            "Нотаток до книг ще немає. Оберіть книгу у формі або додайте нотатку зі сторінки книги.",
+            "Нотаток до книг ще немає. Натисніть “Додати нотатку” або додайте нотатку зі сторінки книги.",
         )
 
     def test_book_notes_are_deleted_with_book_but_general_notes_remain(self):
@@ -1474,6 +1521,14 @@ class BookFormTests(TestCase):
         self.assertEqual(form.fields["cover_image"].label, "Обкладинка")
         self.assertEqual(form.fields["cover_url"].label, "Посилання")
         self.assertEqual(form.fields["is_favorite"].label, "Додати в обране")
+
+    def test_book_form_published_year_uses_text_input_without_spinner(self):
+        form = BookForm()
+        widget = form.fields["published_year"].widget
+
+        self.assertEqual(widget.input_type, "text")
+        self.assertEqual(widget.attrs["inputmode"], "numeric")
+        self.assertEqual(widget.attrs["pattern"], "[0-9]*")
 
 
     def test_book_form_keeps_cover_url_and_status_as_separate_fields(self):

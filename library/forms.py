@@ -254,7 +254,13 @@ class BookForm(BootstrapFormMixin, forms.ModelForm):
             "genre": forms.TextInput(attrs={"placeholder": "Фентезі, роман, нон-фікшн..."}),
             "publisher": forms.TextInput(attrs={"placeholder": "Назва видавництва"}),
             "series": forms.TextInput(attrs={"placeholder": "Назва серії книг"}),
-            "published_year": forms.NumberInput(attrs={"min": 0, "placeholder": "Наприклад, 2024"}),
+            "published_year": forms.TextInput(
+                attrs={
+                    "inputmode": "numeric",
+                    "pattern": "[0-9]*",
+                    "placeholder": "Наприклад, 2024",
+                }
+            ),
             "cover_image": forms.FileInput(attrs={"accept": "image/*"}),
             "cover_url": forms.URLInput(attrs={"placeholder": "https://example.com/cover.jpg"}),
             "start_date": forms.DateInput(format="%Y-%m-%d", attrs={"type": "date"}),
