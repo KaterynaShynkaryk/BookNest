@@ -12,9 +12,11 @@
     </section>
 
     <section class="notes-page-layout fade-in delay-1">
-        <form class="book-form-card note-page-form" method="post">
-            {% csrf_token %}
-            <h2>Додати нотатку</h2>
+        <details class="note-form-toggle note-page-form-toggle" {% if form.errors %}open{% endif %}>
+            <summary class="primary-link-button note-form-toggle__button">+ Додати нотатку</summary>
+            <form class="book-form-card note-page-form" method="post">
+                {% csrf_token %}
+                <h2>Нова нотатка</h2>
             {% if form.non_field_errors %}<div class="alert alert-danger" role="alert">{{ form.non_field_errors }}</div>{% endif %}
 
             <div class="row g-4">
@@ -43,9 +45,10 @@
             </div>
 
             <div class="form-actions">
-                <button class="primary-link-button button-submit" type="submit">Зберегти нотатку</button>
-            </div>
-        </form>
+                    <button class="primary-link-button button-submit" type="submit">Зберегти нотатку</button>
+                </div>
+            </form>
+        </details>
 
         <div class="notes-overview">
             <section class="detail-section notes-section">
@@ -72,7 +75,7 @@
                         {% endfor %}
                     </div>
                 {% else %}
-                    <div class="note-empty"><span class="note-empty__icon" aria-hidden="true">📝</span><span>Загальних нотаток ще немає. Додайте першу нотатку у формі зліва.</span></div>
+                    <div class="note-empty"><span class="note-empty__icon" aria-hidden="true">📝</span><span>Загальних нотаток ще немає. Натисніть “Додати нотатку”, щоб створити першу.</span></div>
                 {% endif %}
             </section>
 
@@ -101,7 +104,7 @@
                         {% endfor %}
                     </div>
                 {% else %}
-                    <div class="note-empty"><span class="note-empty__icon" aria-hidden="true">📝</span><span>Нотаток до книг ще немає. Оберіть книгу у формі або додайте нотатку зі сторінки книги.</span></div>
+                    <div class="note-empty"><span class="note-empty__icon" aria-hidden="true">📝</span><span>Нотаток до книг ще немає. Натисніть “Додати нотатку” або додайте нотатку зі сторінки книги.</span></div>
                 {% endif %}
             </section>
         </div>

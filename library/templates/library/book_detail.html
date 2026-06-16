@@ -61,28 +61,31 @@
                     <a class="reset-link" href="{% url 'note_list' %}">Усі нотатки</a>
                 </div>
 
-                <form class="note-form" method="post" action="{% url 'book_note_create' book.pk %}">
-                    {% csrf_token %}
-                    <div class="note-form-grid">
-                        <div>
-                            <label class="form-label" for="{{ note_form.page_number.id_for_label }}">{{ note_form.page_number.label }}</label>
-                            {{ note_form.page_number }}
-                            {% if note_form.page_number.help_text %}<div class="form-text">{{ note_form.page_number.help_text }}</div>{% endif %}
-                            {% for error in note_form.page_number.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+                <details class="note-form-toggle" {% if note_form.errors %}open{% endif %}>
+                    <summary class="primary-link-button note-form-toggle__button">+ Додати нотатку</summary>
+                    <form class="note-form" method="post" action="{% url 'book_note_create' book.pk %}">
+                        {% csrf_token %}
+                        <div class="note-form-grid">
+                            <div>
+                                <label class="form-label" for="{{ note_form.page_number.id_for_label }}">{{ note_form.page_number.label }}</label>
+                                {{ note_form.page_number }}
+                                {% if note_form.page_number.help_text %}<div class="form-text">{{ note_form.page_number.help_text }}</div>{% endif %}
+                                {% for error in note_form.page_number.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+                            </div>
+                            <div>
+                                <label class="form-label" for="{{ note_form.title.id_for_label }}">{{ note_form.title.label }}</label>
+                                {{ note_form.title }}
+                                {% for error in note_form.title.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+                            </div>
+                            <div class="note-content-field">
+                                <label class="form-label" for="{{ note_form.content.id_for_label }}">{{ note_form.content.label }}</label>
+                                {{ note_form.content }}
+                                {% for error in note_form.content.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+                            </div>
                         </div>
-                        <div>
-                            <label class="form-label" for="{{ note_form.title.id_for_label }}">{{ note_form.title.label }}</label>
-                            {{ note_form.title }}
-                            {% for error in note_form.title.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
-                        </div>
-                        <div class="note-content-field">
-                            <label class="form-label" for="{{ note_form.content.id_for_label }}">{{ note_form.content.label }}</label>
-                            {{ note_form.content }}
-                            {% for error in note_form.content.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
-                        </div>
-                    </div>
-                    <button class="primary-link-button button-submit note-submit" type="submit">Додати нотатку</button>
-                </form>
+                        <button class="primary-link-button button-submit note-submit" type="submit">Зберегти нотатку</button>
+                    </form>
+                </details>
 
                 {% if notes %}
                     <div class="notes-list">
@@ -106,7 +109,7 @@
                         {% endfor %}
                     </div>
                 {% else %}
-                    <div class="note-empty"><span class="note-empty__icon" aria-hidden="true">📝</span><span>Нотаток до цієї книги ще немає. Додайте першу нотатку у формі вище.</span></div>
+                    <div class="note-empty"><span class="note-empty__icon" aria-hidden="true">📝</span><span>Нотаток до цієї книги ще немає. Натисніть “Додати нотатку”, щоб зберегти першу думку про книгу.</span></div>
                 {% endif %}
             </section>
         </div>
@@ -131,9 +134,10 @@
                 </label>
 
                 <div class="progress-dates">
-                    <div class="progress-field">
+                    <div class="progress-field gated-field" data-not-wishlist>
                         <label class="form-label" for="{{ progress_form.start_date.id_for_label }}">{{ progress_form.start_date.label }}</label>
                         {{ progress_form.start_date }}
+                        {% if progress_form.start_date.help_text %}<div class="form-text">{{ progress_form.start_date.help_text }}</div>{% endif %}
                         {% for error in progress_form.start_date.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
                     </div>
                     <div class="progress-field gated-field" data-completed-only>
@@ -169,7 +173,9 @@
 
             const status = form.querySelector("[name='status']");
             const completedOnlyFields = form.querySelectorAll("[data-completed-only]");
+            const notWishlistFields = form.querySelectorAll("[data-not-wishlist]");
             const completedValue = "completed";
+            const wishlistValue = "wishlist";
 
             const syncCompletedFields = () => {
                 const isCompleted = status.value === completedValue;
@@ -181,8 +187,20 @@
                 });
             };
 
+            const syncWishlistFields = () => {
+                const isWishlist = status.value === wishlistValue;
+                notWishlistFields.forEach((field) => {
+                    field.classList.toggle("is-muted", isWishlist);
+                    field.querySelectorAll("input, select, textarea").forEach((input) => {
+                        input.disabled = isWishlist;
+                    });
+                });
+            };
+
             status.addEventListener("change", syncCompletedFields);
+            status.addEventListener("change", syncWishlistFields);
             syncCompletedFields();
+            syncWishlistFields();
         })();
     </script>
 {% endblock %}

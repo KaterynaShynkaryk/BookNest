@@ -1,9 +1,14 @@
+from io import StringIO
+from unittest.mock import patch
+
 from django.contrib.auth import get_user_model
 from django.core.files.uploadedfile import SimpleUploadedFile
+from django.core.management import call_command
 from django.test import TestCase
 from django.urls import reverse
 
 from .forms import BookForm, BookProgressForm, NoteForm, ShelfForm, UkrainianAuthenticationForm, UkrainianUserCreationForm
+from .book_lookup import extract_book_metadata
 from .models import Book, Note, Shelf
 
 
@@ -14,7 +19,28 @@ class BookListViewTest(TestCase):
             password="test-pass-123",
         )
 
+    def test_book_list_loads_without_publisher_filter_param(self):
+        Book.objects.create(
+            user=self.user,
+            title="Publisher Regression",
+            author="Author One",
+            publisher="КСД",
+        )
+
+        self.client.force_login(self.user)
+        response = self.client.get(reverse("book_list"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context["selected_publishers"], [])
+        self.assertContains(response, "Publisher Regression")
+
     def test_book_show_status_badges_and_displayed_count(self):
+        Book.objects.create(
+            user=self.user,
+            title="Wishlist Book",
+            author="Author Zero",
+            status=Book.Status.WISHLIST,
+        )
         Book.objects.create(
             user=self.user,
             title="Planned Book",
@@ -41,25 +67,366 @@ class BookListViewTest(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertNotIn("status_shelves", response.context)
         self.assertNotIn("status_counts", response.context)
-        self.assertEqual(response.context["displayed_count"], 3)
+        self.assertEqual(response.context["displayed_count"], 4)
         self.assertEqual(response.context["selected_statuses"], [])
         self.assertFalse(response.context["favorite_only"])
         self.assertEqual(response.context["status_choices"], Book.Status.choices)
+        self.assertContains(response, 'class="filter-section" open')
+        self.assertContains(response, 'class="filter-section__summary"')
+        self.assertContains(response, 'class="filter-section__chevron"')
         self.assertContains(response, 'class="filter-checkbox-group"')
+        self.assertContains(response, '<legend class="visually-hidden">Статус читання</legend>')
         self.assertContains(response, 'name="status"')
+        with open("backend/static/images/booknest-logo.svg", encoding="utf-8") as logo:
+            svg = logo.read()
+        self.assertIn("BookNest logo", svg)
+        self.assertIn("Minimal blue app icon with a white book and bookmark", svg)
+        self.assertIn('id="background"', svg)
+        self.assertIn('fill="#ffffff"', svg)
+        self.assertIn('fill="#f1c66d"', svg)
+        self.assertContains(response, '<legend class="visually-hidden">Статус читання</legend>')
         self.assertNotContains(response, 'id="status-filter"')
         self.assertNotContains(response, 'id="genre-filter"')
+        self.assertContains(response, "Wishlist Book")
         self.assertContains(response, "Planned Book")
         self.assertContains(response, "Reading Book")
         self.assertContains(response, "Abandoned Book")
+        self.assertContains(response, "status-label--wishlist")
         self.assertContains(response, "status-label--planned")
         self.assertContains(response, "status-label--reading")
         self.assertContains(response, "status-label--failed")
         self.assertContains(response, "♥")
         self.assertContains(response, "♡")
+        self.assertContains(response, "Бажанка")
         self.assertContains(response, "Заплановано")
         self.assertContains(response, "Читаю")
         self.assertContains(response, "Закинуто")
+
+    def test_base_template_renders_flash_messages_region(self):
+        self.client.force_login(self.user)
+        response = self.client.post(
+            reverse("book_create_manual"),
+            {
+                "title": "Flash Book",
+                "author": "Author One",
+                "status": Book.Status.PLANNED,
+                "source": Book.Source.MANUAL,
+            },
+            follow=True,
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'class="flash-messages"')
+        self.assertContains(response, 'class="flash-message flash-message--success"')
+        self.assertContains(response, 'data-flash-dismiss')
+        self.assertContains(response, 'rel="icon" type="image/svg+xml"')
+        self.assertContains(response, 'images/booknest-logo.svg')
+        self.assertContains(response, 'aria-label="Закрити повідомлення"')
+        self.assertContains(response, "Книгу «Flash Book» додано до бібліотеки.")
+        with open("static/css/styles.css", encoding="utf-8") as styles:
+            css = styles.read()
+        self.assertIn(".flash-message", css)
+        self.assertIn(".flash-message--success", css)
+        self.assertIn(".flash-message__dismiss", css)
+
+    def test_book_create_with_series_creates_auto_series_shelf(self):
+        self.client.force_login(self.user)
+        response = self.client.post(
+            reverse("book_create_manual"),
+            {
+                "title": "Дюна",
+                "author": "Френк Герберт",
+                "series": "Хроніки Дюни",
+                "status": Book.Status.PLANNED,
+                "source": Book.Source.MANUAL,
+            },
+            follow=True,
+        )
+
+        self.assertEqual(response.status_code, 200)
+        book = Book.objects.get(user=self.user, title="Дюна")
+        shelf = Shelf.objects.get(user=self.user, name='Серія: "Хроніки Дюни"')
+        self.assertTrue(shelf.is_auto_series)
+        self.assertEqual(shelf.series, "Хроніки Дюни")
+        self.assertEqual(shelf.status, Shelf.Status.NOT_STARTED)
+        self.assertIn(shelf, book.shelves.all())
+
+        form = BookForm(user=self.user)
+        self.assertNotIn(shelf, form.shelf_options)
+
+    def test_book_create_entry_redirects_to_search_first(self):
+        self.client.force_login(self.user)
+        response = self.client.get(reverse("book_create"))
+
+        self.assertRedirects(response, reverse("book_create_search"))
+
+    def test_book_search_page_queries_google_books_and_links_to_manual_form(self):
+        self.client.force_login(self.user)
+        results = [
+            {
+                "title": "Дюна",
+                "author": "Френк Герберт",
+                "published_year": 1965,
+                "publisher": "КСД",
+                "genre": "Science fiction, Classics",
+                "cover_url": "https://books.google.com/books/content?id=abc&printsec=frontcover&img=1",
+                "external_url": "https://books.google.com/books?id=abc",
+                "source": "Google Books",
+            }
+        ]
+
+        with patch("library.views.search_books", return_value=results) as search:
+            response = self.client.get(reverse("book_create_search"), {"q": "Дюна"})
+
+        self.assertEqual(response.status_code, 200)
+        search.assert_called_once_with("Дюна")
+        self.assertContains(response, "Результати пошуку")
+        self.assertContains(response, "Дюна")
+        self.assertContains(response, "Френк Герберт")
+        self.assertContains(response, "Google Books")
+        self.assertContains(response, reverse("book_create_manual"))
+        self.assertContains(response, "Пошук за назвою")
+        self.assertContains(response, "Додати вручну")
+        self.assertNotContains(response, 'name="isbn"')
+
+    def test_book_search_page_shows_title_and_url_import_without_isbn_field(self):
+        self.client.force_login(self.user)
+
+        response = self.client.get(reverse("book_create_search"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'name="q"')
+        self.assertContains(response, 'name="book_url"')
+        self.assertContains(response, "Yakaboo")
+        self.assertContains(response, "Можна ввести назву або посилання")
+        self.assertNotContains(response, 'name="isbn"')
+        self.assertNotContains(response, "ISBN зазвичай")
+
+    def test_book_search_page_can_import_from_book_url(self):
+        self.client.force_login(self.user)
+        results = [
+            {
+                "title": "Мова тіла",
+                "author": "А. К. Тернер",
+                "published_year": "2024",
+                "publisher": "Лабораторія",
+                "genre": "",
+                "cover_url": "https://example.com/body-language.jpg",
+                "description": "Книжка про невербальну комунікацію.",
+                "external_url": "https://www.yakaboo.ua/book.html",
+                "source": "Сторінка книги",
+            }
+        ]
+
+        with patch("library.views.import_book_from_url", return_value=results) as import_from_url:
+            response = self.client.get(
+                reverse("book_create_search"),
+                {"book_url": "https://www.yakaboo.ua/book.html"},
+            )
+
+        self.assertEqual(response.status_code, 200)
+        import_from_url.assert_called_once_with("https://www.yakaboo.ua/book.html")
+        self.assertContains(response, "Мова тіла")
+        self.assertContains(response, "А. К. Тернер")
+        self.assertContains(response, "Сторінка книги")
+        self.assertContains(response, "description=")
+
+    def test_book_url_metadata_can_be_extracted_from_json_ld(self):
+        metadata = extract_book_metadata(
+            '<script type="application/ld+json">'
+            '{"@type":"Product","name":"Мова тіла",'
+            '"image":"https://example.com/cover.jpg","description":"Опис книги",'
+            '"additionalProperty":['
+            '{"name":"Автор","value":"А. К. Тернер"},'
+            '{"name":"Видавництво","value":"Лабораторія"},'
+            '{"name":"Рік видання","value":"2024"}'
+            ']}'
+            "</script>"
+        )
+
+        self.assertEqual(metadata["title"], "Мова тіла")
+        self.assertEqual(metadata["author"], "А. К. Тернер")
+        self.assertEqual(metadata["publisher"], "Лабораторія")
+        self.assertEqual(metadata["published_year"], "2024")
+        self.assertEqual(metadata["cover_url"], "https://example.com/cover.jpg")
+
+    def test_book_url_metadata_falls_back_to_visible_book_details(self):
+        metadata = extract_book_metadata(
+            '<html><head>'
+            '<meta property="og:title" content="Дівчина, яка впала під море | Yakaboo">'
+            '<meta property="og:description" content="Фентезійна історія.">'
+            '<meta property="og:image" content="https://example.com/sea.jpg">'
+            '</head><body>'
+            '<dl><dt>Автор</dt><dd>Аксі О</dd>'
+            '<dt>Видавництво</dt><dd>Рідна мова</dd>'
+            '<dt>Рік видання</dt><dd>2024</dd></dl>'
+            '</body></html>'
+        )
+
+        self.assertEqual(metadata["title"], "Дівчина, яка впала під море")
+        self.assertEqual(metadata["author"], "Аксі О")
+        self.assertEqual(metadata["publisher"], "Рідна мова")
+        self.assertEqual(metadata["published_year"], "2024")
+        self.assertEqual(metadata["cover_url"], "https://example.com/sea.jpg")
+
+    def test_book_url_metadata_extracts_yakaboo_frontend_attribute_labels(self):
+        metadata = extract_book_metadata(
+            '<html><body>'
+            '<script type="application/json">'
+            '{"product":{"title":"Книга з атрибутами",'
+            '"brand":"Yakaboo",'
+            '"attributes":['
+            '{"frontend_label":"Видавництво","value":"Видавництво Старого Лева"},'
+            '{"frontend_label":"Рік видання","value":"2025"},'
+            '{"frontend_label":"Автор","value":"Катерина Єгорушкіна"}'
+            ']}}'
+            '</script>'
+            '</body></html>'
+        )
+
+        self.assertEqual(metadata["title"], "Книга з атрибутами")
+        self.assertEqual(metadata["author"], "Катерина Єгорушкіна")
+        self.assertEqual(metadata["publisher"], "Видавництво Старого Лева")
+        self.assertEqual(metadata["published_year"], "2025")
+        self.assertNotEqual(metadata["publisher"], "Yakaboo")
+
+    def test_book_url_metadata_extracts_yakaboo_values_from_inline_script_state(self):
+        metadata = extract_book_metadata(
+            '<html><head>'
+            '<meta property="og:title" content="Книга з JS state | Yakaboo">'
+            '</head><body>'
+            '<script>'
+            'window.__PRODUCT__ = {'
+            '"characteristics":['
+            '{"label":"Видавництво","value":"Наш Формат"},'
+            '{"label":"Рік видання","value":"2022"}'
+            ']};'
+            '</script>'
+            '</body></html>'
+        )
+
+        self.assertEqual(metadata["title"], "Книга з JS state")
+        self.assertEqual(metadata["publisher"], "Наш Формат")
+        self.assertEqual(metadata["published_year"], "2022")
+
+    def test_book_url_metadata_ignores_yakaboo_publisher_label_placeholder(self):
+        metadata = extract_book_metadata(
+            '<html><head>'
+            '<meta property="og:title" content="Книга з placeholder | Yakaboo">'
+            '</head><body>'
+            '<script>'
+            'window.__PRODUCT__ = {'
+            '"publisher":"book_publisher_label",'
+            '"characteristics":['
+            '{"label":"Видавництво","value":"Видавництво Старого Лева"},'
+            '{"label":"Рік видання","value":"2024"}'
+            ']};'
+            '</script>'
+            '</body></html>'
+        )
+
+        self.assertEqual(metadata["title"], "Книга з placeholder")
+        self.assertEqual(metadata["publisher"], "Видавництво Старого Лева")
+        self.assertEqual(metadata["published_year"], "2024")
+        self.assertNotEqual(metadata["publisher"], "book_publisher_label")
+
+    def test_book_url_metadata_does_not_guess_publisher_from_unlabelled_text(self):
+        metadata = extract_book_metadata(
+            '<html><head>'
+            '<meta property="og:title" content="Книга без видавництва">'
+            '<meta property="og:description" content="Опис книги.">'
+            '<meta property="og:image" content="https://example.com/cover.jpg">'
+            '</head><body>'
+            '<script>window.analytics = {publisher: "Некоректне видавництво"};</script>'
+            '<p>Купити книгу на сайті видавництва або в каталозі книгарні.</p>'
+            '</body></html>'
+        )
+
+        self.assertEqual(metadata["title"], "Книга без видавництва")
+        self.assertEqual(metadata["publisher"], "")
+
+    def test_book_search_page_handles_unavailable_catalogs_without_error_flash(self):
+        self.client.force_login(self.user)
+
+        with patch("library.views.search_books", return_value=[]):
+            response = self.client.get(reverse("book_create_search"), {"q": "Рідкісна книга"})
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Нічого не знайдено")
+        self.assertContains(response, "ручне додавання працює без інтернету")
+        self.assertNotContains(response, "Не вдалося отримати дані")
+
+    def test_manual_book_form_can_be_prefilled_from_search_result(self):
+        self.client.force_login(self.user)
+        response = self.client.get(
+            reverse("book_create_manual"),
+            {
+                "title": "Дюна",
+                "author": "Френк Герберт",
+                "publisher": "КСД",
+                "published_year": "1965",
+                "genre": "Science fiction",
+                "cover_url": "https://books.google.com/books/content?id=abc&printsec=frontcover&img=1",
+            },
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'value="Дюна"')
+        self.assertContains(response, 'value="Френк Герберт"')
+        self.assertContains(response, 'value="КСД"')
+        self.assertContains(response, 'value="1965"')
+        self.assertContains(response, 'value="Science fiction"')
+
+    def test_login_and_logout_show_flash_messages(self):
+        response = self.client.post(
+            reverse("login"),
+            {
+                "username": self.user.username,
+                "password": "test-pass-123",
+            },
+            follow=True,
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Ви успішно увійшли.")
+
+        response = self.client.get(reverse("logout"), follow=True)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Ви вийшли з акаунту.")
+
+    def test_login_page_shows_demo_account_hint(self):
+        response = self.client.get(reverse("login"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Демо акаунт")
+        self.assertContains(response, "demo")
+        self.assertContains(response, "demo12345")
+        self.assertContains(response, "python manage.py seed_demo_user")
+        with open("static/css/styles.css", encoding="utf-8") as styles:
+            css = styles.read()
+        self.assertIn(".demo-account-card", css)
+
+    def test_seed_demo_user_command_creates_sample_account(self):
+        stdout = StringIO()
+
+        call_command("seed_demo_user", stdout=stdout)
+
+        User = get_user_model()
+        user = User.objects.get(username="demo")
+        self.assertTrue(user.check_password("demo12345"))
+        self.assertEqual(Book.objects.filter(user=user).count(), 3)
+        self.assertTrue(Book.objects.filter(user=user, status=Book.Status.WISHLIST).exists())
+        self.assertEqual(Shelf.objects.filter(user=user).count(), 2)
+        self.assertEqual(Note.objects.filter(user=user).count(), 2)
+        self.assertIn("demo", stdout.getvalue())
+
+        call_command("seed_demo_user", stdout=StringIO())
+
+        self.assertEqual(User.objects.filter(username="demo").count(), 1)
+        self.assertEqual(Book.objects.filter(user=user).count(), 3)
+        self.assertEqual(Shelf.objects.filter(user=user).count(), 2)
+        self.assertEqual(Note.objects.filter(user=user).count(), 2)
 
     def test_book_card_shows_shelves_next_to_status(self):
         shelf = Shelf.objects.create(user=self.user, name="Фентезі")
@@ -177,7 +544,7 @@ class BookListViewTest(TestCase):
         self.assertContains(response, "Dune Messiah")
         self.assertNotContains(response, "Foundation")
 
-    def test_books_can_be_filtered_by_genre_publisher_and_series(self):
+    def test_books_can_be_filtered_by_genre_and_publisher(self):
         Book.objects.create(
             user=self.user,
             title="Fantasy Press Book",
@@ -206,20 +573,40 @@ class BookListViewTest(TestCase):
         self.client.force_login(self.user)
         response = self.client.get(
             reverse("book_list"),
-            {"genre": "Fantasy", "publisher": "Book Press", "series": "Chronicles"},
+            {"genre": "Fantasy", "publisher": "Book Press"},
         )
 
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.context["selected_genres"], ["Fantasy"])
         self.assertEqual(response.context["selected_publishers"], ["Book Press"])
-        self.assertEqual(response.context["selected_series"], ["Chronicles"])
         self.assertEqual(response.context["genre_choices"], ["Fantasy", "Romance", "Sci-Fi"])
         self.assertEqual(response.context["publisher_choices"], ["Book Press", "Story House"])
-        self.assertEqual(response.context["series_choices"], ["Chronicles", "Standalone"])
         self.assertEqual(response.context["displayed_count"], 1)
         self.assertContains(response, "Fantasy Press Book")
         self.assertNotContains(response, "Sci Fi Press Book")
         self.assertNotContains(response, "Fantasy House Book")
+
+    def test_books_can_be_searched_by_ukrainian_title_case_insensitively(self):
+        Book.objects.create(
+            user=self.user,
+            title="Мова тіла",
+            author="А. К. Тернер",
+        )
+        Book.objects.create(
+            user=self.user,
+            title="Дівчина, яка впала під море",
+            author="Аксі О",
+        )
+
+        self.client.force_login(self.user)
+        response = self.client.get(reverse("book_list"), {"q": "мова"})
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context["search_query"], "мова")
+        self.assertTrue(response.context["has_active_filters"])
+        self.assertEqual(response.context["displayed_count"], 1)
+        self.assertContains(response, "Мова тіла")
+        self.assertNotContains(response, "Дівчина, яка впала під море")
 
     def test_books_can_be_filtered_by_multiple_checkbox_values(self):
         Book.objects.create(
@@ -257,7 +644,6 @@ class BookListViewTest(TestCase):
                 "status": [Book.Status.COMPLETED, Book.Status.READING],
                 "genre": ["Fantasy", "Sci-Fi"],
                 "publisher": ["Book Press", "Story House"],
-                "series": ["Chronicles", "Saga"],
             },
         )
 
@@ -265,7 +651,6 @@ class BookListViewTest(TestCase):
         self.assertEqual(response.context["selected_statuses"], [Book.Status.COMPLETED, Book.Status.READING])
         self.assertEqual(response.context["selected_genres"], ["Fantasy", "Sci-Fi"])
         self.assertEqual(response.context["selected_publishers"], ["Book Press", "Story House"])
-        self.assertEqual(response.context["selected_series"], ["Chronicles", "Saga"])
         self.assertEqual(response.context["displayed_count"], 2)
         self.assertContains(response, "Completed Fantasy")
         self.assertContains(response, "Reading Sci-Fi")
@@ -321,7 +706,6 @@ class BookListViewTest(TestCase):
                 "status": Book.Status.COMPLETED,
                 "genre": "Sci-Fi",
                 "publisher": "Ace",
-                "series": "Dune",
                 "favorite": "1",
             },
         )
@@ -331,7 +715,6 @@ class BookListViewTest(TestCase):
         self.assertEqual(response.context["selected_statuses"], [Book.Status.COMPLETED])
         self.assertEqual(response.context["selected_genres"], ["Sci-Fi"])
         self.assertEqual(response.context["selected_publishers"], ["Ace"])
-        self.assertEqual(response.context["selected_series"], ["Dune"])
         self.assertTrue(response.context["favorite_only"])
         self.assertTrue(response.context["has_active_filters"])
         self.assertEqual(response.context["displayed_count"], 1)
@@ -422,10 +805,25 @@ class BookListViewTest(TestCase):
             css = styles.read()
         self.assertIn("display: block", css)
         self.assertIn("padding-top: 5px", css)
-        self.assertIn(".book-card--completed", css)
+        self.assertIn("align-items: stretch", css)
+        self.assertIn("min-height: 100%", css)
+        self.assertIn("margin-top: auto", css)
+        self.assertIn("bottom: 0", css)
+        self.assertIn("grid-template-columns: repeat(3, minmax(0, 1fr))", css)
+        self.assertIn("flex-direction: row", css)
+        self.assertIn("max-width: 100%", css)
+        self.assertIn("width: auto", css)
+        self.assertIn("padding-left: 1rem", css)
+        self.assertIn("padding-left: 0.5rem", css)
+        self.assertIn(".filter-controls--compact", css)
+        self.assertIn("min-height: 4.6rem", css)
+        self.assertIn("min-height: 2rem", css)
         self.assertIn(".status-strip", css)
         self.assertIn("display: none", css)
         self.assertIn("a:not(.book-card__link)", css)
+        self.assertIn(".book-card:has(.book-actions-menu[open])", css)
+        self.assertIn(".book-actions-menu[open]", css)
+        self.assertIn("z-index: 70", css)
         self.assertContains(response, "closeMenus")
         self.assertContains(response, "filterMenus")
         self.assertContains(response, 'event.target.closest(".book-actions-menu, .filter-menu")')
@@ -463,6 +861,7 @@ class ShelfListViewTests(TestCase):
         self.assertContains(response, "Фентезі")
         self.assertContains(response, "Класика")
         self.assertContains(response, "Книг: 2")
+        self.assertContains(response, 'class="primary-link-button add-book-link" href="/shelves/add/"')
         self.assertContains(response, "Книг: 1")
         self.assertContains(response, 'class="shelf-cover-grid"')
         self.assertContains(response, 'class="shelf-cover-tile"')
@@ -472,13 +871,40 @@ class ShelfListViewTests(TestCase):
         self.assertContains(response, 'class="is-active" href="/shelves/"')
         self.assertContains(response, 'class="book-actions-menu shelf-actions-menu"')
         self.assertContains(response, "⋯")
-        self.assertContains(response, "📚︎ Книги")
+        self.assertContains(response, "📚︎ Керувати книгами")
         self.assertContains(response, '<span class="mirrored-icon" aria-hidden="true">✎</span> Редагувати')
         self.assertContains(response, "🗙 Видалити")
+        self.assertNotContains(response, "Відкрити поличку →")
         self.assertContains(response, 'event.target.closest(".shelf-actions-menu")')
+        with open("static/css/styles.css", encoding="utf-8") as styles:
+            css = styles.read()
+        self.assertIn(".shelf-card:has(.book-actions-menu[open])", css)
         self.assertNotContains(response, 'class="shelf-card__icon"')
         self.assertNotContains(response, "Чужа поличка")
         self.assertNotContains(response, "Чужа книга")
+
+    def test_shelf_detail_shows_shelf_actions_menu_without_open_link(self):
+        shelf = Shelf.objects.create(user=self.user, name="Фентезі")
+        book = Book.objects.create(user=self.user, title="Абетка магії", author="Автор Один")
+        shelf.books.add(book)
+
+        self.client.force_login(self.user)
+        response = self.client.get(reverse("shelf_detail", args=[shelf.pk]))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "library/shelf_detail.html")
+        self.assertContains(response, "Фентезі")
+        self.assertContains(response, "Абетка магії")
+        self.assertContains(response, 'class="book-actions-menu shelf-actions-menu"')
+        self.assertContains(response, "📚︎ Керувати книгами")
+        self.assertContains(response, '<span class="mirrored-icon" aria-hidden="true">✎</span> Редагувати')
+        self.assertContains(response, "🗙 Видалити")
+        self.assertNotContains(response, "Відкрити поличку")
+        with open("static/css/styles.css", encoding="utf-8") as styles:
+            css = styles.read()
+        self.assertIn(".page-heading:has(.book-actions-menu[open])", css)
+        self.assertIn(".page-heading__actions .book-actions-menu", css)
+
 
     def test_shelf_list_has_empty_state(self):
         self.client.force_login(self.user)
@@ -511,13 +937,13 @@ class ShelfListViewTests(TestCase):
         self.assertContains(response, 'class="shelf-card-empty-state"')
         self.assertContains(response, 'class="shelf-card-empty-state__icon"')
         self.assertContains(response, "Поличка порожня")
-        self.assertContains(response, "Оберіть існуючі книги з бібліотеки, щоб додати їх на поличку.")
+        self.assertContains(response, "Оберіть “Керувати книгами” в меню ⋯, щоб додати книги на поличку.")
         self.assertContains(response, f'href="/shelves/{Shelf.objects.get(name="Порожня").pk}/books/"')
         self.assertNotContains(response, 'class="note-empty"')
         with open("static/css/styles.css", encoding="utf-8") as styles:
             css = styles.read()
         self.assertIn(".shelf-card-empty-state", css)
-        self.assertIn(".shelf-card-empty-state__action", css)
+        self.assertNotIn(".shelf-card-empty-state__action", css)
 
     def test_empty_shelf_add_book_link_opens_existing_book_picker(self):
         shelf = Shelf.objects.create(user=self.user, name="Порожня")
@@ -574,7 +1000,8 @@ class ShelfListViewTests(TestCase):
             self.assertContains(response, f"https://example.com/cover-{index}.jpg")
         self.assertNotContains(response, "https://example.com/cover-1.jpg")
         self.assertContains(response, "+ ще 1")
-        self.assertContains(response, "Керувати книгами")
+        self.assertContains(response, "📚︎ Керувати книгами")
+        self.assertNotContains(response, 'class="shelf-card__manage-link"')
         self.assertNotContains(response, 'class="shelf-book-list"')
 
     def test_user_can_create_shelf(self):
@@ -641,7 +1068,27 @@ class ShelfListViewTests(TestCase):
         self.assertEqual(response.status_code, 404)
         self.assertTrue(Shelf.objects.filter(pk=shelf.pk).exists())
 
+    def test_user_can_update_series_shelf_status(self):
+        shelf = Shelf.objects.create(
+            user=self.user,
+            name='Серія: "Хроніки Дюни"',
+            series="Хроніки Дюни",
+            is_auto_series=True,
+        )
 
+        self.client.force_login(self.user)
+        response = self.client.post(
+            reverse("shelf_update", args=[shelf.pk]),
+            {"name": shelf.name, "status": Shelf.Status.STARTED},
+            follow=True,
+        )
+
+        self.assertEqual(response.status_code, 200)
+        shelf.refresh_from_db()
+        self.assertEqual(shelf.status, Shelf.Status.STARTED)
+        self.assertContains(response, "Автополичка серії")
+        self.assertContains(response, "Почато")
+        self.assertContains(response, "shelf-status--started")
 
 class BookDetailProgressTests(TestCase):
     def setUp(self):
@@ -731,6 +1178,27 @@ class BookDetailProgressTests(TestCase):
         self.book.refresh_from_db()
         self.assertIsNone(self.book.finish_date)
 
+    def test_wishlist_status_disables_start_date_on_detail_page(self):
+        self.client.force_login(self.user)
+        response = self.client.post(
+            reverse("book_detail", args=[self.book.pk]),
+            {
+                "status": Book.Status.WISHLIST,
+                "start_date": "2026-01-01",
+            },
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Дату початку не можна вказувати для бажанки.")
+        self.book.refresh_from_db()
+        self.assertEqual(self.book.status, Book.Status.READING)
+        self.assertIsNone(self.book.start_date)
+
+        response = self.client.get(reverse("book_detail", args=[self.book.pk]))
+
+        self.assertContains(response, "data-not-wishlist")
+        self.assertContains(response, 'const wishlistValue = "wishlist";')
+
     def test_progress_form_rejects_rating_outside_star_range(self):
         for invalid_rating in ("0", "6", "abc"):
             with self.subTest(invalid_rating=invalid_rating):
@@ -814,6 +1282,8 @@ class NoteFeatureTests(TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Нотатки до книги")
+        self.assertContains(response, 'class="note-form-toggle"')
+        self.assertContains(response, '+ Додати нотатку')
         self.assertContains(response, "Chapter insight")
         self.assertContains(response, "Important quote")
         self.assertContains(response, "стор. 42")
@@ -912,6 +1382,8 @@ class NoteFeatureTests(TestCase):
         self.assertContains(response, "General title")
         self.assertContains(response, "General note")
         self.assertContains(response, "Book note")
+        self.assertContains(response, 'class="note-form-toggle note-page-form-toggle"')
+        self.assertContains(response, '+ Додати нотатку')
         self.assertNotContains(response, "Other hidden note")
 
     def test_user_can_edit_note_title_content_and_book_link(self):
@@ -968,18 +1440,24 @@ class NoteFeatureTests(TestCase):
         detail_response = self.client.get(reverse("book_detail", args=[self.book.pk]))
         self.assertContains(
             detail_response,
-            "Нотаток до цієї книги ще немає. Додайте першу нотатку у формі вище.",
+            "Натисніть “Додати нотатку”, щоб зберегти першу думку про книгу.",
         )
         self.assertContains(detail_response, 'class="note-empty__icon"')
+        with open("static/css/styles.css", encoding="utf-8") as styles:
+            css = styles.read()
+        self.assertIn(".note-form-toggle", css)
+        self.assertIn(".note-form-toggle__button", css)
+        self.assertIn(".notes-page-layout:has(.note-page-form-toggle:not([open]))", css)
+        self.assertIn(".notes-page-layout:has(.note-page-form-toggle[open])", css)
 
         notes_response = self.client.get(reverse("note_list"))
         self.assertContains(
             notes_response,
-            "Загальних нотаток ще немає. Додайте першу нотатку у формі зліва.",
+            "Загальних нотаток ще немає. Натисніть “Додати нотатку”, щоб створити першу.",
         )
         self.assertContains(
             notes_response,
-            "Нотаток до книг ще немає. Оберіть книгу у формі або додайте нотатку зі сторінки книги.",
+            "Нотаток до книг ще немає. Натисніть “Додати нотатку” або додайте нотатку зі сторінки книги.",
         )
 
     def test_book_notes_are_deleted_with_book_but_general_notes_remain(self):
@@ -1029,7 +1507,7 @@ class BookFormTests(TestCase):
         )
         self.assertEqual(
             [label for value, label in Book.Status.choices],
-            ["Заплановано", "Читаю", "Прочитано", "Закинуто"],
+            ["Бажанка", "Заплановано", "Читаю", "Прочитано", "Закинуто"],
         )
 
     def test_book_form_labels_are_ukrainian(self):
@@ -1043,6 +1521,14 @@ class BookFormTests(TestCase):
         self.assertEqual(form.fields["cover_image"].label, "Обкладинка")
         self.assertEqual(form.fields["cover_url"].label, "Посилання")
         self.assertEqual(form.fields["is_favorite"].label, "Додати в обране")
+
+    def test_book_form_published_year_uses_text_input_without_spinner(self):
+        form = BookForm()
+        widget = form.fields["published_year"].widget
+
+        self.assertEqual(widget.input_type, "text")
+        self.assertEqual(widget.attrs["inputmode"], "numeric")
+        self.assertEqual(widget.attrs["pattern"], "[0-9]*")
 
 
     def test_book_form_keeps_cover_url_and_status_as_separate_fields(self):
@@ -1074,6 +1560,32 @@ class BookFormTests(TestCase):
 
         self.assertTrue(form.is_valid(), form.errors)
         self.assertEqual(form.cleaned_data["cover_image"].name, "cover.png")
+
+    def test_book_form_rejects_start_date_for_wishlist_status(self):
+        form = BookForm(
+            data={
+                "title": "Wishlist Book",
+                "author": "Author One",
+                "status": Book.Status.WISHLIST,
+                "start_date": "2026-01-01",
+            },
+        )
+
+        self.assertFalse(form.is_valid())
+        self.assertIn("start_date", form.errors)
+        self.assertIn("Дату початку не можна вказувати для бажанки.", form.errors["start_date"])
+
+    def test_book_form_marks_start_date_as_not_wishlist_field(self):
+        user = get_user_model().objects.create_user(username="wishlist-form-reader")
+
+        self.client.force_login(user)
+        response = self.client.get(reverse("book_create_manual"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'value="wishlist"')
+        self.assertContains(response, "Бажанка")
+        self.assertContains(response, "data-not-wishlist")
+        self.assertContains(response, 'const wishlistValue = "wishlist";')
 
     def test_book_form_accepts_cover_url(self):
         form = BookForm(
@@ -1216,7 +1728,7 @@ class BookFormTests(TestCase):
         Shelf.objects.create(user=user, name="Fantasy")
 
         self.client.force_login(user)
-        response = self.client.get(reverse("book_create"))
+        response = self.client.get(reverse("book_create_manual"))
 
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'class="shelf-book-picker shelf-picker"')
@@ -1266,7 +1778,7 @@ class BookFormTests(TestCase):
 
         self.client.force_login(owner)
         response = self.client.post(
-            reverse("book_create"),
+            reverse("book_create_manual"),
             {
                 "title": "Unsafe Shelf Book",
                 "author": "Author One",
@@ -1396,7 +1908,7 @@ class BookFormTests(TestCase):
         )
 
         self.client.force_login(user)
-        response = self.client.get(reverse("book_create"))
+        response = self.client.get(reverse("book_create_manual"))
 
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Додати книгу")
@@ -1429,7 +1941,7 @@ class BookFormTests(TestCase):
         )
 
         self.client.force_login(user)
-        response = self.client.get(reverse("book_create"))
+        response = self.client.get(reverse("book_create_manual"))
 
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'class="combined-value-field"')

@@ -20,14 +20,14 @@ from django.conf.urls.static import static
 from django.contrib import admin
 from django.urls import include, path
 
-from library.views import logout_view
+from library.views import UkrainianLoginView, logout_view
 
 urlpatterns = [
     path("admin/", admin.site.urls),
+    path("auth/login/", UkrainianLoginView.as_view(), name="login"),
     path("auth/logout/", logout_view, name="logout"),
     path("auth/", include("django.contrib.auth.urls")),
     path("", include("library.urls")),
-    path("accounts/", include("django.contrib.auth.urls")),
 ]
 
 if settings.DEBUG:

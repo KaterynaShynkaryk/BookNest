@@ -23,72 +23,82 @@
                 placeholder="Пошук за назвою"
             >
 
-            <details class="filter-menu" {% if selected_statuses or selected_genres or selected_publishers or selected_series or favorite_only %}open{% endif %}>
+            <details class="filter-menu" {% if selected_statuses or selected_genres or selected_publishers or favorite_only %}open{% endif %}>
                 <summary class="filter-menu__toggle">
                     <span>Фільтри</span>
-                    {% if selected_statuses or selected_genres or selected_publishers or selected_series or favorite_only %}<span class="filter-dot" aria-label="Фільтри активні"></span>{% endif %}
+                    {% if selected_statuses or selected_genres or selected_publishers or favorite_only %}<span class="filter-dot" aria-label="Фільтри активні"></span>{% endif %}
                     <span class="filter-chevron" aria-hidden="true"></span>
                 </summary>
 
                 <div class="filter-menu__panel">
-                    <fieldset class="filter-checkbox-group">
-                        <legend>Статус читання</legend>
-                        <div class="filter-checkbox-list">
-                            {% for value, label in status_choices %}
-                                <label class="filter-checkbox-option">
-                                    <input type="checkbox" name="status" value="{{ value }}" {% if value in selected_statuses %}checked{% endif %}>
-                                    <span>{{ label }}</span>
-                                </label>
-                            {% endfor %}
-                        </div>
-                    </fieldset>
-
-                    {% if genre_choices %}
+                    <details class="filter-section" open>
+                        <summary class="filter-section__summary">
+                            <span>Статус читання</span>
+                            <span class="filter-section__chevron" aria-hidden="true"></span>
+                        </summary>
                         <fieldset class="filter-checkbox-group">
-                            <legend>Жанр</legend>
+                            <legend class="visually-hidden">Статус читання</legend>
                             <div class="filter-checkbox-list">
-                                {% for genre in genre_choices %}
+                                {% for value, label in status_choices %}
                                     <label class="filter-checkbox-option">
-                                        <input type="checkbox" name="genre" value="{{ genre }}" {% if genre in selected_genres %}checked{% endif %}>
-                                        <span>{{ genre }}</span>
+                                        <input type="checkbox" name="status" value="{{ value }}" {% if value in selected_statuses %}checked{% endif %}>
+                                        <span>{{ label }}</span>
                                     </label>
                                 {% endfor %}
                             </div>
                         </fieldset>
+                    </details>
+
+                    {% if genre_choices %}
+                        <details class="filter-section" open>
+                            <summary class="filter-section__summary">
+                                <span>Жанр</span>
+                                <span class="filter-section__chevron" aria-hidden="true"></span>
+                            </summary>
+                            <fieldset class="filter-checkbox-group">
+                                <legend class="visually-hidden">Жанр</legend>
+                                <div class="filter-checkbox-list">
+                                    {% for genre in genre_choices %}
+                                        <label class="filter-checkbox-option">
+                                            <input type="checkbox" name="genre" value="{{ genre }}" {% if genre in selected_genres %}checked{% endif %}>
+                                            <span>{{ genre }}</span>
+                                        </label>
+                                    {% endfor %}
+                                </div>
+                            </fieldset>
+                        </details>
                     {% endif %}
 
                     {% if publisher_choices %}
-                        <fieldset class="filter-checkbox-group">
-                            <legend>Видавництво</legend>
-                            <div class="filter-checkbox-list">
-                                {% for publisher in publisher_choices %}
-                                    <label class="filter-checkbox-option">
-                                        <input type="checkbox" name="publisher" value="{{ publisher }}" {% if publisher in selected_publishers %}checked{% endif %}>
-                                        <span>{{ publisher }}</span>
-                                    </label>
-                                {% endfor %}
-                            </div>
-                        </fieldset>
+                        <details class="filter-section" open>
+                            <summary class="filter-section__summary">
+                                <span>Видавництво</span>
+                                <span class="filter-section__chevron" aria-hidden="true"></span>
+                            </summary>
+                            <fieldset class="filter-checkbox-group">
+                                <legend class="visually-hidden">Видавництво</legend>
+                                <div class="filter-checkbox-list">
+                                    {% for publisher in publisher_choices %}
+                                        <label class="filter-checkbox-option">
+                                            <input type="checkbox" name="publisher" value="{{ publisher }}" {% if publisher in selected_publishers %}checked{% endif %}>
+                                            <span>{{ publisher }}</span>
+                                        </label>
+                                    {% endfor %}
+                                </div>
+                            </fieldset>
+                        </details>
                     {% endif %}
-
-                    {% if series_choices %}
-                        <fieldset class="filter-checkbox-group">
-                            <legend>Серія</legend>
-                            <div class="filter-checkbox-list">
-                                {% for series in series_choices %}
-                                    <label class="filter-checkbox-option">
-                                        <input type="checkbox" name="series" value="{{ series }}" {% if series in selected_series %}checked{% endif %}>
-                                        <span>{{ series }}</span>
-                                    </label>
-                                {% endfor %}
-                            </div>
-                        </fieldset>
-                    {% endif %}
-
-                    <label class="filter-checkbox-option favorite-filter">
-                        <input type="checkbox" name="favorite" value="1" {% if favorite_only %}checked{% endif %}>
-                        <span>Улюблені</span>
-                    </label>
+                
+                    <details class="filter-section" open>
+                        <summary class="filter-section__summary">
+                            <span>Інше</span>
+                            <span class="filter-section__chevron" aria-hidden="true"></span>
+                        </summary>
+                        <label class="filter-checkbox-option favorite-filter">
+                            <input type="checkbox" name="favorite" value="1" {% if favorite_only %}checked{% endif %}>
+                            <span>Улюблені</span>
+                        </label>
+                    </details>
                 </div>
             </details>
 
@@ -101,65 +111,10 @@
         <span class="visible-count">Показано: <strong>{{ displayed_count }}</strong></span>
     </form>
 
-    <section class="book-grid" aria-label="Список книг">
-        {% if books %}
-            {% for book in books %}
-                <article class="book-card book-card--{{ book.status }} fade-in" style="animation-delay: {{ forloop.counter0 }}00ms">
-                    <a class="book-card__link" href="{% url 'book_detail' book.pk %}" aria-label="Відкрити деталі книги {{ book.title }}"></a>
-                    <div class="status-strip status-strip--{{ book.status }}" aria-hidden="true"></div>
-                    <div class="book-card__body">
-                        <div class="book-card__top">
-                            <a class="book-cover book-cover--sm" href="{% url 'book_detail' book.pk %}" aria-label="Відкрити {{ book.title }}">
-                                {% if book.cover_image %}
-                                    <img src="{{ book.cover_image.url }}" alt="Обкладинка книги {{ book.title }}">
-                                {% elif book.cover_url %}
-                                    <img src="{{ book.cover_url }}" alt="Обкладинка книги {{ book.title }}">
-                                {% else %}
-                                    <span>{{ book.title|slice:":1" }}</span>
-                                {% endif %}
-                            </a>
-
-                            <div class="book-card__content">
-                                <div class="book-title-row">
-                                    <h2><a href="{% url 'book_detail' book.pk %}">{{ book.title }}</a></h2>
-                                    <form method="post" action="{% url 'book_toggle_favorite' book.pk %}">
-                                        {% csrf_token %}
-                                        <input type="hidden" name="next" value="{{ request.get_full_path }}">
-                                        <button class="favorite-toggle" type="submit" aria-label="{% if book.is_favorite %}Прибрати з обраного{% else %}Додати в обране{% endif %}">
-                                            {% if book.is_favorite %}♥{% else %}♡{% endif %}
-                                        </button>
-                                    </form>
-                                </div>
-                                <p class="book-author">{{ book.author }}</p>
-                                {% if book.genre %}<p class="book-genre">{{ book.genre }}</p>{% endif %}
-                                {% if book.rating %}<p class="rating-line" aria-label="Оцінка {{ book.rating }} з 5">{{ book.rating_stars }}</p>{% endif %}
-                            </div>
-                        </div>
-
-                        <div class="book-meta-row">
-                             <span class="status-label status-label--{{ book.status }}">{{ book.get_status_display }}</span>
-
-                            {% if book.shelves.all %}
-                                <div class="shelf-tags" aria-label="Полички книги">
-                                    {% for shelf in book.shelves.all %}
-                                        <span>{{ shelf.name }}</span>
-                                    {% endfor %}
-                                </div>
-                            {% endif %}
-                        </div>
-
-                        <details class="book-actions-menu">
-                            <summary aria-label="Дії для {{ book.title }}">⋯</summary>
-                            <nav class="book-actions" aria-label="Дії для {{ book.title }}">
-                                <a href="{% url 'book_detail' book.pk %}">👁 Деталі</a>
-                                <a href="{% url 'book_update' book.pk %}"><span class="mirrored-icon" aria-hidden="true">✎</span> Редагувати</a>
-                                <a class="danger-link" href="{% url 'book_delete' book.pk %}">🗙 Видалити</a>
-                            </nav>
-                        </details>
-                    </div>
-                </article>
-            {% endfor %}
-        {% else %}
+    {% if books %}
+        {% include "library/_book_grid.html" with book_grid_label="Список книг" %}
+    {% else %}
+        <section class="book-grid" aria-label="Список книг">
             <div class="empty-state library-empty-state">
                 {% if has_active_filters %}
                     <div class="empty-state__icon" aria-hidden="true">⌕</div>
@@ -173,8 +128,8 @@
                     <a class="primary-link-button" href="{% url 'book_create' %}">Додати книгу</a>
                 {% endif %}
             </div>
-        {% endif %}
-    </section>
+        </section>
+    {% endif %}
 
 <script>
         (() => {

@@ -123,6 +123,7 @@ MEDIA_ROOT = BASE_DIR / 'media'
 
 STATICFILES_DIRS = [
     BASE_DIR / 'static',
+    BASE_DIR / 'backend' / 'static',
 ]
 
 # Auth settings

@@ -10,4 +10,15 @@ From the project root, start the Django development server with:
 python manage.py runserver
 ```
 
-> Note: the command is `runserver`. Django will show `Unknown command: 'ranserver'` if it is typed as `ranserver`.
+## Demo user
+
+Create or refresh a demo account with sample books, shelves, and notes:
+
+```bash
+python manage.py seed_demo_user
+```
+
+Default credentials:
+
+- Username: `demo`
+- Password: `demo12345`

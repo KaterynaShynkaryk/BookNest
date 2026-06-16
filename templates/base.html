@@ -5,6 +5,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}BookNest{% endblock %}</title>
+    <link rel="icon" type="image/svg+xml" href="{% static 'images/booknest-logo.svg' %}">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -18,7 +19,7 @@
                 <nav class="sidebar-nav">
                     <a class="{% if request.resolver_match.url_name == 'book_list' or request.resolver_match.url_name == 'book_create' or request.resolver_match.url_name == 'book_detail' or request.resolver_match.url_name == 'book_update' or request.resolver_match.url_name == 'book_delete' %}is-active{% endif %}" href="{% url 'book_list' %}">📚︎ Бібліотека</a>
                     <a class="{% if request.resolver_match.url_name == 'note_list' or request.resolver_match.url_name == 'note_update' %}is-active{% endif %}" href="{% url 'note_list' %}">📝︎ Нотатки</a>
-                    <a class="{% if request.resolver_match.url_name == 'shelf_list' or request.resolver_match.url_name == 'shelf_create' or request.resolver_match.url_name == 'shelf_update' or request.resolver_match.url_name == 'shelf_delete' or request.resolver_match.url_name == 'shelf_books' %}is-active{% endif %}" href="{% url 'shelf_list' %}">☷︎ Полички</a>
+                    <a class="{% if request.resolver_match.url_name == 'shelf_list' or request.resolver_match.url_name == 'shelf_create' or request.resolver_match.url_name == 'shelf_update' or request.resolver_match.url_name == 'shelf_delete' or request.resolver_match.url_name == 'shelf_books' or request.resolver_match.url_name == 'shelf_detail' %}is-active{% endif %}" href="{% url 'shelf_list' %}">☷︎ Полички</a>
                 </nav>
             </aside>
         {% endif %}
@@ -46,8 +47,31 @@
     {% endblock %}
 
     <main class="{% block main_class %}container-xxl content-wrap{% endblock %}">
+        {% if messages %}
+            <section class="flash-messages" aria-label="Повідомлення">
+                {% for message in messages %}
+                    <div class="flash-message flash-message--{{ message.tags|default:'info' }}" role="status" data-flash-message>
+                        <span class="flash-message__icon" aria-hidden="true">
+                            {% if 'success' in message.tags %}✓{% elif 'error' in message.tags or 'danger' in message.tags %}!{% else %}i{% endif %}
+                        </span>
+                        <span>{{ message }}</span>
+                        <button class="flash-message__dismiss" type="button" aria-label="Закрити повідомлення" data-flash-dismiss>×</button>
+                    </div>
+                {% endfor %}
+            </section>
+        {% endif %}
         {% block content %}{% endblock %}
     </main>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+        (() => {
+            const dismissButtons = document.querySelectorAll("[data-flash-dismiss]");
+            dismissButtons.forEach((button) => {
+                button.addEventListener("click", () => {
+                    button.closest("[data-flash-message]")?.remove();
+                });
+            });
+        })();
+    </script>
 </body>
 </html>

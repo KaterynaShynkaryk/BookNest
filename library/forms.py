@@ -58,6 +58,9 @@ def validate_reading_fields(form, cleaned_data):
     start_date = cleaned_data.get("start_date")
     finish_date = cleaned_data.get("finish_date")
 
+    if status == Book.Status.WISHLIST and start_date:
+        form.add_error("start_date", "Дату початку не можна вказувати для бажанки.")
+
     if status != Book.Status.COMPLETED:
         if rating is not None:
             form.add_error("rating", "Оцінку можна ставити тільки для прочитаних книг.")
@@ -90,6 +93,7 @@ class BookProgressForm(BootstrapFormMixin, forms.ModelForm):
             "rating": "Оцінка",
         }
         help_texts = {
+            "start_date": "Недоступно, коли статус книги — «Бажанка».",
             "finish_date": "Доступно, коли статус книги — «Прочитано».",
             "rating": "Оцінку можна ставити тільки для прочитаних книг.",
         }
@@ -127,7 +131,7 @@ class BookForm(BootstrapFormMixin, forms.ModelForm):
         user_books = Book.objects.none()
 
         if user is not None:
-            shelves_field.queryset = Shelf.objects.filter(user=user)
+            shelves_field.queryset = Shelf.objects.filter(user=user, is_auto_series=False)
             user_books = Book.objects.filter(user=user)
         else:
             shelves_field.queryset = Shelf.objects.none()
@@ -250,7 +254,13 @@ class BookForm(BootstrapFormMixin, forms.ModelForm):
             "genre": forms.TextInput(attrs={"placeholder": "Фентезі, роман, нон-фікшн..."}),
             "publisher": forms.TextInput(attrs={"placeholder": "Назва видавництва"}),
             "series": forms.TextInput(attrs={"placeholder": "Назва серії книг"}),
-            "published_year": forms.NumberInput(attrs={"min": 0, "placeholder": "Наприклад, 2024"}),
+            "published_year": forms.TextInput(
+                attrs={
+                    "inputmode": "numeric",
+                    "pattern": "[0-9]*",
+                    "placeholder": "Наприклад, 2024",
+                }
+            ),
             "cover_image": forms.FileInput(attrs={"accept": "image/*"}),
             "cover_url": forms.URLInput(attrs={"placeholder": "https://example.com/cover.jpg"}),
             "start_date": forms.DateInput(format="%Y-%m-%d", attrs={"type": "date"}),
@@ -261,8 +271,14 @@ class BookForm(BootstrapFormMixin, forms.ModelForm):
 class ShelfForm(BootstrapFormMixin, forms.ModelForm):
     class Meta:
         model = Shelf
-        fields = ["name"]
-        labels = {"name": "Назва полички"}
+        fields = ["name", "status"]
+        labels = {
+            "name": "Назва полички",
+            "status": "Статус серії",
+        }
+        help_texts = {
+            "status": "Для автоматичних поличок серій: не почато, почато або завершена.",
+        }
         widgets = {
             "name": forms.TextInput(attrs={"placeholder": "Наприклад, Фентезі або Купити"}),
         }
@@ -270,6 +286,8 @@ class ShelfForm(BootstrapFormMixin, forms.ModelForm):
     def __init__(self, *args, user=None, **kwargs):
         super().__init__(*args, **kwargs)
         self.user = user
+        if not getattr(self.instance, "is_auto_series", False):
+            self.fields.pop("status")
         self.apply_bootstrap_styles()
 
     def clean_name(self):

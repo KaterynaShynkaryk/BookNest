@@ -5,6 +5,7 @@ from django.db import models
 
 class Book(models.Model):
     class Status(models.TextChoices):
+        WISHLIST = 'wishlist', 'Бажанка'
         PLANNED = 'planned', 'Заплановано'
         READING = 'reading', 'Читаю'
         COMPLETED = 'completed', 'Прочитано'
@@ -85,12 +86,24 @@ class Book(models.Model):
 
 
 class Shelf(models.Model):
+    class Status(models.TextChoices):
+        NOT_STARTED = 'not_started', 'Не почато'
+        STARTED = 'started', 'Почато'
+        COMPLETED = 'completed', 'Завершена'
+
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
         related_name = 'shelves',
     )
     name = models.CharField(max_length=100)
+    series = models.CharField(max_length=150, blank=True)
+    is_auto_series = models.BooleanField(default=False)
+    status = models.CharField(
+        max_length=20,
+        choices=Status.choices,
+        default=Status.NOT_STARTED,
+    )
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:

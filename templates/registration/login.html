@@ -20,6 +20,22 @@
             <h1>Увійти</h1>
             <p>Раді знову вас бачити</p>
 
+            <div class="demo-account-card" role="note" aria-label="Демо акаунт">
+                <strong>Демо акаунт</strong>
+                <p>Щоб швидко подивитися застосунок, створіть демо-дані командою нижче та увійдіть з цими даними.</p>
+                <dl>
+                    <div>
+                        <dt>Логін</dt>
+                        <dd><code>demo</code></dd>
+                    </div>
+                    <div>
+                        <dt>Пароль</dt>
+                        <dd><code>demo12345</code></dd>
+                    </div>
+                </dl>
+                <code class="demo-command">python manage.py seed_demo_user</code>
+            </div>
+
             <form method="post" novalidate class="auth-form">
                 {% csrf_token %}
                 {% if form.non_field_errors %}
