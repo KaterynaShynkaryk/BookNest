@@ -87,10 +87,22 @@
             const actionMenus = document.querySelectorAll(".shelf-actions-menu");
             if (!actionMenus.length) return;
 
+            const setCardMenuState = (menu, isOpen) => {
+                const card = menu.closest(".shelf-card");
+
+                if (card) {
+                    card.classList.toggle(
+                        "shelf-card--menu-open",
+                        isOpen
+                    );
+                }
+            };
+
             const closeMenus = (exceptMenu = null) => {
                 actionMenus.forEach((menu) => {
                     if (menu !== exceptMenu) {
                         menu.open = false;
+                        setCardMenuState(menu, false);
                     }
                 });
             };
@@ -100,11 +112,16 @@
                     if (menu.open) {
                         closeMenus(menu);
                     }
+
+                    setCardMenuState(menu, menu.open);
                 });
             });
 
             document.addEventListener("click", (event) => {
-                if (event.target.closest(".shelf-actions-menu")) return;
+                if (event.target.closest(".shelf-actions-menu")) {
+                    return;
+                }
+
                 closeMenus();
             });
         })();

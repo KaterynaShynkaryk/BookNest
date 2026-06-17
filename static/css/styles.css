@@ -1877,8 +1877,9 @@ a:hover {
     position: relative;
 }
 
-.shelf-card:has(.book-actions-menu[open]) {
-    z-index: 30;
+.shelf-card:has(.book-actions-menu[open]),
+.shelf-card.shelf-card--menu-open {
+    z-index: 100;
 }
 
 .shelf-series-meta {
@@ -1923,6 +1924,8 @@ a:hover {
     gap: 1rem;
     justify-content: space-between;
     min-height: 3.8rem;
+    position: relative;
+    z-index: 20;
 }
 
 .shelf-card h2 {
@@ -1944,6 +1947,8 @@ a:hover {
     display: grid;
     gap: 0.65rem;
     grid-template-columns: repeat(4, minmax(0, 1fr));
+    position: relative;
+    z-index: 1;
 }
 
 .shelf-cover-tile {
@@ -2096,6 +2101,7 @@ a:hover {
 .shelf-actions-menu {
     align-self: flex-start;
     margin-top: 0;
+    z-index: 30;
 }
 
 .shelf-form-shell {
