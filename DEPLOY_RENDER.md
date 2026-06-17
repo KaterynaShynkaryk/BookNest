@@ -2,14 +2,14 @@
 
 This setup is intended for a small personal BookNest deployment that should stay responsive for a private library of hundreds of books.
 
-## Recommended Render setup
+## Free Render setup
 
-Use the paid Render resources in `render.yaml`:
+This project is configured for Render's free resources in `render.yaml`:
 
-- Web service: `starter`
-- PostgreSQL: `basic-256mb`
+- Web service: `free`
+- PostgreSQL: `free`
 
-Render's free web services spin down after idle time, which makes the first request slow. The `starter` web service avoids that cold-start delay. The PostgreSQL database keeps book, shelf, and note data outside the web service filesystem.
+This should let you try the deployment without adding a payment card. Free web services can spin down after idle time, so the first request after a pause can be slow. Free Render PostgreSQL databases expire after a limited time, so this is best for testing before choosing a permanent storage option.
 
 ## Deploy steps
 
@@ -26,5 +26,6 @@ Render's free web services spin down after idle time, which makes the first requ
 
 - `render.yaml` runs migrations on service start.
 - Static files are collected during build by `build.sh`.
-- Uploaded cover files stored on the local filesystem are not permanent unless a persistent disk/object storage is added. For the safest first deployment, prefer cover URLs or add persistent media storage later.
+- Uploaded cover files stored on the local filesystem are not permanent on Render free services. For the safest free deployment, prefer cover URLs instead of uploaded cover files.
+- Free Render services are useful for testing, but they are not ideal for permanent personal data. Export or back up your data before the free database expires.
 - Render sets `RENDER_EXTERNAL_HOSTNAME`; the Django settings use it for `ALLOWED_HOSTS` automatically.

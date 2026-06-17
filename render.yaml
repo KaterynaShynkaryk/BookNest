@@ -1,15 +1,14 @@
 databases:
   - name: booknest-db
-    plan: basic-256mb
+    plan: free
     databaseName: booknest
     user: booknest
-    diskSizeGB: 1
 
 services:
   - type: web
     name: booknest
     runtime: python
-    plan: starter
+    plan: free
     buildCommand: "./build.sh"
     startCommand: "python manage.py migrate && gunicorn backend.wsgi:application"
     envVars:
