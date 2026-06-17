@@ -24,15 +24,15 @@
                     {% for error in form.book.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
                 </div>
                 <div class="col-md-6">
+                    <label class="form-label" for="{{ form.title.id_for_label }}">{{ form.title.label }}</label>
+                    {{ form.title }}
+                    {% for error in form.title.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+                </div>
+                <div class="col-md-6">
                     <label class="form-label" for="{{ form.page_number.id_for_label }}">{{ form.page_number.label }}</label>
                     {{ form.page_number }}
                     {% if form.page_number.help_text %}<div class="form-text">{{ form.page_number.help_text }}</div>{% endif %}
                     {% for error in form.page_number.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
-                </div>
-                <div class="col-md-6">
-                    <label class="form-label" for="{{ form.title.id_for_label }}">{{ form.title.label }}</label>
-                    {{ form.title }}
-                    {% for error in form.title.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
                 </div>
                 <div class="col-12">
                     <label class="form-label" for="{{ form.content.id_for_label }}">{{ form.content.label }}</label>

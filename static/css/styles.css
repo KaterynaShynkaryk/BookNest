@@ -927,6 +927,17 @@ a:hover {
     padding: 0.22rem 0.6rem;
 }
 
+.book-card__read-date {
+    position: absolute;
+    bottom: 1.65rem;
+    left: 1.25rem;
+    font-size: 0.75rem;
+    font-weight: 400;
+    color: var(--muted-foreground);
+    z-index: 2;
+    pointer-events: none;
+}
+
 .book-actions-menu {
     align-self: flex-end;
     margin-top: auto;
@@ -2273,6 +2284,11 @@ a:hover {
 
     .book-card__body {
         padding: 1rem;
+    }
+
+    .book-card__read-date {
+        bottom: 1.4rem;
+        left: 1rem;
     }
 }
 

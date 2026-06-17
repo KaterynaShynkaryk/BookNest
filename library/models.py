@@ -71,7 +71,7 @@ class Book(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        ordering = ('-created_at',)
+        ordering = ('-is_favorite', '-created_at')
 
     def rating_stars(self):
         if self.rating is None:

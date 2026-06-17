@@ -461,7 +461,7 @@ class BookListViewTest(TestCase):
         self.assertTrue(user.check_password("demo12345"))
         self.assertEqual(Book.objects.filter(user=user).count(), 3)
         self.assertTrue(Book.objects.filter(user=user, status=Book.Status.WISHLIST).exists())
-        self.assertEqual(Shelf.objects.filter(user=user).count(), 2)
+        self.assertEqual(Shelf.objects.filter(user=user).count(), 3)
         self.assertEqual(Note.objects.filter(user=user).count(), 2)
         self.assertIn("demo", stdout.getvalue())
 
@@ -469,7 +469,7 @@ class BookListViewTest(TestCase):
 
         self.assertEqual(User.objects.filter(username="demo").count(), 1)
         self.assertEqual(Book.objects.filter(user=user).count(), 3)
-        self.assertEqual(Shelf.objects.filter(user=user).count(), 2)
+        self.assertEqual(Shelf.objects.filter(user=user).count(), 3)
         self.assertEqual(Note.objects.filter(user=user).count(), 2)
 
     def test_book_card_shows_shelves_next_to_status(self):
@@ -828,6 +828,38 @@ class BookListViewTest(TestCase):
         self.assertEqual(response.status_code, 404)
         book.refresh_from_db()
         self.assertFalse(book.is_favorite)
+
+    def test_favorite_ordering_moves_book_forward_and_back(self):
+        book1 = Book.objects.create(user=self.user, title="Book One", author="Author")
+        book2 = Book.objects.create(user=self.user, title="Book Two", author="Author")
+        book3 = Book.objects.create(user=self.user, title="Book Three", author="Author")
+
+        self.client.force_login(self.user)
+        response = self.client.get(reverse("book_list"))
+        self.assertEqual(list(response.context["books"]), [book3, book2, book1])
+
+        book2.is_favorite = True
+        book2.save()
+        response = self.client.get(reverse("book_list"))
+        self.assertEqual(list(response.context["books"]), [book2, book3, book1])
+
+        book2.is_favorite = False
+        book2.save()
+        response = self.client.get(reverse("book_list"))
+        self.assertEqual(list(response.context["books"]), [book3, book2, book1])
+
+    def test_book_card_shows_reading_date_for_completed_books(self):
+        import datetime
+        book = Book.objects.create(
+            user=self.user,
+            title="Completed Book",
+            author="Author One",
+            status=Book.Status.COMPLETED,
+            finish_date=datetime.date(2026, 6, 17),
+        )
+        self.client.force_login(self.user)
+        response = self.client.get(reverse("book_list"))
+        self.assertContains(response, "прочитано 17.06.2026")
 
     def test_book_card_links_to_detail_and_actions_are_in_menu(self):
         book = Book.objects.create(
@@ -1329,6 +1361,8 @@ class NoteFeatureTests(TestCase):
         self.assertContains(response, 'class="note-form-toggle"')
         self.assertContains(response, '+ Додати нотатку')
         self.assertContains(response, "Chapter insight")
+        content = response.content.decode()
+        self.assertLess(content.index("Заголовок"), content.index("Сторінка"))
         self.assertContains(response, "Important quote")
         self.assertContains(response, "стор. 42")
         self.assertContains(response, "Редагувати")
@@ -1422,7 +1456,7 @@ class NoteFeatureTests(TestCase):
         self.assertIn("max-width: 940px", css)
         self.assertNotIn(".has-sidebar .nav-actions", css)
         content = response.content.decode()
-        self.assertLess(content.index("Сторінка"), content.index("Заголовок"))
+        self.assertLess(content.index("Заголовок"), content.index("Сторінка"))
         self.assertContains(response, "General title")
         self.assertContains(response, "General note")
         self.assertContains(response, "Book note")
@@ -1447,7 +1481,7 @@ class NoteFeatureTests(TestCase):
         self.assertContains(response, 'value="Old title"')
         self.assertContains(response, "Old content")
         content = response.content.decode()
-        self.assertLess(content.index("Сторінка"), content.index("Заголовок"))
+        self.assertLess(content.index("Заголовок"), content.index("Сторінка"))
 
         response = self.client.post(
             reverse("note_update", args=[note.pk]),

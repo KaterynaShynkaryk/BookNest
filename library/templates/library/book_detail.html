@@ -67,15 +67,15 @@
                         {% csrf_token %}
                         <div class="note-form-grid">
                             <div>
+                                <label class="form-label" for="{{ note_form.title.id_for_label }}">{{ note_form.title.label }}</label>
+                                {{ note_form.title }}
+                                {% for error in note_form.title.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+                            </div>
+                            <div>
                                 <label class="form-label" for="{{ note_form.page_number.id_for_label }}">{{ note_form.page_number.label }}</label>
                                 {{ note_form.page_number }}
                                 {% if note_form.page_number.help_text %}<div class="form-text">{{ note_form.page_number.help_text }}</div>{% endif %}
                                 {% for error in note_form.page_number.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
-                            </div>
-                            <div>
-                                <label class="form-label" for="{{ note_form.title.id_for_label }}">{{ note_form.title.label }}</label>
-                                {{ note_form.title }}
-                                {% for error in note_form.title.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
                             </div>
                             <div class="note-content-field">
                                 <label class="form-label" for="{{ note_form.content.id_for_label }}">{{ note_form.content.label }}</label>

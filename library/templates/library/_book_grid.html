@@ -43,6 +43,10 @@
                                 {% endfor %}
                             </div>
                         {% endif %}
+
+                        {% if book.status == 'completed' and book.finish_date %}
+                            <span class="book-card__read-date" aria-label="Дата прочитання">прочитано {{ book.finish_date|date:"d.m.Y" }}</span>
+                        {% endif %}
                     </div>
 
                     <details class="book-actions-menu">
