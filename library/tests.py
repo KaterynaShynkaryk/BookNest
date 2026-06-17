@@ -395,17 +395,13 @@ class BookListViewTest(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Ви вийшли з акаунту.")
 
-    def test_login_page_shows_demo_account_hint(self):
+    def test_login_page_does_not_show_demo_account_hint(self):
         response = self.client.get(reverse("login"))
 
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "Демо акаунт")
-        self.assertContains(response, "demo")
-        self.assertContains(response, "demo12345")
-        self.assertContains(response, "python manage.py seed_demo_user")
-        with open("static/css/styles.css", encoding="utf-8") as styles:
-            css = styles.read()
-        self.assertIn(".demo-account-card", css)
+        self.assertNotContains(response, "Демо акаунт")
+        self.assertNotContains(response, "demo12345")
+        self.assertNotContains(response, "python manage.py seed_demo_user")
 
     def test_seed_demo_user_command_creates_sample_account(self):
         stdout = StringIO()

@@ -144,65 +144,6 @@ a:hover {
     color: var(--muted-foreground);
 }
 
-.demo-account-card {
-    background: color-mix(in srgb, var(--primary-soft) 62%, white);
-    border: 1px solid color-mix(in srgb, var(--primary) 18%, var(--border));
-    border-radius: 0.95rem;
-    display: grid;
-    gap: 0.55rem;
-    margin-bottom: 1.25rem;
-    padding: 0.95rem;
-}
-
-.demo-account-card strong {
-    color: var(--foreground);
-    font-size: 0.95rem;
-}
-
-.demo-account-card p {
-    color: var(--muted-foreground);
-    font-size: 0.82rem;
-    margin: 0;
-}
-
-.demo-account-card dl {
-    display: grid;
-    gap: 0.5rem;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    margin: 0;
-}
-
-.demo-account-card dl > div {
-    background: color-mix(in srgb, var(--card) 78%, transparent);
-    border-radius: 0.75rem;
-    padding: 0.55rem 0.65rem;
-}
-
-.demo-account-card dt {
-    color: var(--muted-foreground);
-    font-size: 0.72rem;
-    font-weight: 600;
-    margin-bottom: 0.2rem;
-}
-
-.demo-account-card dd {
-    margin: 0;
-}
-
-.demo-account-card code {
-    color: var(--primary-hover);
-    font-size: 0.78rem;
-    font-weight: 700;
-}
-
-.demo-command {
-    background: color-mix(in srgb, var(--foreground) 7%, transparent);
-    border-radius: 0.7rem;
-    display: block;
-    padding: 0.55rem 0.65rem;
-    white-space: normal;
-}
-
 .nav-link-button,
 .primary-link-button,
 .reset-link,
