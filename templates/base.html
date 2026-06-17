@@ -65,11 +65,22 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
 <script>
         (() => {
+            const messages = document.querySelectorAll("[data-flash-message]");
             const dismissButtons = document.querySelectorAll("[data-flash-dismiss]");
+
             dismissButtons.forEach((button) => {
                 button.addEventListener("click", () => {
                     button.closest("[data-flash-message]")?.remove();
                 });
+            });
+
+            messages.forEach((message) => {
+                const isError = message.classList.contains("flash-message--error") || message.classList.contains("flash-message--danger");
+                if (isError) return;
+
+                window.setTimeout(() => {
+                    message.remove();
+                }, 7000);
             });
         })();
     </script>

@@ -229,7 +229,41 @@ class BookListViewTest(TestCase):
         self.assertContains(response, "Мова тіла")
         self.assertContains(response, "А. К. Тернер")
         self.assertContains(response, "Сторінка книги")
-        self.assertContains(response, "description=")
+        self.assertContains(response, "import_id=")
+        self.assertNotContains(response, "description=")
+
+    def test_book_url_import_uses_short_session_link_for_long_metadata(self):
+        self.client.force_login(self.user)
+        long_description = "Опис " * 1500
+        results = [
+            {
+                "title": "Великий опис",
+                "author": "Автор",
+                "published_year": "2024",
+                "publisher": "Видавництво",
+                "genre": "Роман",
+                "cover_url": "https://example.com/cover.jpg",
+                "description": long_description,
+                "external_url": "https://example.com/book",
+                "source": "Сторінка книги",
+            }
+        ]
+
+        with patch("library.views.import_book_from_url", return_value=results):
+            response = self.client.get(
+                reverse("book_create_search"),
+                {"book_url": "https://example.com/book"},
+            )
+
+        self.assertContains(response, "import_id=")
+        self.assertNotContains(response, long_description)
+        import_id = next(iter(self.client.session["book_import_initials"]))
+
+        response = self.client.get(reverse("book_create_manual"), {"import_id": import_id})
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'value="Великий опис"')
+        self.assertContains(response, long_description[:120])
 
     def test_book_url_metadata_can_be_extracted_from_json_ld(self):
         metadata = extract_book_metadata(
@@ -394,6 +428,13 @@ class BookListViewTest(TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Ви вийшли з акаунту.")
+        self.assertContains(response, "window.setTimeout")
+        self.assertContains(response, "flash-message--error")
+        self.assertContains(response, "flash-message--danger")
+        with open("static/css/styles.css", encoding="utf-8") as styles:
+            css = styles.read()
+        self.assertIn("flex-direction: column", css)
+        self.assertIn(".auth-page .flash-messages", css)
 
     def test_login_page_does_not_show_demo_account_hint(self):
         response = self.client.get(reverse("login"))

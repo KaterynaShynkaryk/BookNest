@@ -1461,9 +1461,14 @@ a:hover {
 .auth-page {
     align-items: center;
     display: flex;
+    flex-direction: column;
     justify-content: center;
     min-height: 100vh;
     padding: 3rem 1rem;
+}
+
+.auth-page .flash-messages {
+    width: min(400px, 100%);
 }
 
 .auth-card {

@@ -1,3 +1,5 @@
+import secrets
+
 from django.contrib import messages
 from django.contrib.auth import login, logout
 from django.contrib.auth.decorators import login_required
@@ -410,19 +412,22 @@ def book_create(request):
     return redirect("book_create_search")
 
 
-def get_book_initial_from_query(request):
-    allowed_fields = [
-        "title",
-        "author",
-        "genre",
-        "publisher",
-        "published_year",
-        "cover_url",
-        "description",
-    ]
+BOOK_IMPORT_SESSION_KEY = "book_import_initials"
+BOOK_IMPORT_ALLOWED_FIELDS = [
+    "title",
+    "author",
+    "genre",
+    "publisher",
+    "published_year",
+    "cover_url",
+    "description",
+]
+
+
+def get_book_initial_from_mapping(data):
     initial = {}
-    for field in allowed_fields:
-        value = request.GET.get(field, "").strip()
+    for field in BOOK_IMPORT_ALLOWED_FIELDS:
+        value = str(data.get(field, "")).strip()
         if value:
             initial[field] = value
 
@@ -430,6 +435,33 @@ def get_book_initial_from_query(request):
         initial.setdefault("status", Book.Status.PLANNED)
 
     return initial
+
+
+def remember_book_import_options(request, search_results):
+    stored_options = request.session.get(BOOK_IMPORT_SESSION_KEY, {})
+
+    for result in search_results:
+        initial = get_book_initial_from_mapping(result)
+        if not initial:
+            continue
+
+        import_id = secrets.token_urlsafe(8)
+        result["import_id"] = import_id
+        stored_options[import_id] = initial
+
+    if len(stored_options) > 20:
+        stored_options = dict(list(stored_options.items())[-20:])
+
+    request.session[BOOK_IMPORT_SESSION_KEY] = stored_options
+
+
+def get_book_initial_from_query(request):
+    import_id = request.GET.get("import_id", "").strip()
+    stored_options = request.session.get(BOOK_IMPORT_SESSION_KEY, {})
+    if import_id and import_id in stored_options:
+        return dict(stored_options[import_id])
+
+    return get_book_initial_from_mapping(request.GET)
 
 @login_required
 def book_create_search(request):
@@ -445,6 +477,8 @@ def book_create_search(request):
             search_results = []
     elif search_query:
         search_results = search_books(search_query)
+
+    remember_book_import_options(request, search_results)
 
     return render(
         request,

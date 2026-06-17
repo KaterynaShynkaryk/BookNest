@@ -76,10 +76,10 @@
                                     </div>
                                     {% if result.genre %}<p class="book-search-result-card__genres">{{ result.genre }}</p>{% endif %}
                                     <div class="book-search-result-card__actions">
-                                        {% if not result.external_only %}
+                                        {% if not result.external_only and result.import_id %}
                                             <a
                                                 class="primary-link-button"
-                                                href="{% url 'book_create_manual' %}?title={{ result.title|urlencode }}&author={{ result.author|urlencode }}&publisher={{ result.publisher|urlencode }}&published_year={{ result.published_year|urlencode }}&genre={{ result.genre|urlencode }}&cover_url={{ result.cover_url|urlencode }}&description={{ result.description|urlencode }}"
+                                                href="{% url 'book_create_manual' %}?import_id={{ result.import_id|urlencode }}"
                                             >Обрати</a>
                                         {% endif %}
                                         {% if result.external_url %}<a class="reset-link" href="{{ result.external_url }}" target="_blank" rel="noopener noreferrer">{{ result.source|default:"Джерело" }}</a>{% endif %}
