@@ -401,6 +401,10 @@ class BookListViewTest(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "BookNest")
         self.assertContains(response, "Моя цифрова бібліотека")
+        with open("static/css/styles.css", encoding="utf-8") as styles:
+            css = styles.read()
+        self.assertIn("min-height: 100svh", css)
+        self.assertIn("padding: 1rem 1rem 2rem", css)
         self.assertNotContains(response, "Моя бібліотека")
         self.assertNotContains(response, "Демо акаунт")
         self.assertNotContains(response, "demo12345")

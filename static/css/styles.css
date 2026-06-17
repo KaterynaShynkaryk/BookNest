@@ -2312,3 +2312,20 @@ a:hover {
         padding-right: 0.5rem;
     }
 }
+
+@media (max-width: 768px) {
+    .auth-page {
+        align-items: flex-start;
+        justify-content: flex-start;
+        min-height: 100svh;
+        padding: 1rem 1rem 2rem;
+    }
+
+    .auth-logo {
+        margin-bottom: 1rem;
+    }
+
+    .auth-panel {
+        padding: 1.5rem;
+    }
+}
