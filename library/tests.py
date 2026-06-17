@@ -399,6 +399,9 @@ class BookListViewTest(TestCase):
         response = self.client.get(reverse("login"))
 
         self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "BookNest")
+        self.assertContains(response, "Моя цифрова бібліотека")
+        self.assertNotContains(response, "Моя бібліотека")
         self.assertNotContains(response, "Демо акаунт")
         self.assertNotContains(response, "demo12345")
         self.assertNotContains(response, "python manage.py seed_demo_user")

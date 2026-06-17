@@ -118,6 +118,23 @@ a:hover {
     width: 2rem;
 }
 
+.auth-logo__copy {
+    display: grid;
+    gap: 0.05rem;
+    line-height: 1.15;
+}
+
+.auth-logo__name {
+    color: var(--foreground);
+    font-weight: 700;
+}
+
+.auth-logo__tagline {
+    color: var(--muted-foreground);
+    font-size: 0.72rem;
+    font-weight: 500;
+}
+
 .nav-actions,
 .filter-controls,
 .detail-badges,
