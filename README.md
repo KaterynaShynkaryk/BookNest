@@ -103,6 +103,14 @@ Built with **Python, Django, Django Templates, Bootstrap, HTML/CSS and PostgreSQ
 
 ### Адаптація під телефон
 
+![Бібліотека на телефоні](docs/screenshots/09_mobi_library.jpg)
+
+![Деталі книги на телефоні](docs/screenshots/10_mobi_detail.jpg)
+
+![Полички на телефоні](docs/screenshots/11_mobi_shelves.jpg)
+
+![Статистика на телефоні](docs/screenshots/12_mobi_statistics.jpg)
+
 - інтерфейс адаптується під мобільні екрани;
 - навігація, картки книг, полички, форми та фільтри зручно перебудовуються для меншої ширини;
 - сторінки можна використовувати як з комп’ютера, так і зі смартфона.
@@ -274,6 +282,14 @@ The project was built as a portfolio-ready Django application that demonstrates 
 ![Reset Password](docs/screenshots/07_reset_password.png)
 
 ### Responsive Design
+
+![Library on mobile](docs/screenshots/09_mobi_library.jpg)
+
+![Book detail on mobile](docs/screenshots/10_mobi_detail.jpg)
+
+![Shelves on mobile](docs/screenshots/11_mobi_shelves.jpg)
+
+![Statistics on mobile](docs/screenshots/12_mobi_statistics.jpg)
 
 - layout adapts to mobile screens;
 - navigation, book cards, shelves, forms and filters remain usable on smaller widths;
