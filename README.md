@@ -57,6 +57,8 @@ Built with **Python, Django, Django Templates, Bootstrap, HTML/CSS and PostgreSQ
 - позначення книг як улюблених;
 - пошук і фільтрація за статусом, жанром, видавництвом та улюбленими.
 
+![Фільтри](docs/screenshots/08_filters.png)
+
 ### Полички
 
 ![Полички](docs/screenshots/03_shelves.png)
@@ -97,6 +99,14 @@ Built with **Python, Django, Django Templates, Bootstrap, HTML/CSS and PostgreSQ
 - ізоляція даних між користувачами;
 - відновлення пароля через електронну пошту.
 
+![Відновлення паролю](docs/screenshots/07_reset_password.png)
+
+### Адаптація під телефон
+
+- інтерфейс адаптується під мобільні екрани;
+- навігація, картки книг, полички, форми та фільтри зручно перебудовуються для меншої ширини;
+- сторінки можна використовувати як з комп’ютера, так і зі смартфона.
+
 ---
 
 ## Чому цей проєкт цікавий
@@ -116,7 +126,7 @@ BookNest вирішує реальну користувацьку задачу �
 - пошук і фільтрацію даних;
 - роботу з файлами обкладинок;
 - перевикористання шаблонів та компонентів інтерфейсу;
-- адаптивну верстку;
+- адаптивну верстку для комп’ютерів і мобільних пристроїв;
 - статистику на основі користувацьких даних;
 - автоматизовані тести;
 - конфігурацію, готову до деплою.
@@ -212,7 +222,7 @@ The project was built as a portfolio-ready Django application that demonstrates 
 
 ### Book Library
 
-![books_detail](docs/screenshots/02_book_detail.png)
+![Books detail](docs/screenshots/02_book_detail.png)
 
 - add books manually or via search;
 - store title, author, genre, publisher, series, publication year, description and cover;
@@ -220,6 +230,8 @@ The project was built as a portfolio-ready Django application that demonstrates 
 - rate completed books;
 - mark books as favorites;
 - search and filter by status, genre, publisher and favorites.
+
+![Filters](docs/screenshots/08_filters.png)
 
 ### Shelves
 
@@ -259,6 +271,14 @@ The project was built as a portfolio-ready Django application that demonstrates 
 - user-specific private data;
 - email-based password reset.
 
+![Reset Password](docs/screenshots/07_reset_password.png)
+
+### Responsive Design
+
+- layout adapts to mobile screens;
+- navigation, book cards, shelves, forms and filters remain usable on smaller widths;
+- the application can be used both on desktop and mobile devices.
+
 ---
 
 ## Why this project is useful
@@ -278,7 +298,7 @@ It also demonstrates practical product thinking: clear navigation, useful filter
 - search and filtering;
 - file handling for book covers;
 - reusable template components;
-- responsive layout;
+- responsive layout for desktop and mobile devices;
 - user-based statistics;
 - automated tests;
 - deployment-ready configuration.
