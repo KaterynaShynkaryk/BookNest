@@ -981,6 +981,38 @@ class ShelfListViewTests(TestCase):
         self.assertIn(".page-heading:has(.book-actions-menu[open])", css)
         self.assertIn(".page-heading__actions .book-actions-menu", css)
 
+    def test_shelf_detail_filters_books_inside_shelf(self):
+        shelf = Shelf.objects.create(user=self.user, name="Фентезі")
+        matching = Book.objects.create(
+            user=self.user,
+            title="Абетка магії",
+            author="Автор Один",
+            genre="Фентезі",
+            status=Book.Status.READING,
+            is_favorite=True,
+        )
+        hidden = Book.objects.create(
+            user=self.user,
+            title="Космос",
+            author="Автор Два",
+            genre="Наукова фантастика",
+            status=Book.Status.PLANNED,
+        )
+        shelf.books.add(matching, hidden)
+
+        self.client.force_login(self.user)
+        response = self.client.get(
+            reverse("shelf_detail", args=[shelf.pk]),
+            {"q": "абетка", "status": Book.Status.READING, "genre": "Фентезі", "favorite": "1"},
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Пошук у поличці")
+        self.assertContains(response, "Абетка магії")
+        self.assertNotContains(response, "Космос")
+        self.assertEqual(response.context["displayed_count"], 1)
+        self.assertTrue(response.context["has_active_filters"])
+        self.assertContains(response, f'href="/shelves/{shelf.pk}/"')
 
     def test_shelf_list_has_empty_state(self):
         self.client.force_login(self.user)
@@ -1054,7 +1086,7 @@ class ShelfListViewTests(TestCase):
         self.assertRedirects(response, reverse("shelf_list"))
         self.assertEqual(list(shelf.books.order_by("title")), [second_book])
 
-    def test_shelf_cards_show_latest_four_book_covers_instead_of_title_list(self):
+    def test_shelf_cards_show_latest_eight_book_covers_instead_of_title_list(self):
         shelf = Shelf.objects.create(user=self.user, name="Обкладинки")
         books = [
             Book.objects.create(
@@ -1063,7 +1095,7 @@ class ShelfListViewTests(TestCase):
                 author="Автор",
                 cover_url=f"https://example.com/cover-{index}.jpg",
             )
-            for index in range(1, 6)
+            for index in range(1, 10)
         ]
         shelf.books.add(*books)
 
@@ -1071,8 +1103,8 @@ class ShelfListViewTests(TestCase):
         response = self.client.get(reverse("shelf_list"))
 
         self.assertContains(response, 'class="shelf-cover-grid"')
-        self.assertContains(response, 'class="shelf-cover-tile"', count=4)
-        for index in range(2, 6):
+        self.assertContains(response, 'class="shelf-cover-tile"', count=8)
+        for index in range(2, 10):
             self.assertContains(response, f"https://example.com/cover-{index}.jpg")
         self.assertNotContains(response, "https://example.com/cover-1.jpg")
         self.assertContains(response, "+ ще 1")
@@ -1463,6 +1495,26 @@ class NoteFeatureTests(TestCase):
         self.assertContains(response, 'class="note-form-toggle note-page-form-toggle"')
         self.assertContains(response, '+ Додати нотатку')
         self.assertNotContains(response, "Other hidden note")
+
+
+    def test_note_favorite_toggle_moves_note_to_top(self):
+        first = Note.objects.create(user=self.user, content="Звичайна нотатка")
+        favorite = Note.objects.create(user=self.user, content="Важлива нотатка")
+
+        self.client.force_login(self.user)
+        response = self.client.post(reverse("note_toggle_favorite", args=[favorite.pk]))
+
+        self.assertRedirects(response, reverse("note_list"))
+        favorite.refresh_from_db()
+        self.assertTrue(favorite.is_favorite)
+        notes = list(Note.objects.filter(user=self.user))
+        self.assertEqual(notes[0], favorite)
+        self.assertEqual(notes[1], first)
+
+        response = self.client.get(reverse("note_list"))
+        content = response.content.decode()
+        self.assertLess(content.index("Важлива нотатка"), content.index("Звичайна нотатка"))
+        self.assertContains(response, "♥ Улюблена")
 
     def test_user_can_edit_note_title_content_and_book_link(self):
         note = Note.objects.create(

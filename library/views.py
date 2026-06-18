@@ -67,6 +67,13 @@ def get_safe_redirect_url(request):
 
 @login_required
 def book_list(request):
+    user_books = Book.objects.filter(user=request.user).prefetch_related("shelves")
+    context = get_book_filter_context(request, user_books)
+
+    return render(request, "library/book_list.html", context)
+
+
+def get_book_filter_context(request, books_queryset):
     search_query = request.GET.get("q", "").strip()
     selected_statuses = request.GET.getlist("status")
     selected_genres = request.GET.getlist("genre")
@@ -74,11 +81,10 @@ def book_list(request):
     favorite_only = request.GET.get("favorite") == "1"
     available_statuses = {status for status, label in Book.Status.choices}
 
-    user_books = Book.objects.filter(user=request.user)
     genre_choices = []
     seen_genres = set()
     for genre_value in (
-        user_books.exclude(genre="")
+        books_queryset.exclude(genre="")
         .order_by("genre")
         .values_list("genre", flat=True)
         .distinct()
@@ -88,14 +94,15 @@ def book_list(request):
             if genre_key not in seen_genres:
                 genre_choices.append(genre)
                 seen_genres.add(genre_key)
+
     publisher_choices = list(
-        user_books.exclude(publisher="")
+        books_queryset.exclude(publisher="")
         .order_by("publisher")
         .values_list("publisher", flat=True)
         .distinct()
     )
-    books = user_books.prefetch_related("shelves")
 
+    books = books_queryset
     selected_statuses = [status for status in selected_statuses if status in available_statuses]
     if selected_statuses:
         books = books.filter(status__in=selected_statuses)
@@ -123,33 +130,21 @@ def book_list(request):
         ]
         books = books.filter(pk__in=matching_book_ids)
 
-    has_active_filters = any(
-        [
-            search_query,
-            selected_statuses,
-            selected_genres,
-            selected_publishers,
-            favorite_only,
-        ]
-    )
+    has_active_filters = any([search_query, selected_statuses, selected_genres, selected_publishers, favorite_only])
 
-    return render(
-        request,
-        "library/book_list.html",
-        {
-            "books": books,
-            "status_choices": Book.Status.choices,
-            "genre_choices": genre_choices,
-            "publisher_choices": publisher_choices,
-            "search_query": search_query,
-            "selected_statuses": selected_statuses,
-            "selected_genres": selected_genres,
-            "selected_publishers": selected_publishers,
-            "favorite_only": favorite_only,
-            "has_active_filters": has_active_filters,
-            "displayed_count": books.count(),
-        },
-    )
+    return {
+        "books": books,
+        "status_choices": Book.Status.choices,
+        "genre_choices": genre_choices,
+        "publisher_choices": publisher_choices,
+        "search_query": search_query,
+        "selected_statuses": selected_statuses,
+        "selected_genres": selected_genres,
+        "selected_publishers": selected_publishers,
+        "favorite_only": favorite_only,
+        "has_active_filters": has_active_filters,
+        "displayed_count": books.count(),
+    }
 
 
 @login_required
@@ -249,17 +244,11 @@ def shelf_list(request):
 @login_required
 def shelf_detail(request, pk):
     shelf = get_object_or_404(Shelf, pk=pk, user=request.user)
-    books = shelf.books.filter(user=request.user).prefetch_related("shelves")
+    shelf_books = shelf.books.filter(user=request.user).prefetch_related("shelves")
+    context = get_book_filter_context(request, shelf_books)
+    context["shelf"] = shelf
 
-    return render(
-        request,
-        "library/shelf_detail.html",
-        {
-            "shelf": shelf,
-            "books": books,
-            "displayed_count": books.count(),
-        },
-    )
+    return render(request, "library/shelf_detail.html", context)
 
 
 @login_required
@@ -362,6 +351,23 @@ def note_list(request):
             "book_notes": notes.filter(book__isnull=False),
         },
     )
+
+
+@login_required
+@require_POST
+def note_toggle_favorite(request, pk):
+    note = get_object_or_404(Note, pk=pk, user=request.user)
+    note.is_favorite = not note.is_favorite
+    note.save(update_fields=["is_favorite", "updated_at"])
+
+    redirect_url = get_safe_redirect_url(request)
+    if redirect_url:
+        return redirect(redirect_url)
+
+    if note.book_id:
+        return redirect("book_detail", pk=note.book_id)
+
+    return redirect("note_list")
 
 
 @login_required

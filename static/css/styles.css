@@ -2356,3 +2356,20 @@ a:hover {
         padding: 1.5rem;
     }
 }
+.note-card--favorite {
+    background: color-mix(in srgb, var(--gold) 10%, var(--note-bg));
+    border-left-color: var(--heart);
+}
+
+.note-favorite-button {
+    background: transparent;
+    border: 0;
+    color: var(--muted-foreground);
+    font-size: 0.8rem;
+    font-weight: 700;
+    padding: 0;
+}
+
+.note-favorite-button.is-active {
+    color: var(--heart);
+}
