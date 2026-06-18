@@ -7,13 +7,20 @@ Built with **Python, Django, Django Templates, Bootstrap, HTML/CSS and PostgreSQ
   <a href="https://booknest-j0pb.onrender.com">
     <img src="https://img.shields.io/badge/▶%20Live%20Demo-BookNest-6f8fa6?style=for-the-badge" alt="Live Demo">
   </a>
-  <img src="https://img.shields.io/badge/Python-3.x-blue?style=for-the-badge&logo=python" alt="Python">
+  <img src="https://img.shields.io/badge/Python-3.12%2B-blue?style=for-the-badge&logo=python" alt="Python">
   <img src="https://img.shields.io/badge/Django-Web%20App-0c4b33?style=for-the-badge&logo=django" alt="Django">
   <img src="https://img.shields.io/badge/Deploy-Render-46e3b7?style=for-the-badge&logo=render" alt="Render">
 </p>
 
 <p align="center">
   <a href="#-українська-версія">Українська</a> · <a href="#-english-version">English</a>
+</p>
+
+<p align="center">
+  <a href="#-основні-сторінки-та-можливості">Можливості</a> ·
+  <a href="#-запуск-локально">Запуск</a> ·
+  <a href="#-тести">Тести</a> ·
+  <a href="#-local-setup">Setup</a>
 </p>
 
 ---
@@ -25,6 +32,14 @@ Built with **Python, Django, Django Templates, Bootstrap, HTML/CSS and PostgreSQ
 **BookNest** — це вебзастосунок для ведення персональної цифрової бібліотеки. Користувач може додавати книги, відстежувати прогрес читання, створювати полички, писати нотатки, позначати важливе та переглядати статистику прочитаного.
 
 Проєкт розроблений як портфоліо-застосунок, що демонструє повний цикл створення Django-застосунку: від моделей і CRUD-логіки до авторизації, фільтрів, інтерфейсу, тестів і деплою.
+
+### Коротко про функціональність
+
+- приватні бібліотеки для кожного користувача;
+- ручне додавання книг і пошук книг через зовнішнє API;
+- статуси читання, рейтинги, улюблені книги та нотатки;
+- власні й автоматичні полички для книжкових серій;
+- статистика читання та адаптивний інтерфейс для мобільних пристроїв.
 
 ### Демо
 
@@ -40,7 +55,7 @@ Built with **Python, Django, Django Templates, Bootstrap, HTML/CSS and PostgreSQ
 
 | | | | | | | |
 |---|---|---|---|---|---|---|
-| ![Python](https://img.shields.io/badge/Python-3.x-3776AB?logo=python&logoColor=white) | ![Django](https://img.shields.io/badge/Django-Web%20App-0C4B33?logo=django&logoColor=white) | ![Bootstrap](https://img.shields.io/badge/Bootstrap-UI-7952B3?logo=bootstrap&logoColor=white) | ![HTML5](https://img.shields.io/badge/HTML5-Markup-E34F26?logo=html5&logoColor=white) | ![CSS3](https://img.shields.io/badge/CSS3-Styles-1572B6?logo=css3&logoColor=white) | ![SQLite](https://img.shields.io/badge/SQLite-Local-003B57?logo=sqlite&logoColor=white) | ![Render](https://img.shields.io/badge/Render-Deploy-46E3B7?logo=render&logoColor=white) |
+| ![Python](https://img.shields.io/badge/Python-3.12%2B-3776AB?logo=python&logoColor=white) | ![Django](https://img.shields.io/badge/Django-Web%20App-0C4B33?logo=django&logoColor=white) | ![Bootstrap](https://img.shields.io/badge/Bootstrap-UI-7952B3?logo=bootstrap&logoColor=white) | ![HTML5](https://img.shields.io/badge/HTML5-Markup-E34F26?logo=html5&logoColor=white) | ![CSS3](https://img.shields.io/badge/CSS3-Styles-1572B6?logo=css3&logoColor=white) | ![SQLite](https://img.shields.io/badge/SQLite-Local-003B57?logo=sqlite&logoColor=white) | ![Render](https://img.shields.io/badge/Render-Deploy-46E3B7?logo=render&logoColor=white) |
 
 ---
 
@@ -103,13 +118,12 @@ Built with **Python, Django, Django Templates, Bootstrap, HTML/CSS and PostgreSQ
 
 ### Адаптація під телефон
 
-![Бібліотека на телефоні](docs/screenshots/09_mobi_library.jpg)
-
-![Деталі книги на телефоні](docs/screenshots/10_mobi_detail.jpg)
-
-![Полички на телефоні](docs/screenshots/11_mobi_shelves.jpg)
-
-![Статистика на телефоні](docs/screenshots/12_mobi_statistics.jpg)
+<p align="center">
+  <img src="docs/screenshots/09_mobi_library.jpg" alt="Бібліотека на телефоні" width="220">
+  <img src="docs/screenshots/10_mobi_detail.jpg" alt="Деталі книги на телефоні" width="220">
+  <img src="docs/screenshots/11_mobi_shelves.jpg" alt="Полички на телефоні" width="220">
+  <img src="docs/screenshots/12_mobi_statistics.jpg" alt="Статистика на телефоні" width="220">
+</p>
 
 - інтерфейс адаптується під мобільні екрани;
 - навігація, картки книг, полички, форми та фільтри зручно перебудовуються для меншої ширини;
@@ -166,9 +180,10 @@ BookNest/
 git clone <repository-url>
 cd BookNest
 python -m venv .venv
-source .venv/bin/activate
+source .venv/bin/activate  # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
 python manage.py migrate
+python manage.py seed_demo_user  # optional: creates demo / demo12345
 python manage.py runserver
 ```
 
@@ -208,6 +223,14 @@ python manage.py check
 
 The project was built as a portfolio-ready Django application that demonstrates the full development flow: data models, CRUD operations, authentication, filtering, UI templates, tests and deployment.
 
+### Feature overview
+
+- private libraries per user;
+- manual book creation and book lookup via an external API;
+- reading statuses, ratings, favorite books and notes;
+- custom shelves plus automatic shelves for book series;
+- reading statistics and a responsive mobile-friendly interface.
+
 ### Live Demo
 
 ➡️ **[Open BookNest](https://booknest-j0pb.onrender.com)**
@@ -222,7 +245,7 @@ The project was built as a portfolio-ready Django application that demonstrates 
 
 | | | | | | | |
 |---|---|---|---|---|---|---|
-| ![Python](https://img.shields.io/badge/Python-3.x-3776AB?logo=python&logoColor=white) | ![Django](https://img.shields.io/badge/Django-Web%20App-0C4B33?logo=django&logoColor=white) | ![Bootstrap](https://img.shields.io/badge/Bootstrap-UI-7952B3?logo=bootstrap&logoColor=white) | ![HTML5](https://img.shields.io/badge/HTML5-Markup-E34F26?logo=html5&logoColor=white) | ![CSS3](https://img.shields.io/badge/CSS3-Styles-1572B6?logo=css3&logoColor=white) | ![SQLite](https://img.shields.io/badge/SQLite-Local-003B57?logo=sqlite&logoColor=white) | ![Render](https://img.shields.io/badge/Render-Deploy-46E3B7?logo=render&logoColor=white) |
+| ![Python](https://img.shields.io/badge/Python-3.12%2B-3776AB?logo=python&logoColor=white) | ![Django](https://img.shields.io/badge/Django-Web%20App-0C4B33?logo=django&logoColor=white) | ![Bootstrap](https://img.shields.io/badge/Bootstrap-UI-7952B3?logo=bootstrap&logoColor=white) | ![HTML5](https://img.shields.io/badge/HTML5-Markup-E34F26?logo=html5&logoColor=white) | ![CSS3](https://img.shields.io/badge/CSS3-Styles-1572B6?logo=css3&logoColor=white) | ![SQLite](https://img.shields.io/badge/SQLite-Local-003B57?logo=sqlite&logoColor=white) | ![Render](https://img.shields.io/badge/Render-Deploy-46E3B7?logo=render&logoColor=white) |
 
 ---
 
@@ -252,6 +275,8 @@ The project was built as a portfolio-ready Django application that demonstrates 
 - filters inside each shelf.
 
 ### Notes
+
+![Notes](docs/screenshots/04_notes.png)
 
 - general notes;
 - book-specific notes;
@@ -283,13 +308,12 @@ The project was built as a portfolio-ready Django application that demonstrates 
 
 ### Responsive Design
 
-![Library on mobile](docs/screenshots/09_mobi_library.jpg)
-
-![Book detail on mobile](docs/screenshots/10_mobi_detail.jpg)
-
-![Shelves on mobile](docs/screenshots/11_mobi_shelves.jpg)
-
-![Statistics on mobile](docs/screenshots/12_mobi_statistics.jpg)
+<p align="center">
+  <img src="docs/screenshots/09_mobi_library.jpg" alt="Library on mobile" width="220">
+  <img src="docs/screenshots/10_mobi_detail.jpg" alt="Book detail on mobile" width="220">
+  <img src="docs/screenshots/11_mobi_shelves.jpg" alt="Shelves on mobile" width="220">
+  <img src="docs/screenshots/12_mobi_statistics.jpg" alt="Statistics on mobile" width="220">
+</p>
 
 - layout adapts to mobile screens;
 - navigation, book cards, shelves, forms and filters remain usable on smaller widths;
@@ -346,9 +370,10 @@ BookNest/
 git clone <repository-url>
 cd BookNest
 python -m venv .venv
-source .venv/bin/activate
+source .venv/bin/activate  # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
 python manage.py migrate
+python manage.py seed_demo_user  # optional: creates demo / demo12345
 python manage.py runserver
 ```
 
