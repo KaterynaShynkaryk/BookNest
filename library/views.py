@@ -239,7 +239,7 @@ def statistics(request):
             "total_books": user_books.count(),
             "completed_count": completed_books.count(),
             "reading_count": user_books.filter(status=Book.Status.READING).count(),
-            "favorite_count": user_books.filter(is_favorite=True).count(),
+            "wishlist_count": user_books.filter(status=Book.Status.WISHLIST).count(),
             "books_by_year": books_by_year,
         },
     )

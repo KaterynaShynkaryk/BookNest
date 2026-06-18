@@ -2,6 +2,7 @@ from io import StringIO
 from unittest.mock import patch
 
 from django.contrib.auth import get_user_model
+from django.core import mail
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.core.management import call_command
 from django.test import TestCase
@@ -442,6 +443,8 @@ class BookListViewTest(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "BookNest")
         self.assertContains(response, "Моя цифрова бібліотека")
+        self.assertContains(response, "Забули пароль?")
+        self.assertContains(response, 'href="/auth/password_reset/"')
         with open("static/css/styles.css", encoding="utf-8") as styles:
             css = styles.read()
         self.assertIn("min-height: 100svh", css)
@@ -450,6 +453,17 @@ class BookListViewTest(TestCase):
         self.assertNotContains(response, "Демо акаунт")
         self.assertNotContains(response, "demo12345")
         self.assertNotContains(response, "python manage.py seed_demo_user")
+
+    def test_password_reset_sends_email(self):
+        self.user.email = "reader@example.com"
+        self.user.save(update_fields=["email"])
+
+        response = self.client.post(reverse("password_reset"), {"email": "reader@example.com"})
+
+        self.assertRedirects(response, reverse("password_reset_done"))
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertIn("BookNest", mail.outbox[0].body)
+        self.assertIn("/auth/reset/", mail.outbox[0].body)
 
     def test_seed_demo_user_command_creates_sample_account(self):
         stdout = StringIO()
@@ -2071,9 +2085,7 @@ class StatisticsViewTests(TestCase):
             user=self.user,
             title="Книга 2024",
             author="Автор Два",
-            status=Book.Status.COMPLETED,
-            finish_date="2024-03-01",
-            is_favorite=True,
+            status=Book.Status.WISHLIST,
         )
         Book.objects.create(
             user=self.user,
@@ -2095,14 +2107,14 @@ class StatisticsViewTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response, "library/statistics.html")
         self.assertEqual(response.context["total_books"], 3)
-        self.assertEqual(response.context["completed_count"], 2)
+        self.assertEqual(response.context["completed_count"], 1)
         self.assertEqual(response.context["reading_count"], 1)
-        self.assertEqual(response.context["favorite_count"], 1)
+        self.assertEqual(response.context["wishlist_count"], 1)
         self.assertContains(response, "Статистика")
         self.assertContains(response, "Усього книг")
         self.assertContains(response, "Прочитано у 2025")
         self.assertContains(response, "Книга 2025")
-        self.assertContains(response, "Прочитано у 2024")
-        self.assertContains(response, "Книга 2024")
+        self.assertContains(response, "Бажанки")
+        self.assertNotContains(response, "Прочитано у 2024")
         self.assertContains(response, 'class="is-active" href="/statistics/"')
         self.assertNotContains(response, "Чужа книга")

@@ -2510,3 +2510,17 @@ a:hover {
         grid-template-columns: 1fr;
     }
 }
+
+.auth-form input[type="email"],
+.auth-form input[type="password"] {
+    border: 1px solid var(--border);
+    border-radius: 0.75rem;
+    padding: 0.65rem 0.75rem;
+    width: 100%;
+}
+
+.auth-helper-link {
+    font-size: 0.85rem;
+    margin: 0.9rem 0 0;
+    text-align: center;
+}
