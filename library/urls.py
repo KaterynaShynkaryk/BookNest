@@ -22,6 +22,7 @@ from .views import (
     shelf_delete,
     shelf_list,
     shelf_update,
+    statistics,
     test_page,
     UkrainianLoginView,
 )
@@ -38,6 +39,7 @@ urlpatterns = [
     path("books/<int:pk>/edit/", book_update, name="book_update"),
     path("books/<int:pk>/delete/", book_delete, name="book_delete"),
     path("notes/", note_list, name="note_list"),
+    path("statistics/", statistics, name="statistics"),
     path("shelves/", shelf_list, name="shelf_list"),
     path("shelves/add/", shelf_create, name="shelf_create"),
     path("shelves/<int:pk>/", shelf_detail, name="shelf_detail"),

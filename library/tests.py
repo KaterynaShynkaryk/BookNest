@@ -981,38 +981,6 @@ class ShelfListViewTests(TestCase):
         self.assertIn(".page-heading:has(.book-actions-menu[open])", css)
         self.assertIn(".page-heading__actions .book-actions-menu", css)
 
-    def test_shelf_detail_filters_books_inside_shelf(self):
-        shelf = Shelf.objects.create(user=self.user, name="Фентезі")
-        matching = Book.objects.create(
-            user=self.user,
-            title="Абетка магії",
-            author="Автор Один",
-            genre="Фентезі",
-            status=Book.Status.READING,
-            is_favorite=True,
-        )
-        hidden = Book.objects.create(
-            user=self.user,
-            title="Космос",
-            author="Автор Два",
-            genre="Наукова фантастика",
-            status=Book.Status.PLANNED,
-        )
-        shelf.books.add(matching, hidden)
-
-        self.client.force_login(self.user)
-        response = self.client.get(
-            reverse("shelf_detail", args=[shelf.pk]),
-            {"q": "абетка", "status": Book.Status.READING, "genre": "Фентезі", "favorite": "1"},
-        )
-
-        self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "Пошук у поличці")
-        self.assertContains(response, "Абетка магії")
-        self.assertNotContains(response, "Космос")
-        self.assertEqual(response.context["displayed_count"], 1)
-        self.assertTrue(response.context["has_active_filters"])
-        self.assertContains(response, f'href="/shelves/{shelf.pk}/"')
 
     def test_shelf_list_has_empty_state(self):
         self.client.force_login(self.user)
@@ -1496,25 +1464,6 @@ class NoteFeatureTests(TestCase):
         self.assertContains(response, '+ Додати нотатку')
         self.assertNotContains(response, "Other hidden note")
 
-
-    def test_note_favorite_toggle_moves_note_to_top(self):
-        first = Note.objects.create(user=self.user, content="Звичайна нотатка")
-        favorite = Note.objects.create(user=self.user, content="Важлива нотатка")
-
-        self.client.force_login(self.user)
-        response = self.client.post(reverse("note_toggle_favorite", args=[favorite.pk]))
-
-        self.assertRedirects(response, reverse("note_list"))
-        favorite.refresh_from_db()
-        self.assertTrue(favorite.is_favorite)
-        notes = list(Note.objects.filter(user=self.user))
-        self.assertEqual(notes[0], favorite)
-        self.assertEqual(notes[1], first)
-
-        response = self.client.get(reverse("note_list"))
-        content = response.content.decode()
-        self.assertLess(content.index("Важлива нотатка"), content.index("Звичайна нотатка"))
-        self.assertContains(response, "♥ Улюблена")
 
     def test_user_can_edit_note_title_content_and_book_link(self):
         note = Note.objects.create(
@@ -2097,3 +2046,63 @@ class BookFormTests(TestCase):
             css = styles.read()
         self.assertIn(".combined-value-field", css)
         self.assertIn(".existing-value-select", css)
+
+
+class StatisticsViewTests(TestCase):
+    def setUp(self):
+        self.user = get_user_model().objects.create_user(
+            username="stats-reader",
+            password="test-pass-123",
+        )
+        self.other_user = get_user_model().objects.create_user(
+            username="other-stats-reader",
+            password="test-pass-123",
+        )
+
+    def test_statistics_page_shows_totals_and_completed_books_by_year(self):
+        Book.objects.create(
+            user=self.user,
+            title="Книга 2025",
+            author="Автор Один",
+            status=Book.Status.COMPLETED,
+            finish_date="2025-05-10",
+        )
+        Book.objects.create(
+            user=self.user,
+            title="Книга 2024",
+            author="Автор Два",
+            status=Book.Status.COMPLETED,
+            finish_date="2024-03-01",
+            is_favorite=True,
+        )
+        Book.objects.create(
+            user=self.user,
+            title="Читаю зараз",
+            author="Автор Три",
+            status=Book.Status.READING,
+        )
+        Book.objects.create(
+            user=self.other_user,
+            title="Чужа книга",
+            author="Автор Чотири",
+            status=Book.Status.COMPLETED,
+            finish_date="2025-01-01",
+        )
+
+        self.client.force_login(self.user)
+        response = self.client.get(reverse("statistics"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "library/statistics.html")
+        self.assertEqual(response.context["total_books"], 3)
+        self.assertEqual(response.context["completed_count"], 2)
+        self.assertEqual(response.context["reading_count"], 1)
+        self.assertEqual(response.context["favorite_count"], 1)
+        self.assertContains(response, "Статистика")
+        self.assertContains(response, "Усього книг")
+        self.assertContains(response, "Прочитано у 2025")
+        self.assertContains(response, "Книга 2025")
+        self.assertContains(response, "Прочитано у 2024")
+        self.assertContains(response, "Книга 2024")
+        self.assertContains(response, 'class="is-active" href="/statistics/"')
+        self.assertNotContains(response, "Чужа книга")

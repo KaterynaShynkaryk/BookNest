@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+
+{% block title %}Статистика{% endblock %}
+
+{% block content %}
+    <section class="page-heading fade-in">
+        <div class="page-heading__copy">
+            <h1>Статистика</h1>
+            <p>Короткий підсумок вашої бібліотеки та прочитаного за роками</p>
+        </div>
+    </section>
+
+    <section class="stats-summary-grid fade-in delay-1" aria-label="Загальна статистика бібліотеки">
+        <article class="stats-card stats-card--primary">
+            <span class="stats-card__label">Усього книг</span>
+            <strong>{{ total_books }}</strong>
+        </article>
+        <article class="stats-card">
+            <span class="stats-card__label">Прочитано</span>
+            <strong>{{ completed_count }}</strong>
+        </article>
+        <article class="stats-card">
+            <span class="stats-card__label">Читаю зараз</span>
+            <strong>{{ reading_count }}</strong>
+        </article>
+        <article class="stats-card">
+            <span class="stats-card__label">Улюблені</span>
+            <strong>{{ favorite_count }}</strong>
+        </article>
+    </section>
+
+    <section class="detail-section yearly-stats-section fade-in delay-2">
+        <h2>Прочитано по роках</h2>
+        {% if books_by_year %}
+            <div class="yearly-books-list">
+                {% for group in books_by_year %}
+                    <details class="yearly-books-group" open>
+                        <summary>
+                            <span>Прочитано у {{ group.year }}</span>
+                            <strong>{{ group.books|length }}</strong>
+                        </summary>
+                        <div class="yearly-books-group__content">
+                            {% for book in group.books %}
+                                <a class="yearly-book-row" href="{% url 'book_detail' book.pk %}">
+                                    <span class="book-cover book-cover--xs">
+                                        {% if book.cover_image %}
+                                            <img src="{{ book.cover_image.url }}" alt="Обкладинка книги {{ book.title }}">
+                                        {% elif book.cover_url %}
+                                            <img src="{{ book.cover_url }}" alt="Обкладинка книги {{ book.title }}">
+                                        {% else %}
+                                            <span>{{ book.title|slice:":1" }}</span>
+                                        {% endif %}
+                                    </span>
+                                    <span class="yearly-book-row__copy">
+                                        <strong>{{ book.title }}</strong>
+                                        <small>{{ book.author }}{% if book.finish_date %} · {{ book.finish_date|date:"d.m.Y" }}{% endif %}</small>
+                                    </span>
+                                </a>
+                            {% endfor %}
+                        </div>
+                    </details>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="empty-state stats-empty-state">
+                <div class="empty-state__icon" aria-hidden="true">📈</div>
+                <h2>Поки немає прочитаних книг із датою завершення</h2>
+                <p>Коли ви позначите книги як прочитані та додасте дату завершення, тут автоматично з’являться списки за роками.</p>
+            </div>
+        {% endif %}
+    </section>
+{% endblock %}

@@ -20,6 +20,7 @@
                     <a class="{% if request.resolver_match.url_name == 'book_list' or request.resolver_match.url_name == 'book_create' or request.resolver_match.url_name == 'book_detail' or request.resolver_match.url_name == 'book_update' or request.resolver_match.url_name == 'book_delete' %}is-active{% endif %}" href="{% url 'book_list' %}">📚︎ Бібліотека</a>
                     <a class="{% if request.resolver_match.url_name == 'note_list' or request.resolver_match.url_name == 'note_update' %}is-active{% endif %}" href="{% url 'note_list' %}">📝︎ Нотатки</a>
                     <a class="{% if request.resolver_match.url_name == 'shelf_list' or request.resolver_match.url_name == 'shelf_create' or request.resolver_match.url_name == 'shelf_update' or request.resolver_match.url_name == 'shelf_delete' or request.resolver_match.url_name == 'shelf_books' or request.resolver_match.url_name == 'shelf_detail' %}is-active{% endif %}" href="{% url 'shelf_list' %}">☷︎ Полички</a>
+                    <a class="{% if request.resolver_match.url_name == 'statistics' %}is-active{% endif %}" href="{% url 'statistics' %}">📈︎ Статистика</a>
                 </nav>
             </aside>
         {% endif %}

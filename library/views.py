@@ -220,6 +220,32 @@ def book_note_create(request, pk):
 
 
 @login_required
+def statistics(request):
+    user_books = Book.objects.filter(user=request.user)
+    completed_books = user_books.filter(status=Book.Status.COMPLETED)
+    completed_with_year = completed_books.filter(finish_date__isnull=False).order_by("-finish_date", "title")
+
+    books_by_year = []
+    for book in completed_with_year:
+        year = book.finish_date.year
+        if not books_by_year or books_by_year[-1]["year"] != year:
+            books_by_year.append({"year": year, "books": []})
+        books_by_year[-1]["books"].append(book)
+
+    return render(
+        request,
+        "library/statistics.html",
+        {
+            "total_books": user_books.count(),
+            "completed_count": completed_books.count(),
+            "reading_count": user_books.filter(status=Book.Status.READING).count(),
+            "favorite_count": user_books.filter(is_favorite=True).count(),
+            "books_by_year": books_by_year,
+        },
+    )
+
+
+@login_required
 def shelf_list(request):
     shelves = (
         Shelf.objects.filter(user=request.user)
