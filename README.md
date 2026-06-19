@@ -1,7 +1,6 @@
 # 📚 BookNest
 
-Персональний менеджер бібліотеки / Personal library manager.  
-Built with **Python, Django, Django Templates, Bootstrap, HTML/CSS and PostgreSQL-ready deployment**.
+A personal digital library manager built with **Python, Django, Django Templates, Bootstrap, HTML/CSS**, and deployment settings that are ready for **Render + PostgreSQL**.
 
 <p align="center">
   <a href="https://booknest-j0pb.onrender.com">
@@ -13,227 +12,33 @@ Built with **Python, Django, Django Templates, Bootstrap, HTML/CSS and PostgreSQ
 </p>
 
 <p align="center">
-  <a href="#-українська-версія">Українська</a> · <a href="#-english-version">English</a>
-</p>
-
-<p align="center">
-  <a href="#-основні-сторінки-та-можливості">Можливості</a> ·
-  <a href="#-запуск-локально">Запуск</a> ·
-  <a href="#-тести">Тести</a> ·
-  <a href="#-local-setup">Setup</a>
+  <a href="README.uk.md">Українська версія</a> ·
+  <a href="#live-demo">Live Demo</a> ·
+  <a href="#technical-highlights">Technical Highlights</a> ·
+  <a href="#local-setup">Setup</a> ·
+  <a href="#tests-and-quality">Tests</a>
 </p>
 
 ---
-
-## 🇺🇦 Українська версія
-
-## Про проєкт
-
-**BookNest** — це вебзастосунок для ведення персональної цифрової бібліотеки. Користувач може додавати книги, відстежувати прогрес читання, створювати полички, писати нотатки, позначати важливе та переглядати статистику прочитаного.
-
-Проєкт розроблений як портфоліо-застосунок, що демонструє повний цикл створення Django-застосунку: від моделей і CRUD-логіки до авторизації, фільтрів, інтерфейсу, тестів і деплою.
-
-### Коротко про функціональність
-
-- приватні бібліотеки для кожного користувача;
-- ручне додавання книг і пошук книг через зовнішнє API;
-- статуси читання, рейтинги, улюблені книги та нотатки;
-- власні й автоматичні полички для книжкових серій;
-- статистика читання та адаптивний інтерфейс для мобільних пристроїв.
-
-### Демо
-
-➡️ **[Відкрити BookNest](https://booknest-j0pb.onrender.com)**
-
----
-
-![Бібліотека](docs/screenshots/01_library.png)
-
----
-
-## Технології
-
-| | | | | | | |
-|---|---|---|---|---|---|---|
-| ![Python](https://img.shields.io/badge/Python-3.12%2B-3776AB?logo=python&logoColor=white) | ![Django](https://img.shields.io/badge/Django-Web%20App-0C4B33?logo=django&logoColor=white) | ![Bootstrap](https://img.shields.io/badge/Bootstrap-UI-7952B3?logo=bootstrap&logoColor=white) | ![HTML5](https://img.shields.io/badge/HTML5-Markup-E34F26?logo=html5&logoColor=white) | ![CSS3](https://img.shields.io/badge/CSS3-Styles-1572B6?logo=css3&logoColor=white) | ![SQLite](https://img.shields.io/badge/SQLite-Local-003B57?logo=sqlite&logoColor=white) | ![Render](https://img.shields.io/badge/Render-Deploy-46E3B7?logo=render&logoColor=white) |
-
----
-
-## Основні сторінки та можливості
-
-### Бібліотека книг
-
-![Деталі книги](docs/screenshots/02_book_detail.png)
-
-- додавання книг вручну або через пошук;
-- збереження назви, автора, жанру, видавництва, серії, року видання, опису та обкладинки;
-- статуси читання: **Бажанка**, **Заплановано**, **Читаю**, **Прочитано**, **Закинуто**;
-- оцінювання прочитаних книг;
-- позначення книг як улюблених;
-- пошук і фільтрація за статусом, жанром, видавництвом та улюбленими.
-
-![Фільтри](docs/screenshots/08_filters.png)
-
-### Полички
-
-![Полички](docs/screenshots/03_shelves.png)
-
-- створення власних поличок;
-- керування книгами всередині полички;
-- автоматичні полички для книжкових серій;
-- прев’ю полички з двома рядами обкладинок;
-- фільтри всередині кожної полички.
-
-### Нотатки
-
-![Нотатки](docs/screenshots/04_notes.png)
-
-- загальні нотатки;
-- нотатки до конкретної книги;
-- номер сторінки для цитат або важливих фрагментів;
-- редагування та видалення нотаток;
-- улюблені нотатки, які підіймаються вище у списку.
-
-### Статистика
-
-![Статистика](docs/screenshots/05_statistics.png)
-
-- загальна кількість книг;
-- кількість прочитаних книг;
-- кількість книг у процесі читання;
-- кількість книг у бажанках;
-- автоматичні списки прочитаних книг за роками;
-- згортання та розгортання списків за роками.
-
-### Акаунт
-
-![Вхід](docs/screenshots/06_login.png)
-
-- реєстрація користувача;
-- вхід і вихід з акаунта;
-- ізоляція даних між користувачами;
-- відновлення пароля через електронну пошту.
-
-![Відновлення паролю](docs/screenshots/07_reset_password.png)
-
-### Адаптація під телефон
-
-<p align="center">
-  <img src="docs/screenshots/09_mobi_library.jpg" alt="Бібліотека на телефоні" width="220">
-  <img src="docs/screenshots/10_mobi_detail.jpg" alt="Деталі книги на телефоні" width="220">
-  <img src="docs/screenshots/11_mobi_shelves.jpg" alt="Полички на телефоні" width="220">
-  <img src="docs/screenshots/12_mobi_statistics.jpg" alt="Статистика на телефоні" width="220">
-</p>
-
-- інтерфейс адаптується під мобільні екрани;
-- навігація, картки книг, полички, форми та фільтри зручно перебудовуються для меншої ширини;
-- сторінки можна використовувати як з комп’ютера, так і зі смартфона.
-
----
-
-## Чому цей проєкт цікавий
-
-BookNest вирішує реальну користувацьку задачу — допомагає організувати особисту бібліотеку, плани читання, книжкові серії та нотатки.
-
-Проєкт демонструє не лише backend-логіку, а й увагу до UX: зручну навігацію, фільтри, зрозумілі статуси, статистику, автоматичні списки та адаптивний інтерфейс.
-
----
-
-## Що демонструє проєкт
-
-- моделі Django та зв’язки між ними;
-- CRUD для книг, нотаток і поличок;
-- автентифікацію користувачів;
-- відновлення пароля через електронну пошту;
-- пошук і фільтрацію даних;
-- роботу з файлами обкладинок;
-- перевикористання шаблонів та компонентів інтерфейсу;
-- адаптивну верстку для комп’ютерів і мобільних пристроїв;
-- статистику на основі користувацьких даних;
-- автоматизовані тести;
-- конфігурацію, готову до деплою.
-
----
-
-## Архітектура
-
-```text
-BookNest/
-├── backend/                 # налаштування Django-проєкту
-├── library/                 # основний застосунок
-│   ├── models.py            # книги, полички, нотатки
-│   ├── views.py             # сторінки та бізнес-логіка
-│   ├── forms.py             # форми для книг, нотаток, поличок
-│   ├── templates/library/   # UI сторінок бібліотеки
-│   └── tests.py             # тести застосунку
-├── templates/registration/  # авторизація та відновлення пароля
-├── static/css/              # стилі інтерфейсу
-├── render.yaml              # конфігурація деплою на Render
-└── manage.py
-```
-
----
-
-## Запуск локально
-
-```bash
-git clone <repository-url>
-cd BookNest
-python -m venv .venv
-source .venv/bin/activate  # Windows: .venv\Scripts\activate
-pip install -r requirements.txt
-python manage.py migrate
-python manage.py seed_demo_user  # optional: creates demo / demo12345
-python manage.py runserver
-```
-
-Локальна адреса:
-
-```text
-http://127.0.0.1:8000/
-```
-
----
-
-## Тести
-
-```bash
-python manage.py test
-python manage.py check
-```
-
----
-
-## Подальший розвиток
-
-- графіки статистики;
-- цілі читання на рік;
-- експорт бібліотеки у CSV/PDF;
-- публічний профіль читача;
-- темна тема;
-- покращений імпорт книг із зовнішніх джерел.
-
----
-
-## 🇬🇧 English version
 
 ## About
 
-**BookNest** is a personal digital library web application. It helps users manage books, track reading progress, organize shelves, write notes, mark important items and view reading statistics.
+**BookNest** is a personal digital library web application. It helps users manage books, track reading progress, organize shelves, write notes, mark important items, and view reading statistics.
 
-The project was built as a portfolio-ready Django application that demonstrates the full development flow: data models, CRUD operations, authentication, filtering, UI templates, tests and deployment.
+The project was built as a portfolio-ready Django application that demonstrates the full development flow: data modeling, CRUD operations, authentication, filtering, form validation, responsive templates, automated tests, and deployment configuration.
 
-### Feature overview
-
-- private libraries per user;
-- manual book creation and book lookup via an external API;
-- reading statuses, ratings, favorite books and notes;
-- custom shelves plus automatic shelves for book series;
-- reading statistics and a responsive mobile-friendly interface.
-
-### Live Demo
+## Live Demo
 
 ➡️ **[Open BookNest](https://booknest-j0pb.onrender.com)**
+
+### Demo credentials
+
+Use the seeded demo account to explore the deployed app:
+
+```text
+Username: demo
+Password: demo12345
+```
 
 ---
 
@@ -243,24 +48,30 @@ The project was built as a portfolio-ready Django application that demonstrates 
 
 ## Tech Stack
 
-| | | | | | | |
-|---|---|---|---|---|---|---|
-| ![Python](https://img.shields.io/badge/Python-3.12%2B-3776AB?logo=python&logoColor=white) | ![Django](https://img.shields.io/badge/Django-Web%20App-0C4B33?logo=django&logoColor=white) | ![Bootstrap](https://img.shields.io/badge/Bootstrap-UI-7952B3?logo=bootstrap&logoColor=white) | ![HTML5](https://img.shields.io/badge/HTML5-Markup-E34F26?logo=html5&logoColor=white) | ![CSS3](https://img.shields.io/badge/CSS3-Styles-1572B6?logo=css3&logoColor=white) | ![SQLite](https://img.shields.io/badge/SQLite-Local-003B57?logo=sqlite&logoColor=white) | ![Render](https://img.shields.io/badge/Render-Deploy-46E3B7?logo=render&logoColor=white) |
+| Area | Technology |
+|---|---|
+| Backend | Python 3.12+, Django |
+| Frontend | Django Templates, Bootstrap, HTML5, custom CSS |
+| Database | SQLite for local development, PostgreSQL-ready for deployment |
+| Authentication | Django authentication views and user-owned data isolation |
+| External data | Book lookup through an external books API |
+| Deployment | Render configuration via `render.yaml` |
+| Testing | Django `TestCase` suite for core application flows |
 
 ---
 
-## Main Pages and Features
+## Feature Overview
 
 ### Book Library
 
 ![Books detail](docs/screenshots/02_book_detail.png)
 
-- add books manually or via search;
-- store title, author, genre, publisher, series, publication year, description and cover;
-- reading statuses: **Wishlist**, **Planned**, **Reading**, **Completed**, **Dropped**;
+- add books manually or through external search;
+- store title, author, genre, publisher, series, publication year, description, and cover;
+- manage reading statuses: **Wishlist**, **Planned**, **Reading**, **Completed**, **Dropped**;
 - rate completed books;
 - mark books as favorites;
-- search and filter by status, genre, publisher and favorites.
+- search and filter by status, genre, publisher, and favorites.
 
 ![Filters](docs/screenshots/08_filters.png)
 
@@ -270,39 +81,39 @@ The project was built as a portfolio-ready Django application that demonstrates 
 
 - create custom shelves;
 - manage books inside shelves;
-- automatic shelves for book series;
-- two-row cover preview on shelf cards;
-- filters inside each shelf.
+- automatically generate shelves for book series;
+- show a two-row cover preview on shelf cards;
+- filter books inside each shelf.
 
 ### Notes
 
 ![Notes](docs/screenshots/04_notes.png)
 
-- general notes;
-- book-specific notes;
-- page number for quotes or important fragments;
+- create general notes;
+- attach notes to specific books;
+- store page numbers for quotes or important fragments;
 - edit and delete notes;
-- favorite notes that move to the top of the list.
+- keep favorite notes at the top of the list.
 
 ### Statistics
 
 ![Statistics](docs/screenshots/05_statistics.png)
 
-- total number of books;
-- completed books count;
-- currently reading count;
-- wishlist count;
-- automatically generated yearly lists of completed books;
-- collapsible yearly sections.
+- track total books;
+- count completed books;
+- count books currently being read;
+- count wishlist items;
+- automatically group completed books by year;
+- collapse and expand yearly reading sections.
 
 ### Account
 
 ![login](docs/screenshots/06_login.png)
 
-- user registration;
-- login and logout;
-- user-specific private data;
-- email-based password reset.
+- register users;
+- log in and log out;
+- keep each user's books, shelves, and notes private;
+- reset passwords through email-based recovery.
 
 ![Reset Password](docs/screenshots/07_reset_password.png)
 
@@ -316,32 +127,21 @@ The project was built as a portfolio-ready Django application that demonstrates 
 </p>
 
 - layout adapts to mobile screens;
-- navigation, book cards, shelves, forms and filters remain usable on smaller widths;
+- navigation, book cards, shelves, forms, and filters remain usable on smaller widths;
 - the application can be used both on desktop and mobile devices.
 
 ---
 
-## Why this project is useful
+## Technical Highlights
 
-BookNest solves a real personal productivity problem: keeping books, reading plans, series and notes organized in one place.
-
-It also demonstrates practical product thinking: clear navigation, useful filters, reading statuses, statistics, automatic grouping and a responsive user interface.
-
----
-
-## What the project demonstrates
-
-- Django models and relationships;
-- CRUD for books, notes and shelves;
-- user authentication;
-- email-based password reset;
-- search and filtering;
-- file handling for book covers;
-- reusable template components;
-- responsive layout for desktop and mobile devices;
-- user-based statistics;
-- automated tests;
-- deployment-ready configuration.
+- **User-owned data isolation:** books, shelves, notes, and statistics are scoped to the authenticated user.
+- **CRUD workflows:** books, shelves, and notes can be created, updated, viewed, filtered, and deleted through Django views and forms.
+- **Automatic series shelves:** when books belong to a series, BookNest can keep automatic series shelves synchronized with the user's library.
+- **Form validation:** reading dates, statuses, ratings, shelves, and user-owned choices are validated server-side.
+- **Search and filtering:** list pages support status, genre, publisher, favorites, and text-based filtering.
+- **Reusable template structure:** Django templates keep pages consistent while still supporting specialized screens such as shelves, notes, and statistics.
+- **Responsive UI:** custom CSS and Bootstrap utilities support desktop and mobile layouts.
+- **Deployment-ready configuration:** the project includes Render configuration and is structured for production database settings.
 
 ---
 
@@ -349,22 +149,27 @@ It also demonstrates practical product thinking: clear navigation, useful filter
 
 ```text
 BookNest/
-├── backend/                 # Django project settings
-├── library/                 # main application
-│   ├── models.py            # books, shelves, notes
-│   ├── views.py             # pages and business logic
-│   ├── forms.py             # book, note and shelf forms
-│   ├── templates/library/   # library UI templates
-│   └── tests.py             # application tests
-├── templates/registration/  # auth and password reset templates
-├── static/css/              # interface styles
-├── render.yaml              # Render deployment config
-└── manage.py
+├── backend/                 # Django project settings, URL routing, WSGI/ASGI entry points
+├── library/                 # main Django application
+│   ├── models.py            # books, shelves, notes and their relationships
+│   ├── views.py             # page controllers, filtering and business workflows
+│   ├── forms.py             # book, progress, note and shelf forms with validation
+│   ├── series_shelves.py    # helpers for automatic book-series shelves
+│   ├── templates/library/   # application-specific UI templates
+│   └── tests.py             # Django tests for core user flows and validation
+├── templates/registration/  # authentication and password reset templates
+├── static/css/              # custom responsive interface styles
+├── docs/screenshots/        # README screenshots for desktop and mobile views
+├── render.yaml              # Render deployment configuration
+├── requirements.txt         # Python dependencies
+└── manage.py                # Django command-line entry point
 ```
+
+The app follows a classic Django structure: `backend` contains project-level configuration, while `library` contains the domain logic for books, shelves, notes, filters, forms, templates, and tests. Authentication templates are kept in `templates/registration`, static styling lives in `static/css`, and deployment-specific settings are documented through `render.yaml`.
 
 ---
 
-## Local setup
+## Local Setup
 
 ```bash
 git clone <repository-url>
@@ -385,20 +190,25 @@ http://127.0.0.1:8000/
 
 ---
 
-## Tests
+## Tests and Quality
+
+Run the Django test suite and system checks:
 
 ```bash
 python manage.py test
 python manage.py check
 ```
 
+Current test coverage is represented by the Django test suite in `library/tests.py`. It covers core flows such as authentication, book management, shelves, automatic series shelves, notes, filters, forms, ownership checks, and validation rules. A numeric coverage report is not configured yet; adding `coverage.py` or CI coverage reporting would be a good next improvement.
+
 ---
 
-## Future improvements
+## Future Improvements
 
 - reading statistics charts;
 - yearly reading goals;
 - CSV/PDF library export;
 - public reader profile;
 - dark mode;
-- improved book import from external sources.
+- improved book import from external sources;
+- numeric test coverage reporting in CI.

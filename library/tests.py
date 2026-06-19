@@ -1954,6 +1954,14 @@ class BookFormTests(TestCase):
             series="Saga",
         )
         Book.objects.create(
+            user=owner,
+            title="Owner Lowercase Series",
+            author="Author Four",
+            genre="Mystery",
+            publisher="Zeta Press",
+            series="atlas",
+        )
+        Book.objects.create(
             user=other,
             title="Other Horror",
             author="Author Three",
@@ -1964,9 +1972,9 @@ class BookFormTests(TestCase):
 
         form = BookForm(user=owner)
 
-        self.assertEqual(form.genre_options, ["Fantasy", "Sci-Fi"])
-        self.assertEqual(form.publisher_options, ["Book Press", "Story House"])
-        self.assertEqual(form.series_options, ["Chronicles", "Saga"])
+        self.assertEqual(form.genre_options, ["Fantasy", "Mystery", "Sci-Fi"])
+        self.assertEqual(form.publisher_options, ["Book Press", "Story House", "Zeta Press"])
+        self.assertEqual(form.series_options, ["atlas", "Chronicles", "Saga"])
         self.assertNotIn("list", form.fields["genre"].widget.attrs)
         self.assertNotIn("list", form.fields["publisher"].widget.attrs)
         self.assertNotIn("list", form.fields["series"].widget.attrs)
