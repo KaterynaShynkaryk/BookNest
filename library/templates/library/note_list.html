@@ -27,15 +27,15 @@
                     {% for error in form.book.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
                 </div>
                 <div class="col-md-6">
+                    <label class="form-label" for="{{ form.title.id_for_label }}">{{ form.title.label }}</label>
+                    {{ form.title }}
+                    {% for error in form.title.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+                </div>
+                <div class="col-md-6">
                     <label class="form-label" for="{{ form.page_number.id_for_label }}">{{ form.page_number.label }}</label>
                     {{ form.page_number }}
                     {% if form.page_number.help_text %}<div class="form-text">{{ form.page_number.help_text }}</div>{% endif %}
                     {% for error in form.page_number.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
-                </div>
-                <div class="col-md-6">
-                    <label class="form-label" for="{{ form.title.id_for_label }}">{{ form.title.label }}</label>
-                    {{ form.title }}
-                    {% for error in form.title.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
                 </div>
                 <div class="col-12">
                     <label class="form-label" for="{{ form.content.id_for_label }}">{{ form.content.label }}</label>
@@ -56,7 +56,7 @@
                 {% if general_notes %}
                     <div class="notes-list">
                         {% for note in general_notes %}
-                            <article class="note-card">
+                            <article class="note-card{% if note.is_favorite %} note-card--favorite{% endif %}">
                                 <div class="note-card__meta">
                                     {% if note.page_number %}<span>стор. {{ note.page_number }}</span>{% endif %}
                                     <time datetime="{{ note.created_at|date:'c' }}">{{ note.created_at|date:"d.m.Y" }}</time>
@@ -64,6 +64,11 @@
                                 {% if note.title %}<h3>{{ note.title }}</h3>{% endif %}
                                 <p>{{ note.content }}</p>
                                 <div class="note-card__actions">
+                                    <form method="post" action="{% url 'note_toggle_favorite' note.pk %}">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                                        <button class="note-favorite-button{% if note.is_favorite %} is-active{% endif %}" type="submit" aria-label="{% if note.is_favorite %}Прибрати нотатку з улюблених{% else %}Додати нотатку в улюблені{% endif %}">{% if note.is_favorite %}♥ Улюблена{% else %}♡ В улюблені{% endif %}</button>
+                                    </form>
                                     <a class="note-edit-link" href="{% url 'note_update' note.pk %}?next={{ request.get_full_path|urlencode }}">Редагувати</a>
                                     <form method="post" action="{% url 'note_delete' note.pk %}">
                                         {% csrf_token %}
@@ -84,7 +89,7 @@
                 {% if book_notes %}
                     <div class="notes-list">
                         {% for note in book_notes %}
-                            <article class="note-card">
+                            <article class="note-card{% if note.is_favorite %} note-card--favorite{% endif %}">
                                 <div class="note-card__meta">
                                     <a href="{% url 'book_detail' note.book.pk %}">{{ note.book.title }}</a>
                                     {% if note.page_number %}<span>стор. {{ note.page_number }}</span>{% endif %}
@@ -93,6 +98,11 @@
                                 {% if note.title %}<h3>{{ note.title }}</h3>{% endif %}
                                 <p>{{ note.content }}</p>
                                 <div class="note-card__actions">
+                                    <form method="post" action="{% url 'note_toggle_favorite' note.pk %}">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                                        <button class="note-favorite-button{% if note.is_favorite %} is-active{% endif %}" type="submit" aria-label="{% if note.is_favorite %}Прибрати нотатку з улюблених{% else %}Додати нотатку в улюблені{% endif %}">{% if note.is_favorite %}♥ Улюблена{% else %}♡ В улюблені{% endif %}</button>
+                                    </form>
                                     <a class="note-edit-link" href="{% url 'note_update' note.pk %}?next={{ request.get_full_path|urlencode }}">Редагувати</a>
                                     <form method="post" action="{% url 'note_delete' note.pk %}">
                                         {% csrf_token %}

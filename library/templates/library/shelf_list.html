@@ -42,8 +42,8 @@
 
                     {% if shelf.books.all %}
                         <div class="shelf-cover-grid" aria-label="Останні книги на поличці {{ shelf.name }}">
-                            {% for book in shelf.books.all|slice:":4" %}
-                                <a class="shelf-cover-tile" href="{% url 'book_detail' book.pk %}" aria-label="Відкрити книгу {{ book.title }}">
+                            {% for book in shelf.books.all|slice:":8" %}
+                                <div class="shelf-cover-tile" aria-label="Книга {{ book.title }}">
                                     {% if book.cover_image %}
                                         <img src="{{ book.cover_image.url }}" alt="Обкладинка книги {{ book.title }}">
                                     {% elif book.cover_url %}
@@ -51,12 +51,12 @@
                                     {% else %}
                                         <span>{{ book.title|slice:":1" }}</span>
                                     {% endif %}
-                                </a>
+                                </div>
                             {% endfor %}
                         </div>
-                        {% if shelf.books.all|length > 4 %}
+                        {% if shelf.books.all|length > 8 %}
                             <div class="shelf-card__footer">
-                                <p class="shelf-card__more">+ ще {{ shelf.books.all|length|add:"-4" }}</p>
+                                <p class="shelf-card__more">+ ще {{ shelf.books.all|length|add:"-8" }}</p>
                             </div>
                         {% endif %}
                     {% else %}
@@ -87,10 +87,22 @@
             const actionMenus = document.querySelectorAll(".shelf-actions-menu");
             if (!actionMenus.length) return;
 
+            const setCardMenuState = (menu, isOpen) => {
+                const card = menu.closest(".shelf-card");
+
+                if (card) {
+                    card.classList.toggle(
+                        "shelf-card--menu-open",
+                        isOpen
+                    );
+                }
+            };
+
             const closeMenus = (exceptMenu = null) => {
                 actionMenus.forEach((menu) => {
                     if (menu !== exceptMenu) {
                         menu.open = false;
+                        setCardMenuState(menu, false);
                     }
                 });
             };
@@ -100,11 +112,16 @@
                     if (menu.open) {
                         closeMenus(menu);
                     }
+
+                    setCardMenuState(menu, menu.open);
                 });
             });
 
             document.addEventListener("click", (event) => {
-                if (event.target.closest(".shelf-actions-menu")) return;
+                if (event.target.closest(".shelf-actions-menu")) {
+                    return;
+                }
+
                 closeMenus();
             });
         })();

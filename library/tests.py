@@ -2,6 +2,7 @@ from io import StringIO
 from unittest.mock import patch
 
 from django.contrib.auth import get_user_model
+from django.core import mail
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.core.management import call_command
 from django.test import TestCase
@@ -229,7 +230,41 @@ class BookListViewTest(TestCase):
         self.assertContains(response, "Мова тіла")
         self.assertContains(response, "А. К. Тернер")
         self.assertContains(response, "Сторінка книги")
-        self.assertContains(response, "description=")
+        self.assertContains(response, "import_id=")
+        self.assertNotContains(response, "description=")
+
+    def test_book_url_import_uses_short_session_link_for_long_metadata(self):
+        self.client.force_login(self.user)
+        long_description = "Опис " * 1500
+        results = [
+            {
+                "title": "Великий опис",
+                "author": "Автор",
+                "published_year": "2024",
+                "publisher": "Видавництво",
+                "genre": "Роман",
+                "cover_url": "https://example.com/cover.jpg",
+                "description": long_description,
+                "external_url": "https://example.com/book",
+                "source": "Сторінка книги",
+            }
+        ]
+
+        with patch("library.views.import_book_from_url", return_value=results):
+            response = self.client.get(
+                reverse("book_create_search"),
+                {"book_url": "https://example.com/book"},
+            )
+
+        self.assertContains(response, "import_id=")
+        self.assertNotContains(response, long_description)
+        import_id = next(iter(self.client.session["book_import_initials"]))
+
+        response = self.client.get(reverse("book_create_manual"), {"import_id": import_id})
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'value="Великий опис"')
+        self.assertContains(response, long_description[:120])
 
     def test_book_url_metadata_can_be_extracted_from_json_ld(self):
         metadata = extract_book_metadata(
@@ -394,18 +429,41 @@ class BookListViewTest(TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Ви вийшли з акаунту.")
+        self.assertContains(response, "window.setTimeout")
+        self.assertContains(response, "flash-message--error")
+        self.assertContains(response, "flash-message--danger")
+        with open("static/css/styles.css", encoding="utf-8") as styles:
+            css = styles.read()
+        self.assertIn("flex-direction: column", css)
+        self.assertIn(".auth-page .flash-messages", css)
 
-    def test_login_page_shows_demo_account_hint(self):
+    def test_login_page_does_not_show_demo_account_hint(self):
         response = self.client.get(reverse("login"))
 
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "Демо акаунт")
-        self.assertContains(response, "demo")
-        self.assertContains(response, "demo12345")
-        self.assertContains(response, "python manage.py seed_demo_user")
+        self.assertContains(response, "BookNest")
+        self.assertContains(response, "Моя цифрова бібліотека")
+        self.assertContains(response, "Забули пароль?")
+        self.assertContains(response, 'href="/auth/password_reset/"')
         with open("static/css/styles.css", encoding="utf-8") as styles:
             css = styles.read()
-        self.assertIn(".demo-account-card", css)
+        self.assertIn("min-height: 100svh", css)
+        self.assertIn("padding: 1rem 1rem 2rem", css)
+        self.assertNotContains(response, "Моя бібліотека")
+        self.assertNotContains(response, "Демо акаунт")
+        self.assertNotContains(response, "demo12345")
+        self.assertNotContains(response, "python manage.py seed_demo_user")
+
+    def test_password_reset_sends_email(self):
+        self.user.email = "reader@example.com"
+        self.user.save(update_fields=["email"])
+
+        response = self.client.post(reverse("password_reset"), {"email": "reader@example.com"})
+
+        self.assertRedirects(response, reverse("password_reset_done"))
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertIn("BookNest", mail.outbox[0].body)
+        self.assertIn("/auth/reset/", mail.outbox[0].body)
 
     def test_seed_demo_user_command_creates_sample_account(self):
         stdout = StringIO()
@@ -417,7 +475,7 @@ class BookListViewTest(TestCase):
         self.assertTrue(user.check_password("demo12345"))
         self.assertEqual(Book.objects.filter(user=user).count(), 3)
         self.assertTrue(Book.objects.filter(user=user, status=Book.Status.WISHLIST).exists())
-        self.assertEqual(Shelf.objects.filter(user=user).count(), 2)
+        self.assertEqual(Shelf.objects.filter(user=user).count(), 3)
         self.assertEqual(Note.objects.filter(user=user).count(), 2)
         self.assertIn("demo", stdout.getvalue())
 
@@ -425,7 +483,7 @@ class BookListViewTest(TestCase):
 
         self.assertEqual(User.objects.filter(username="demo").count(), 1)
         self.assertEqual(Book.objects.filter(user=user).count(), 3)
-        self.assertEqual(Shelf.objects.filter(user=user).count(), 2)
+        self.assertEqual(Shelf.objects.filter(user=user).count(), 3)
         self.assertEqual(Note.objects.filter(user=user).count(), 2)
 
     def test_book_card_shows_shelves_next_to_status(self):
@@ -785,6 +843,38 @@ class BookListViewTest(TestCase):
         book.refresh_from_db()
         self.assertFalse(book.is_favorite)
 
+    def test_favorite_ordering_moves_book_forward_and_back(self):
+        book1 = Book.objects.create(user=self.user, title="Book One", author="Author")
+        book2 = Book.objects.create(user=self.user, title="Book Two", author="Author")
+        book3 = Book.objects.create(user=self.user, title="Book Three", author="Author")
+
+        self.client.force_login(self.user)
+        response = self.client.get(reverse("book_list"))
+        self.assertEqual(list(response.context["books"]), [book3, book2, book1])
+
+        book2.is_favorite = True
+        book2.save()
+        response = self.client.get(reverse("book_list"))
+        self.assertEqual(list(response.context["books"]), [book2, book3, book1])
+
+        book2.is_favorite = False
+        book2.save()
+        response = self.client.get(reverse("book_list"))
+        self.assertEqual(list(response.context["books"]), [book3, book2, book1])
+
+    def test_book_card_shows_reading_date_for_completed_books(self):
+        import datetime
+        book = Book.objects.create(
+            user=self.user,
+            title="Completed Book",
+            author="Author One",
+            status=Book.Status.COMPLETED,
+            finish_date=datetime.date(2026, 6, 17),
+        )
+        self.client.force_login(self.user)
+        response = self.client.get(reverse("book_list"))
+        self.assertContains(response, "прочитано 17.06.2026")
+
     def test_book_card_links_to_detail_and_actions_are_in_menu(self):
         book = Book.objects.create(
             user=self.user,
@@ -978,7 +1068,7 @@ class ShelfListViewTests(TestCase):
         self.assertRedirects(response, reverse("shelf_list"))
         self.assertEqual(list(shelf.books.order_by("title")), [second_book])
 
-    def test_shelf_cards_show_latest_four_book_covers_instead_of_title_list(self):
+    def test_shelf_cards_show_latest_eight_book_covers_instead_of_title_list(self):
         shelf = Shelf.objects.create(user=self.user, name="Обкладинки")
         books = [
             Book.objects.create(
@@ -987,7 +1077,7 @@ class ShelfListViewTests(TestCase):
                 author="Автор",
                 cover_url=f"https://example.com/cover-{index}.jpg",
             )
-            for index in range(1, 6)
+            for index in range(1, 10)
         ]
         shelf.books.add(*books)
 
@@ -995,8 +1085,8 @@ class ShelfListViewTests(TestCase):
         response = self.client.get(reverse("shelf_list"))
 
         self.assertContains(response, 'class="shelf-cover-grid"')
-        self.assertContains(response, 'class="shelf-cover-tile"', count=4)
-        for index in range(2, 6):
+        self.assertContains(response, 'class="shelf-cover-tile"', count=8)
+        for index in range(2, 10):
             self.assertContains(response, f"https://example.com/cover-{index}.jpg")
         self.assertNotContains(response, "https://example.com/cover-1.jpg")
         self.assertContains(response, "+ ще 1")
@@ -1285,6 +1375,8 @@ class NoteFeatureTests(TestCase):
         self.assertContains(response, 'class="note-form-toggle"')
         self.assertContains(response, '+ Додати нотатку')
         self.assertContains(response, "Chapter insight")
+        content = response.content.decode()
+        self.assertLess(content.index("Заголовок"), content.index("Сторінка"))
         self.assertContains(response, "Important quote")
         self.assertContains(response, "стор. 42")
         self.assertContains(response, "Редагувати")
@@ -1378,13 +1470,14 @@ class NoteFeatureTests(TestCase):
         self.assertIn("max-width: 940px", css)
         self.assertNotIn(".has-sidebar .nav-actions", css)
         content = response.content.decode()
-        self.assertLess(content.index("Сторінка"), content.index("Заголовок"))
+        self.assertLess(content.index("Заголовок"), content.index("Сторінка"))
         self.assertContains(response, "General title")
         self.assertContains(response, "General note")
         self.assertContains(response, "Book note")
         self.assertContains(response, 'class="note-form-toggle note-page-form-toggle"')
         self.assertContains(response, '+ Додати нотатку')
         self.assertNotContains(response, "Other hidden note")
+
 
     def test_user_can_edit_note_title_content_and_book_link(self):
         note = Note.objects.create(
@@ -1403,7 +1496,7 @@ class NoteFeatureTests(TestCase):
         self.assertContains(response, 'value="Old title"')
         self.assertContains(response, "Old content")
         content = response.content.decode()
-        self.assertLess(content.index("Сторінка"), content.index("Заголовок"))
+        self.assertLess(content.index("Заголовок"), content.index("Сторінка"))
 
         response = self.client.post(
             reverse("note_update", args=[note.pk]),
@@ -1861,6 +1954,14 @@ class BookFormTests(TestCase):
             series="Saga",
         )
         Book.objects.create(
+            user=owner,
+            title="Owner Lowercase Series",
+            author="Author Four",
+            genre="Mystery",
+            publisher="Zeta Press",
+            series="atlas",
+        )
+        Book.objects.create(
             user=other,
             title="Other Horror",
             author="Author Three",
@@ -1871,9 +1972,9 @@ class BookFormTests(TestCase):
 
         form = BookForm(user=owner)
 
-        self.assertEqual(form.genre_options, ["Fantasy", "Sci-Fi"])
-        self.assertEqual(form.publisher_options, ["Book Press", "Story House"])
-        self.assertEqual(form.series_options, ["Chronicles", "Saga"])
+        self.assertEqual(form.genre_options, ["Fantasy", "Mystery", "Sci-Fi"])
+        self.assertEqual(form.publisher_options, ["Book Press", "Story House", "Zeta Press"])
+        self.assertEqual(form.series_options, ["atlas", "Chronicles", "Saga"])
         self.assertNotIn("list", form.fields["genre"].widget.attrs)
         self.assertNotIn("list", form.fields["publisher"].widget.attrs)
         self.assertNotIn("list", form.fields["series"].widget.attrs)
@@ -1967,3 +2068,61 @@ class BookFormTests(TestCase):
             css = styles.read()
         self.assertIn(".combined-value-field", css)
         self.assertIn(".existing-value-select", css)
+
+
+class StatisticsViewTests(TestCase):
+    def setUp(self):
+        self.user = get_user_model().objects.create_user(
+            username="stats-reader",
+            password="test-pass-123",
+        )
+        self.other_user = get_user_model().objects.create_user(
+            username="other-stats-reader",
+            password="test-pass-123",
+        )
+
+    def test_statistics_page_shows_totals_and_completed_books_by_year(self):
+        Book.objects.create(
+            user=self.user,
+            title="Книга 2025",
+            author="Автор Один",
+            status=Book.Status.COMPLETED,
+            finish_date="2025-05-10",
+        )
+        Book.objects.create(
+            user=self.user,
+            title="Книга 2024",
+            author="Автор Два",
+            status=Book.Status.WISHLIST,
+        )
+        Book.objects.create(
+            user=self.user,
+            title="Читаю зараз",
+            author="Автор Три",
+            status=Book.Status.READING,
+        )
+        Book.objects.create(
+            user=self.other_user,
+            title="Чужа книга",
+            author="Автор Чотири",
+            status=Book.Status.COMPLETED,
+            finish_date="2025-01-01",
+        )
+
+        self.client.force_login(self.user)
+        response = self.client.get(reverse("statistics"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "library/statistics.html")
+        self.assertEqual(response.context["total_books"], 3)
+        self.assertEqual(response.context["completed_count"], 1)
+        self.assertEqual(response.context["reading_count"], 1)
+        self.assertEqual(response.context["wishlist_count"], 1)
+        self.assertContains(response, "Статистика")
+        self.assertContains(response, "Усього книг")
+        self.assertContains(response, "Прочитано у 2025")
+        self.assertContains(response, "Книга 2025")
+        self.assertContains(response, "Бажанки")
+        self.assertNotContains(response, "Прочитано у 2024")
+        self.assertContains(response, 'class="is-active" href="/statistics/"')
+        self.assertNotContains(response, "Чужа книга")

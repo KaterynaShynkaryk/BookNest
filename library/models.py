@@ -71,7 +71,7 @@ class Book(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        ordering = ('-created_at',)
+        ordering = ('-is_favorite', '-created_at')
 
     def rating_stars(self):
         if self.rating is None:
@@ -131,12 +131,13 @@ class Note(models.Model):
     title = models.CharField(max_length=150, blank=True)
     content = models.TextField()
     page_number = models.PositiveIntegerField(null=True, blank=True)
+    is_favorite = models.BooleanField(default=False)
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        ordering = ['-created_at']
+        ordering = ['-is_favorite', '-created_at']
 
     def __str__(self):
         if self.title:

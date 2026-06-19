@@ -23,8 +23,8 @@
     --shadow-hover: 0 4px 12px rgba(0, 0, 0, 0.07);
     --status-wishlist-bg: hsl(291 32% 94%);
     --status-wishlist-text: hsl(286 30% 42%);
-    --status-planned-bg: hsl(215 38% 93%);
-    --status-planned-text: hsl(223 28% 39%);
+    --status-planned-bg: hsl(45 82% 94%);
+    --status-planned-text: hsl(36 58% 34%);
     --status-reading-bg: hsl(24 80% 96%);
     --status-reading-text: hsl(16 43% 50%);
     --status-completed-bg: hsl(135 30% 93%);
@@ -118,6 +118,23 @@ a:hover {
     width: 2rem;
 }
 
+.auth-logo__copy {
+    display: grid;
+    gap: 0.05rem;
+    line-height: 1.15;
+}
+
+.auth-logo__name {
+    color: var(--foreground);
+    font-weight: 700;
+}
+
+.auth-logo__tagline {
+    color: var(--muted-foreground);
+    font-size: 0.72rem;
+    font-weight: 500;
+}
+
 .nav-actions,
 .filter-controls,
 .detail-badges,
@@ -142,65 +159,6 @@ a:hover {
 .auth-switch,
 .form-text {
     color: var(--muted-foreground);
-}
-
-.demo-account-card {
-    background: color-mix(in srgb, var(--primary-soft) 62%, white);
-    border: 1px solid color-mix(in srgb, var(--primary) 18%, var(--border));
-    border-radius: 0.95rem;
-    display: grid;
-    gap: 0.55rem;
-    margin-bottom: 1.25rem;
-    padding: 0.95rem;
-}
-
-.demo-account-card strong {
-    color: var(--foreground);
-    font-size: 0.95rem;
-}
-
-.demo-account-card p {
-    color: var(--muted-foreground);
-    font-size: 0.82rem;
-    margin: 0;
-}
-
-.demo-account-card dl {
-    display: grid;
-    gap: 0.5rem;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    margin: 0;
-}
-
-.demo-account-card dl > div {
-    background: color-mix(in srgb, var(--card) 78%, transparent);
-    border-radius: 0.75rem;
-    padding: 0.55rem 0.65rem;
-}
-
-.demo-account-card dt {
-    color: var(--muted-foreground);
-    font-size: 0.72rem;
-    font-weight: 600;
-    margin-bottom: 0.2rem;
-}
-
-.demo-account-card dd {
-    margin: 0;
-}
-
-.demo-account-card code {
-    color: var(--primary-hover);
-    font-size: 0.78rem;
-    font-weight: 700;
-}
-
-.demo-command {
-    background: color-mix(in srgb, var(--foreground) 7%, transparent);
-    border-radius: 0.7rem;
-    display: block;
-    padding: 0.55rem 0.65rem;
-    white-space: normal;
 }
 
 .nav-link-button,
@@ -969,6 +927,17 @@ a:hover {
     padding: 0.22rem 0.6rem;
 }
 
+.book-card__read-date {
+    position: absolute;
+    bottom: 1.65rem;
+    left: 1.25rem;
+    font-size: 0.75rem;
+    font-weight: 400;
+    color: var(--muted-foreground);
+    z-index: 2;
+    pointer-events: none;
+}
+
 .book-actions-menu {
     align-self: flex-end;
     margin-top: auto;
@@ -1503,9 +1472,14 @@ a:hover {
 .auth-page {
     align-items: center;
     display: flex;
+    flex-direction: column;
     justify-content: center;
     min-height: 100vh;
     padding: 3rem 1rem;
+}
+
+.auth-page .flash-messages {
+    width: min(400px, 100%);
 }
 
 .auth-card {
@@ -1903,8 +1877,9 @@ a:hover {
     position: relative;
 }
 
-.shelf-card:has(.book-actions-menu[open]) {
-    z-index: 30;
+.shelf-card:has(.book-actions-menu[open]),
+.shelf-card.shelf-card--menu-open {
+    z-index: 100;
 }
 
 .shelf-series-meta {
@@ -1949,6 +1924,8 @@ a:hover {
     gap: 1rem;
     justify-content: space-between;
     min-height: 3.8rem;
+    position: relative;
+    z-index: 20;
 }
 
 .shelf-card h2 {
@@ -1970,6 +1947,8 @@ a:hover {
     display: grid;
     gap: 0.65rem;
     grid-template-columns: repeat(4, minmax(0, 1fr));
+    position: relative;
+    z-index: 1;
 }
 
 .shelf-cover-tile {
@@ -2122,6 +2101,7 @@ a:hover {
 .shelf-actions-menu {
     align-self: flex-start;
     margin-top: 0;
+    z-index: 30;
 }
 
 .shelf-form-shell {
@@ -2244,8 +2224,8 @@ a:hover {
 
     .sidebar-nav {
         display: grid;
-        gap: 0.35rem;
-        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 0.25rem;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
         overflow: visible;
     }
 
@@ -2253,18 +2233,20 @@ a:hover {
     .sidebar-nav span {
         border-radius: 0.8rem;
         flex-direction: column;
-        font-size: 0.72rem;
+        font-size: 0.68rem;
         gap: 0.15rem;
         justify-content: center;
+        line-height: 1.1;
         min-width: 0;
-        padding: 0.45rem 0.25rem;
+        padding: 0.45rem 0.15rem;
         text-align: center;
-        white-space: normal;
+        white-space: nowrap;
     }
 
     .sidebar-nav a.is-active {
         background: var(--primary-soft);
-        font-size: 0.78rem;
+        font-size: 0.68rem;
+        font-weight: 800;
     }
 
     .has-sidebar .content-wrap {
@@ -2311,6 +2293,11 @@ a:hover {
     .book-card__body {
         padding: 1rem;
     }
+
+    .book-card__read-date {
+        bottom: 1.4rem;
+        left: 1rem;
+    }
 }
 
 @media (max-width: 768px) {
@@ -2353,4 +2340,189 @@ a:hover {
         padding-left: 0.5rem;
         padding-right: 0.5rem;
     }
+}
+
+@media (max-width: 768px) {
+    .auth-page {
+        align-items: flex-start;
+        justify-content: flex-start;
+        min-height: 100svh;
+        padding: 1rem 1rem 2rem;
+    }
+
+    .auth-logo {
+        margin-bottom: 1rem;
+    }
+
+    .auth-panel {
+        padding: 1.5rem;
+    }
+}
+.note-card--favorite {
+    background: color-mix(in srgb, var(--gold) 10%, var(--note-bg));
+    border-left-color: var(--heart);
+}
+
+.note-favorite-button {
+    background: transparent;
+    border: 0;
+    color: var(--muted-foreground);
+    font-size: 0.8rem;
+    font-weight: 700;
+    padding: 0;
+}
+
+.note-favorite-button.is-active {
+    color: var(--heart);
+}
+
+.stats-summary-grid {
+    display: grid;
+    gap: 1rem;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    margin-bottom: 1.5rem;
+}
+
+.stats-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 1rem;
+    box-shadow: var(--shadow-card);
+    display: grid;
+    gap: 0.35rem;
+    padding: 1rem;
+}
+
+.stats-card--primary {
+    background: color-mix(in srgb, var(--primary-soft) 55%, var(--card));
+    border-color: color-mix(in srgb, var(--primary) 28%, var(--border));
+}
+
+.stats-card__label {
+    color: var(--muted-foreground);
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+}
+
+.stats-card strong {
+    color: var(--foreground);
+    font-size: 2rem;
+    line-height: 1;
+}
+
+.yearly-stats-section {
+    display: grid;
+    gap: 1rem;
+}
+
+.yearly-books-list {
+    display: grid;
+    gap: 0.75rem;
+}
+
+.yearly-books-group {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 1rem;
+    box-shadow: var(--shadow-card);
+    overflow: hidden;
+}
+
+.yearly-books-group summary {
+    align-items: center;
+    cursor: pointer;
+    display: flex;
+    font-size: 1rem;
+    font-weight: 700;
+    justify-content: space-between;
+    list-style: none;
+    padding: 1rem;
+}
+
+.yearly-books-group summary::-webkit-details-marker {
+    display: none;
+}
+
+.yearly-books-group summary strong {
+    background: var(--primary-soft);
+    border-radius: 999px;
+    color: var(--primary);
+    font-size: 0.82rem;
+    padding: 0.25rem 0.6rem;
+}
+
+.yearly-books-group__content {
+    border-top: 1px solid var(--border);
+    display: grid;
+    gap: 0.55rem;
+    padding: 0.8rem;
+}
+
+.yearly-book-row {
+    align-items: center;
+    border-radius: 0.85rem;
+    color: var(--foreground);
+    display: flex;
+    gap: 0.75rem;
+    padding: 0.5rem;
+}
+
+.yearly-book-row:hover {
+    background: color-mix(in srgb, var(--muted) 46%, transparent);
+    color: var(--foreground);
+}
+
+.book-cover--xs {
+    font-size: 0.95rem;
+    height: 3.2rem;
+    width: 2.35rem;
+}
+
+.yearly-book-row__copy {
+    display: grid;
+    min-width: 0;
+}
+
+.yearly-book-row__copy strong,
+.yearly-book-row__copy small {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.yearly-book-row__copy small {
+    color: var(--muted-foreground);
+    font-size: 0.78rem;
+}
+
+.stats-empty-state {
+    margin: 0;
+}
+
+@media (max-width: 992px) {
+    .stats-summary-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 576px) {
+    .stats-summary-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+.auth-form input[type="email"],
+.auth-form input[type="password"] {
+    border: 1px solid var(--border);
+    border-radius: 0.75rem;
+    padding: 0.65rem 0.75rem;
+    width: 100%;
+}
+
+.auth-helper-link {
+    font-size: 0.85rem;
+    margin: 0.9rem 0 0;
+    text-align: center;
 }

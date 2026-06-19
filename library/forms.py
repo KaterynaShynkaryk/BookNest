@@ -1,5 +1,6 @@
 from django import forms
 from django.contrib.auth.forms import AuthenticationForm, UserCreationForm
+from django.db.models.functions import Lower
 
 from .models import Book, Note, Shelf
 
@@ -159,7 +160,7 @@ class BookForm(BootstrapFormMixin, forms.ModelForm):
         )
         self.series_options = list(
             user_books.exclude(series="")
-            .order_by("series")
+            .order_by(Lower("series"), "series")
             .values_list("series", flat=True)
             .distinct()
         )

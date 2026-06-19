@@ -11,7 +11,6 @@
             <p>Книги на цій поличці</p>
         </div>
         <div class="page-heading__actions">
-            <span class="visible-count">Показано: <strong>{{ displayed_count }}</strong></span>
             <details class="book-actions-menu shelf-actions-menu">
                 <summary aria-label="Дії для полички {{ shelf.name }}">⋯</summary>
                 <nav class="book-actions" aria-label="Дії для полички {{ shelf.name }}">
@@ -22,6 +21,49 @@
             </details>
         </div>
     </section>
+
+
+    <form class="filter-bar fade-in delay-1" method="get" aria-label="Пошук і фільтри полички">
+        <div class="filter-controls filter-controls--compact">
+            <label class="visually-hidden" for="shelf-title-search">Пошук за назвою</label>
+            <input class="form-control search-input" id="shelf-title-search" type="search" name="q" value="{{ search_query }}" placeholder="Пошук у поличці">
+
+            <details class="filter-menu" {% if selected_statuses or selected_genres or selected_publishers or favorite_only %}open{% endif %}>
+                <summary class="filter-menu__toggle">
+                    <span>Фільтри</span>
+                    {% if selected_statuses or selected_genres or selected_publishers or favorite_only %}<span class="filter-dot" aria-label="Фільтри активні"></span>{% endif %}
+                    <span class="filter-chevron" aria-hidden="true"></span>
+                </summary>
+                <div class="filter-menu__panel">
+                    <details class="filter-section" open>
+                        <summary class="filter-section__summary"><span>Статус читання</span><span class="filter-section__chevron" aria-hidden="true"></span></summary>
+                        <fieldset class="filter-checkbox-group"><legend class="visually-hidden">Статус читання</legend><div class="filter-checkbox-list">
+                            {% for value, label in status_choices %}<label class="filter-checkbox-option"><input type="checkbox" name="status" value="{{ value }}" {% if value in selected_statuses %}checked{% endif %}><span>{{ label }}</span></label>{% endfor %}
+                        </div></fieldset>
+                    </details>
+                    {% if genre_choices %}<details class="filter-section" open>
+                        <summary class="filter-section__summary"><span>Жанр</span><span class="filter-section__chevron" aria-hidden="true"></span></summary>
+                        <fieldset class="filter-checkbox-group"><legend class="visually-hidden">Жанр</legend><div class="filter-checkbox-list">
+                            {% for genre in genre_choices %}<label class="filter-checkbox-option"><input type="checkbox" name="genre" value="{{ genre }}" {% if genre in selected_genres %}checked{% endif %}><span>{{ genre }}</span></label>{% endfor %}
+                        </div></fieldset>
+                    </details>{% endif %}
+                    {% if publisher_choices %}<details class="filter-section" open>
+                        <summary class="filter-section__summary"><span>Видавництво</span><span class="filter-section__chevron" aria-hidden="true"></span></summary>
+                        <fieldset class="filter-checkbox-group"><legend class="visually-hidden">Видавництво</legend><div class="filter-checkbox-list">
+                            {% for publisher in publisher_choices %}<label class="filter-checkbox-option"><input type="checkbox" name="publisher" value="{{ publisher }}" {% if publisher in selected_publishers %}checked{% endif %}><span>{{ publisher }}</span></label>{% endfor %}
+                        </div></fieldset>
+                    </details>{% endif %}
+                    <details class="filter-section" open>
+                        <summary class="filter-section__summary"><span>Інше</span><span class="filter-section__chevron" aria-hidden="true"></span></summary>
+                        <label class="filter-checkbox-option favorite-filter"><input type="checkbox" name="favorite" value="1" {% if favorite_only %}checked{% endif %}><span>Улюблені</span></label>
+                    </details>
+                </div>
+            </details>
+            <button class="nav-link-button compact-submit" type="submit">Знайти</button>
+            {% if has_active_filters %}<a class="reset-link" href="{% url 'shelf_detail' shelf.pk %}">Скинути</a>{% endif %}
+        </div>
+        <span class="visible-count">Показано: <strong>{{ displayed_count }}</strong></span>
+    </form>
 
     {% if books %}
         {% include "library/_book_grid.html" with book_grid_label="Книги на поличці" %}
