@@ -108,11 +108,12 @@
                 <a class="reset-link" href="{% url 'book_list' %}">Скинути</a>
             {% endif %}
         </div>
-        <span class="visible-count">Показано: <strong>{{ displayed_count }}</strong></span>
+        <span class="visible-count">Усього: <strong>{{ displayed_count }}</strong></span>
     </form>
 
     {% if books %}
         {% include "library/_book_grid.html" with book_grid_label="Список книг" %}
+        {% include "library/_pagination.html" %}
     {% else %}
         <section class="book-grid" aria-label="Список книг">
             <div class="empty-state library-empty-state">

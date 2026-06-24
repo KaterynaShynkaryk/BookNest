@@ -35,6 +35,39 @@ class BookListViewTest(TestCase):
         self.assertEqual(response.context["selected_publishers"], [])
         self.assertContains(response, "Publisher Regression")
 
+    def test_book_list_paginates_books(self):
+        for index in range(30):
+            Book.objects.create(
+                user=self.user,
+                title=f"Library Book {index:02d}",
+                author="Author One",
+            )
+
+        self.client.force_login(self.user)
+        response = self.client.get(reverse("book_list"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context["displayed_count"], 30)
+        self.assertEqual(len(response.context["books"]), 24)
+        self.assertTrue(response.context["page_obj"].has_next())
+        self.assertContains(response, "Усього: <strong>30</strong>")
+        self.assertContains(response, 'aria-current="page">1</span>')
+        self.assertContains(response, 'href="?page=2">2</a>')
+        self.assertContains(response, "Наступна →")
+        self.assertContains(response, "В кінець »")
+
+        second_page = self.client.get(reverse("book_list"), {"page": "2"})
+
+        self.assertEqual(second_page.status_code, 200)
+        self.assertEqual(second_page.context["displayed_count"], 30)
+        self.assertEqual(len(second_page.context["books"]), 6)
+        self.assertTrue(second_page.context["page_obj"].has_previous())
+        self.assertContains(second_page, "Усього: <strong>30</strong>")
+        self.assertContains(second_page, 'aria-current="page">2</span>')
+        self.assertContains(second_page, 'href="?page=1">1</a>')
+        self.assertContains(second_page, "« На початок")
+        self.assertContains(second_page, "← Попередня")
+
     def test_book_show_status_badges_and_displayed_count(self):
         Book.objects.create(
             user=self.user,
@@ -399,7 +432,6 @@ class BookListViewTest(TestCase):
                 "title": "Дюна",
                 "author": "Френк Герберт",
                 "publisher": "КСД",
-                "published_year": "1965",
                 "genre": "Science fiction",
                 "cover_url": "https://books.google.com/books/content?id=abc&printsec=frontcover&img=1",
             },
@@ -409,7 +441,7 @@ class BookListViewTest(TestCase):
         self.assertContains(response, 'value="Дюна"')
         self.assertContains(response, 'value="Френк Герберт"')
         self.assertContains(response, 'value="КСД"')
-        self.assertContains(response, 'value="1965"')
+        self.assertNotContains(response, 'name="published_year"')
         self.assertContains(response, 'value="Science fiction"')
 
     def test_login_and_logout_show_flash_messages(self):
@@ -995,6 +1027,31 @@ class ShelfListViewTests(TestCase):
         self.assertIn(".page-heading:has(.book-actions-menu[open])", css)
         self.assertIn(".page-heading__actions .book-actions-menu", css)
 
+    def test_shelf_list_orders_started_series_before_not_started_and_completed(self):
+        not_started = Shelf.objects.create(
+            user=self.user,
+            name="Не почато",
+            is_auto_series=True,
+            status=Shelf.Status.NOT_STARTED,
+        )
+        completed = Shelf.objects.create(
+            user=self.user,
+            name="Завершена",
+            is_auto_series=True,
+            status=Shelf.Status.COMPLETED,
+        )
+        started = Shelf.objects.create(
+            user=self.user,
+            name="Почато",
+            is_auto_series=True,
+            status=Shelf.Status.STARTED,
+        )
+
+        self.client.force_login(self.user)
+        response = self.client.get(reverse("shelf_list"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(list(response.context["shelves"]), [started, not_started, completed])
 
     def test_shelf_list_has_empty_state(self):
         self.client.force_login(self.user)
@@ -1610,18 +1667,10 @@ class BookFormTests(TestCase):
         self.assertEqual(form.fields["author"].label, "Автор")
         self.assertEqual(form.fields["publisher"].label, "Видавництво")
         self.assertEqual(form.fields["series"].label, "Серія")
-        self.assertEqual(form.fields["published_year"].label, "Рік видання")
+        self.assertNotIn("published_year", form.fields)
         self.assertEqual(form.fields["cover_image"].label, "Обкладинка")
         self.assertEqual(form.fields["cover_url"].label, "Посилання")
         self.assertEqual(form.fields["is_favorite"].label, "Додати в обране")
-
-    def test_book_form_published_year_uses_text_input_without_spinner(self):
-        form = BookForm()
-        widget = form.fields["published_year"].widget
-
-        self.assertEqual(widget.input_type, "text")
-        self.assertEqual(widget.attrs["inputmode"], "numeric")
-        self.assertEqual(widget.attrs["pattern"], "[0-9]*")
 
 
     def test_book_form_keeps_cover_url_and_status_as_separate_fields(self):
@@ -2120,9 +2169,49 @@ class StatisticsViewTests(TestCase):
         self.assertEqual(response.context["wishlist_count"], 1)
         self.assertContains(response, "Статистика")
         self.assertContains(response, "Усього книг")
+        self.assertEqual(response.context["stats_period"], "years")
         self.assertContains(response, "Прочитано у 2025")
         self.assertContains(response, "Книга 2025")
+        self.assertContains(response, "По роках")
+        self.assertContains(response, "По місяцях")
         self.assertContains(response, "Бажанки")
         self.assertNotContains(response, "Прочитано у 2024")
         self.assertContains(response, 'class="is-active" href="/statistics/"')
         self.assertNotContains(response, "Чужа книга")
+
+    def test_statistics_page_can_group_completed_books_by_month(self):
+        Book.objects.create(
+            user=self.user,
+            title="Травнева книга",
+            author="Автор Один",
+            status=Book.Status.COMPLETED,
+            finish_date="2025-05-10",
+        )
+        Book.objects.create(
+            user=self.user,
+            title="Ще травень",
+            author="Автор Два",
+            status=Book.Status.COMPLETED,
+            finish_date="2025-05-20",
+        )
+        Book.objects.create(
+            user=self.user,
+            title="Квітнева книга",
+            author="Автор Три",
+            status=Book.Status.COMPLETED,
+            finish_date="2025-04-01",
+        )
+
+        self.client.force_login(self.user)
+        response = self.client.get(reverse("statistics"), {"period": "months"})
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context["stats_period"], "months")
+        self.assertContains(response, "Прочитано по місяцях")
+        self.assertContains(response, "травень 2025")
+        self.assertContains(response, "квітень 2025")
+        self.assertContains(response, "Травнева книга")
+        self.assertContains(response, "Ще травень")
+        self.assertContains(response, "Квітнева книга")
+        self.assertContains(response, 'href="/statistics/?period=years"')
+        self.assertContains(response, 'href="/statistics/?period=months"')
