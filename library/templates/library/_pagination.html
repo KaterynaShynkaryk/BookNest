@@ -1,0 +1,25 @@
+{% if page_obj.has_other_pages %}
+    <nav class="pagination-nav" aria-label="Сторінки книг">
+        {% if page_obj.has_previous %}
+            <a class="pagination-link" href="?{% if page_querystring %}{{ page_querystring }}&amp;{% endif %}page=1">« На початок</a>
+            <a class="pagination-link" href="?{% if page_querystring %}{{ page_querystring }}&amp;{% endif %}page={{ page_obj.previous_page_number }}">← Попередня</a>
+        {% endif %}
+
+        <div class="pagination-pages" aria-label="Номери сторінок">
+            {% for page_number in page_range %}
+                {% if page_number == page_obj.paginator.ELLIPSIS %}
+                    <span class="pagination-ellipsis" aria-hidden="true">{{ page_number }}</span>
+                {% elif page_number == page_obj.number %}
+                    <span class="pagination-link pagination-link--current" aria-current="page">{{ page_number }}</span>
+                {% else %}
+                    <a class="pagination-link" href="?{% if page_querystring %}{{ page_querystring }}&amp;{% endif %}page={{ page_number }}">{{ page_number }}</a>
+                {% endif %}
+            {% endfor %}
+        </div>
+
+        {% if page_obj.has_next %}
+            <a class="pagination-link" href="?{% if page_querystring %}{{ page_querystring }}&amp;{% endif %}page={{ page_obj.next_page_number }}">Наступна →</a>
+            <a class="pagination-link" href="?{% if page_querystring %}{{ page_querystring }}&amp;{% endif %}page={{ page_obj.paginator.num_pages }}">В кінець »</a>
+        {% endif %}
+    </nav>
+{% endif %}

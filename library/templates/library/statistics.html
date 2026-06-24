@@ -6,7 +6,7 @@
     <section class="page-heading fade-in">
         <div class="page-heading__copy">
             <h1>Статистика</h1>
-            <p>Короткий підсумок вашої бібліотеки та прочитаного за роками</p>
+            <p>Короткий підсумок вашої бібліотеки та прочитаного за роками або місяцями</p>
         </div>
     </section>
 
@@ -30,13 +30,19 @@
     </section>
 
     <section class="detail-section yearly-stats-section fade-in delay-2">
-        <h2>Прочитано по роках</h2>
-        {% if books_by_year %}
+        <div class="stats-section-heading">
+            <h2>{% if stats_period == "months" %}Прочитано по місяцях{% else %}Прочитано по роках{% endif %}</h2>
+            <div class="stats-period-toggle" aria-label="Обрати період статистики">
+                <a class="stats-period-toggle__link{% if stats_period == 'years' %} is-active{% endif %}" href="{% url 'statistics' %}?period=years">По роках</a>
+                <a class="stats-period-toggle__link{% if stats_period == 'months' %} is-active{% endif %}" href="{% url 'statistics' %}?period=months">По місяцях</a>
+            </div>
+        </div>
+        {% if books_by_period %}
             <div class="yearly-books-list">
-                {% for group in books_by_year %}
+                {% for group in books_by_period %}
                     <details class="yearly-books-group" open>
                         <summary>
-                            <span>Прочитано у {{ group.year }}</span>
+                            <span>{% if stats_period == "months" %}{{ group.label }}{% else %}Прочитано у {{ group.label }}{% endif %}</span>
                             <strong>{{ group.books|length }}</strong>
                         </summary>
                         <div class="yearly-books-group__content">
@@ -65,7 +71,7 @@
             <div class="empty-state stats-empty-state">
                 <div class="empty-state__icon" aria-hidden="true">📈</div>
                 <h2>Поки немає прочитаних книг із датою завершення</h2>
-                <p>Коли ви позначите книги як прочитані та додасте дату завершення, тут автоматично з’являться списки за роками.</p>
+                <p>Коли ви позначите книги як прочитані та додасте дату завершення, тут автоматично з’являться списки за роками або місяцями.</p>
             </div>
         {% endif %}
     </section>

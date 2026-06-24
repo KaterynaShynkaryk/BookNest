@@ -62,11 +62,12 @@
             <button class="nav-link-button compact-submit" type="submit">Знайти</button>
             {% if has_active_filters %}<a class="reset-link" href="{% url 'shelf_detail' shelf.pk %}">Скинути</a>{% endif %}
         </div>
-        <span class="visible-count">Показано: <strong>{{ displayed_count }}</strong></span>
+        <span class="visible-count">Усього: <strong>{{ displayed_count }}</strong></span>
     </form>
 
     {% if books %}
         {% include "library/_book_grid.html" with book_grid_label="Книги на поличці" %}
+        {% include "library/_pagination.html" %}
     {% else %}
         <section class="book-grid" aria-label="Книги на поличці">
             <div class="empty-state library-empty-state">

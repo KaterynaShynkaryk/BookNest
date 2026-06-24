@@ -213,7 +213,6 @@ class BookForm(BootstrapFormMixin, forms.ModelForm):
             "genre",
             "publisher",
             "series",
-            "published_year",
             "cover_image",
             "cover_url",
             "status",
@@ -230,7 +229,6 @@ class BookForm(BootstrapFormMixin, forms.ModelForm):
             "genre": "Жанр",
             "publisher": "Видавництво",
             "series": "Серія",
-            "published_year": "Рік видання",
             "cover_image": "Обкладинка",
             "cover_url": "Посилання",
             "status": "Статус читання",
@@ -243,7 +241,6 @@ class BookForm(BootstrapFormMixin, forms.ModelForm):
         }
         help_texts = {
             "genre": "Можна додати кілька жанрів через кому, наприклад: фентезі, роман.",
-            "published_year": "За бажанням: рік видання або перевидання.",
             "cover_image": "Додай обкладинку файлом або посиланням. Якщо заповнити обидва варіанти, буде показано файл.",
             "cover_url": "Встав пряме посилання на зображення.",
             "finish_date": "Доступно, коли статус книги — «Прочитано».",
@@ -255,13 +252,6 @@ class BookForm(BootstrapFormMixin, forms.ModelForm):
             "genre": forms.TextInput(attrs={"placeholder": "Фентезі, роман, нон-фікшн..."}),
             "publisher": forms.TextInput(attrs={"placeholder": "Назва видавництва"}),
             "series": forms.TextInput(attrs={"placeholder": "Назва серії книг"}),
-            "published_year": forms.TextInput(
-                attrs={
-                    "inputmode": "numeric",
-                    "pattern": "[0-9]*",
-                    "placeholder": "Наприклад, 2024",
-                }
-            ),
             "cover_image": forms.FileInput(attrs={"accept": "image/*"}),
             "cover_url": forms.URLInput(attrs={"placeholder": "https://example.com/cover.jpg"}),
             "start_date": forms.DateInput(format="%Y-%m-%d", attrs={"type": "date"}),

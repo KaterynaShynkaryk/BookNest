@@ -67,7 +67,7 @@ Password: demo12345
 ![Books detail](docs/screenshots/02_book_detail.png)
 
 - add books manually or through external search;
-- store title, author, genre, publisher, series, publication year, description, and cover;
+- store title, author, genre, publisher, series, description, and cover;
 - manage reading statuses: **Wishlist**, **Planned**, **Reading**, **Completed**, **Dropped**;
 - rate completed books;
 - mark books as favorites;

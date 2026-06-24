@@ -1,10 +1,11 @@
 import secrets
 
 from django.contrib import messages
+from django.core.paginator import Paginator
 from django.contrib.auth import login, logout
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.views import LoginView
-from django.db.models import Prefetch, Q
+from django.db.models import Case, IntegerField, Prefetch, Q, Value, When
 from django.views.decorators.http import require_POST
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils.http import url_has_allowed_host_and_scheme
@@ -20,6 +21,24 @@ from .forms import (
 from .book_lookup import BookLookupError, import_book_from_url, search_books
 from .models import Book, Note, Shelf
 from .series_shelves import cleanup_empty_series_shelves, sync_book_series_shelf
+
+
+BOOKS_PER_PAGE = 24
+STATISTICS_PERIODS = {"years", "months"}
+MONTH_NAMES_UK = {
+    1: "січень",
+    2: "лютий",
+    3: "березень",
+    4: "квітень",
+    5: "травень",
+    6: "червень",
+    7: "липень",
+    8: "серпень",
+    9: "вересень",
+    10: "жовтень",
+    11: "листопад",
+    12: "грудень",
+}
 
 
 def test_page(request):
@@ -125,15 +144,24 @@ def get_book_filter_context(request, books_queryset):
         normalized_query = search_query.casefold()
         matching_book_ids = [
             book_id
-            for book_id, title in books.values_list("pk", "title")
+            for book_id, title in books.values_list("pk", "title").iterator(chunk_size=1000)
             if normalized_query in title.casefold()
         ]
         books = books.filter(pk__in=matching_book_ids)
 
     has_active_filters = any([search_query, selected_statuses, selected_genres, selected_publishers, favorite_only])
+    displayed_count = books.count()
+    paginator = Paginator(books, BOOKS_PER_PAGE)
+    page_obj = paginator.get_page(request.GET.get("page"))
+    page_range = paginator.get_elided_page_range(page_obj.number, on_each_side=1, on_ends=1)
+    page_query_params = request.GET.copy()
+    page_query_params.pop("page", None)
 
     return {
-        "books": books,
+        "books": page_obj,
+        "page_obj": page_obj,
+        "page_range": page_range,
+        "page_querystring": page_query_params.urlencode(),
         "status_choices": Book.Status.choices,
         "genre_choices": genre_choices,
         "publisher_choices": publisher_choices,
@@ -143,7 +171,7 @@ def get_book_filter_context(request, books_queryset):
         "selected_publishers": selected_publishers,
         "favorite_only": favorite_only,
         "has_active_filters": has_active_filters,
-        "displayed_count": books.count(),
+        "displayed_count": displayed_count,
     }
 
 
@@ -223,14 +251,23 @@ def book_note_create(request, pk):
 def statistics(request):
     user_books = Book.objects.filter(user=request.user)
     completed_books = user_books.filter(status=Book.Status.COMPLETED)
-    completed_with_year = completed_books.filter(finish_date__isnull=False).order_by("-finish_date", "title")
+    completed_with_date = completed_books.filter(finish_date__isnull=False).order_by("-finish_date", "title")
+    stats_period = request.GET.get("period", "years")
+    if stats_period not in STATISTICS_PERIODS:
+        stats_period = "years"
 
-    books_by_year = []
-    for book in completed_with_year:
-        year = book.finish_date.year
-        if not books_by_year or books_by_year[-1]["year"] != year:
-            books_by_year.append({"year": year, "books": []})
-        books_by_year[-1]["books"].append(book)
+    books_by_period = []
+    for book in completed_with_date:
+        if stats_period == "months":
+            period_key = (book.finish_date.year, book.finish_date.month)
+            period_label = f"{MONTH_NAMES_UK[book.finish_date.month]} {book.finish_date.year}"
+        else:
+            period_key = book.finish_date.year
+            period_label = str(book.finish_date.year)
+
+        if not books_by_period or books_by_period[-1]["key"] != period_key:
+            books_by_period.append({"key": period_key, "label": period_label, "books": []})
+        books_by_period[-1]["books"].append(book)
 
     return render(
         request,
@@ -240,7 +277,9 @@ def statistics(request):
             "completed_count": completed_books.count(),
             "reading_count": user_books.filter(status=Book.Status.READING).count(),
             "wishlist_count": user_books.filter(status=Book.Status.WISHLIST).count(),
-            "books_by_year": books_by_year,
+            "books_by_period": books_by_period,
+            "books_by_year": books_by_period if stats_period == "years" else [],
+            "stats_period": stats_period,
         },
     )
 
@@ -249,6 +288,16 @@ def statistics(request):
 def shelf_list(request):
     shelves = (
         Shelf.objects.filter(user=request.user)
+        .annotate(
+            status_order=Case(
+                When(status=Shelf.Status.STARTED, then=Value(0)),
+                When(status=Shelf.Status.NOT_STARTED, then=Value(1)),
+                When(status=Shelf.Status.COMPLETED, then=Value(2)),
+                default=Value(1),
+                output_field=IntegerField(),
+            )
+        )
+        .order_by("status_order", "name")
         .prefetch_related(
             Prefetch(
                 "books",
@@ -450,7 +499,6 @@ BOOK_IMPORT_ALLOWED_FIELDS = [
     "author",
     "genre",
     "publisher",
-    "published_year",
     "cover_url",
     "description",
 ]
