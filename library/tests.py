@@ -305,11 +305,12 @@ class BookListViewTest(TestCase):
         metadata = extract_book_metadata(
             '<script type="application/ld+json">'
             '{"@type":"Product","name":"Мова тіла",'
+            '"isPartOf":{"name":"Поведінкова психологія"},'
+            '"genre":"Психологія",'
             '"image":"https://example.com/cover.jpg","description":"Опис книги",'
             '"additionalProperty":['
             '{"name":"Автор","value":"А. К. Тернер"},'
             '{"name":"Видавництво","value":"Лабораторія"},'
-            '{"name":"Серія","value":"Психологія спілкування"},'
             '{"name":"Рік видання","value":"2024"}'
             ']}'
             "</script>"
@@ -318,7 +319,8 @@ class BookListViewTest(TestCase):
         self.assertEqual(metadata["title"], "Мова тіла")
         self.assertEqual(metadata["author"], "А. К. Тернер")
         self.assertEqual(metadata["publisher"], "Лабораторія")
-        self.assertEqual(metadata["series"], "Психологія спілкування")
+        self.assertEqual(metadata["series"], "Поведінкова психологія")
+        self.assertEqual(metadata["genre"], "Психологія")
         self.assertEqual(metadata["published_year"], "2024")
         self.assertEqual(metadata["cover_url"], "https://example.com/cover.jpg")
 
@@ -332,6 +334,7 @@ class BookListViewTest(TestCase):
             '<dl><dt>Автор</dt><dd>Аксі О</dd>'
             '<dt>Видавництво</dt><dd>Рідна мова</dd>'
             '<dt>Серія</dt><dd>Казки моря</dd>'
+            '<dt>Тематика</dt><dd>Фентезі</dd>'
             '<dt>Рік видання</dt><dd>2024</dd></dl>'
             '</body></html>'
         )
@@ -340,6 +343,7 @@ class BookListViewTest(TestCase):
         self.assertEqual(metadata["author"], "Аксі О")
         self.assertEqual(metadata["publisher"], "Рідна мова")
         self.assertEqual(metadata["series"], "Казки моря")
+        self.assertEqual(metadata["genre"], "Фентезі")
         self.assertEqual(metadata["published_year"], "2024")
         self.assertEqual(metadata["cover_url"], "https://example.com/sea.jpg")
 
@@ -420,6 +424,44 @@ class BookListViewTest(TestCase):
 
         self.assertEqual(metadata["title"], "Книга без видавництва")
         self.assertEqual(metadata["publisher"], "")
+
+    def test_book_url_metadata_extracts_yakaboo_line_based_characteristics(self):
+        metadata = extract_book_metadata(
+            '<html><head>'
+            '<meta property="og:title" content="Нашіптувач. Книга 1 | Yakaboo">'
+            '<meta property="og:description" content="Психологічний кримінальний трилер.">'
+            '</head><body>'
+            '<section class="characteristics">'
+            '<div>Автор</div><a>Донато Каррізі</a>'
+            '<div>Видавництво</div><a>Книжковий клуб "Клуб Сімейного Дозвілля"</a>'
+            '<div>Категорія</div><a>Психологічний трилер</a><a>Саспенс</a><a>Сучасна проза</a>'
+            '<div>Серія книг</div><a>Слідство Міли Васкес</a>'
+            '</section>'
+            '</body></html>'
+        )
+
+        self.assertEqual(metadata["title"], "Нашіптувач. Книга 1")
+        self.assertEqual(metadata["author"], "Донато Каррізі")
+        self.assertEqual(metadata["publisher"], 'Книжковий клуб "Клуб Сімейного Дозвілля"')
+        self.assertEqual(metadata["series"], "Слідство Міли Васкес")
+        self.assertEqual(metadata["genre"], "Психологічний трилер, Саспенс, Сучасна проза")
+
+    def test_book_url_metadata_uses_safe_brand_as_publisher_fallback(self):
+        metadata = extract_book_metadata(
+            '<html><body>'
+            '<script type="application/json">'
+            '{"product":{"title":"Книга з брендом",'
+            '"brand":"Наш Формат",'
+            '"seriesName":"Бізнес-бібліотека",'
+            '"categoryName":"Нон-фікшн"}}'
+            '</script>'
+            '</body></html>'
+        )
+
+        self.assertEqual(metadata["title"], "Книга з брендом")
+        self.assertEqual(metadata["publisher"], "Наш Формат")
+        self.assertEqual(metadata["series"], "Бізнес-бібліотека")
+        self.assertEqual(metadata["genre"], "Нон-фікшн")
 
     def test_book_search_page_handles_unavailable_catalogs_without_error_flash(self):
         self.client.force_login(self.user)
@@ -843,9 +885,11 @@ class BookListViewTest(TestCase):
         with open("static/css/styles.css", encoding="utf-8") as styles:
             css = styles.read()
 
+        self.assertIn(':root[data-theme="dark"]', css)
         self.assertIn("@media (prefers-color-scheme: dark)", css)
         self.assertIn("color-scheme: dark", css)
         self.assertIn("--background: hsl(222 28% 9%)", css)
+        self.assertIn(".theme-toggle", css)
 
     def test_book_cover_has_no_decorative_left_stripe(self):
         with open("static/css/styles.css", encoding="utf-8") as styles:
@@ -1046,17 +1090,17 @@ class ShelfListViewTests(TestCase):
         self.assertIn(".page-heading__actions .book-actions-menu", css)
 
     def test_shelf_list_paginates_shelves(self):
-        for index in range(14):
+        for index in range(26):
             Shelf.objects.create(user=self.user, name=f"Поличка {index:02d}")
 
         self.client.force_login(self.user)
         response = self.client.get(reverse("shelf_list"))
 
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.context["shelf_count"], 14)
-        self.assertEqual(len(response.context["shelves"]), 12)
+        self.assertEqual(response.context["shelf_count"], 26)
+        self.assertEqual(len(response.context["shelves"]), 24)
         self.assertTrue(response.context["page_obj"].has_next())
-        self.assertContains(response, "Усього: <strong>14</strong>")
+        self.assertContains(response, "Усього: <strong>26</strong>")
         self.assertContains(response, 'aria-current="page">1</span>')
         self.assertContains(response, 'href="?page=2">2</a>')
         self.assertContains(response, "В кінець »")
@@ -1064,7 +1108,7 @@ class ShelfListViewTests(TestCase):
         second_page = self.client.get(reverse("shelf_list"), {"page": "2"})
 
         self.assertEqual(second_page.status_code, 200)
-        self.assertEqual(second_page.context["shelf_count"], 14)
+        self.assertEqual(second_page.context["shelf_count"], 26)
         self.assertEqual(len(second_page.context["shelves"]), 2)
         self.assertTrue(second_page.context["page_obj"].has_previous())
         self.assertContains(second_page, 'aria-current="page">2</span>')

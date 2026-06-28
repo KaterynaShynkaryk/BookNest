@@ -24,7 +24,7 @@ from .series_shelves import cleanup_empty_series_shelves, sync_book_series_shelf
 
 
 BOOKS_PER_PAGE = 24
-SHELVES_PER_PAGE = 12
+SHELVES_PER_PAGE = 24
 STATISTICS_PERIODS = {"years", "months"}
 MONTH_NAMES_UK = {
     1: "січень",
