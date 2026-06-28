@@ -581,7 +581,7 @@ def find_property_value(properties, labels):
 
 AUTHOR_LABELS = ["Автор", "Авторка", "Автори", "Автор(и)", "Автор/ка", "Author"]
 PUBLISHER_LABELS = ["Видавництво", "Видавництво книги", "Видавець", "Імпринт", "Publisher", "Imprint"]
-SERIES_LABELS = ["Серія", "Серія книг", "Цикл", "Цикл книг", "Книжкова серія", "Назва серії", "Series", "Book series", "Collection"]
+SERIES_LABELS = ["Книжкова серія", "Назва серії", "Серія книг", "Цикл книг", "Book series", "Серія", "Цикл", "Series", "Collection"]
 PUBLISHED_YEAR_LABELS = [
     "Рік видання",
     "Дата видання",
@@ -658,6 +658,14 @@ def extract_labeled_value(html, labels):
     import re
 
     visible_html = remove_non_content_tags(html)
+    stop_labels = tuple(
+        dict.fromkeys(
+            AUTHOR_LABELS + PUBLISHER_LABELS + SERIES_LABELS + PUBLISHED_YEAR_LABELS + GENRE_LABELS + DESCRIPTION_LABELS + [
+                "ISBN", "Кількість сторінок", "Палітурка", "Мова", "Формат", "Language", "Pages",
+            ]))
+    line_value = extract_labeled_value_from_lines(visible_html, labels, stop_labels)
+    if line_value:
+        return line_value
     for label in labels:
         structured_patterns = (
             rf"<(?:dt|th)[^>]*>\s*{re.escape(label)}\s*:?[\s\u00a0]*</(?:dt|th)>\s*<(?:dd|td)[^>]*>(.*?)</(?:dd|td)>",
@@ -682,10 +690,6 @@ def extract_labeled_value(html, labels):
                     return value
 
     text = strip_tags(visible_html)
-    stop_labels = tuple(
-        dict.fromkeys(AUTHOR_LABELS + PUBLISHER_LABELS + SERIES_LABELS + PUBLISHED_YEAR_LABELS + GENRE_LABELS + DESCRIPTION_LABELS + [
-            "ISBN", "Кількість сторінок", "Палітурка", "Мова", "Формат", "Language", "Pages",
-        ]))
     stop_pattern = "|".join(re.escape(label) for label in stop_labels)
 
     for label in labels:
@@ -699,6 +703,43 @@ def extract_labeled_value(html, labels):
             if value:
                 return value
     return ""
+
+
+def extract_labeled_value_from_lines(html, labels, stop_labels):
+    lines = html_to_text_lines(html)
+    label_keys = {label.casefold() for label in labels}
+    stop_keys = {label.casefold() for label in stop_labels}
+    genre_keys = {label.casefold() for label in GENRE_LABELS}
+    is_genre_lookup = bool(label_keys & genre_keys)
+
+    for index, line in enumerate(lines):
+        normalized_line = line.strip(" :—-").casefold()
+        if normalized_line not in label_keys:
+            continue
+
+        values = []
+        for value_line in lines[index + 1:]:
+            normalized_value = value_line.strip(" :—-").casefold()
+            if normalized_value in stop_keys:
+                break
+            value = clean_labeled_value(value_line)
+            if value:
+                values.append(value)
+            if not is_genre_lookup or len(values) >= 3:
+                break
+
+        if values:
+            return ", ".join(values)
+    return ""
+
+
+def html_to_text_lines(html):
+    import re
+
+    html = re.sub(r"</(?:p|div|li|tr|td|th|dt|dd|span|a|h[1-6])>", "\n", html, flags=re.IGNORECASE)
+    html = re.sub(r"<(?:br|br/)\s*[^>]*>", "\n", html, flags=re.IGNORECASE)
+    text = re.sub(r"<[^>]+>", " ", unescape_html(html))
+    return [re.sub(r"\s+", " ", line).strip() for line in text.splitlines() if line.strip()]
 
 
 def extract_jsonish_value(html, keys, labels=()):

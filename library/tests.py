@@ -425,6 +425,27 @@ class BookListViewTest(TestCase):
         self.assertEqual(metadata["title"], "Книга без видавництва")
         self.assertEqual(metadata["publisher"], "")
 
+    def test_book_url_metadata_extracts_yakaboo_line_based_characteristics(self):
+        metadata = extract_book_metadata(
+            '<html><head>'
+            '<meta property="og:title" content="Нашіптувач. Книга 1 | Yakaboo">'
+            '<meta property="og:description" content="Психологічний кримінальний трилер.">'
+            '</head><body>'
+            '<section class="characteristics">'
+            '<div>Автор</div><a>Донато Каррізі</a>'
+            '<div>Видавництво</div><a>Книжковий клуб "Клуб Сімейного Дозвілля"</a>'
+            '<div>Категорія</div><a>Психологічний трилер</a><a>Саспенс</a><a>Сучасна проза</a>'
+            '<div>Серія книг</div><a>Слідство Міли Васкес</a>'
+            '</section>'
+            '</body></html>'
+        )
+
+        self.assertEqual(metadata["title"], "Нашіптувач. Книга 1")
+        self.assertEqual(metadata["author"], "Донато Каррізі")
+        self.assertEqual(metadata["publisher"], 'Книжковий клуб "Клуб Сімейного Дозвілля"')
+        self.assertEqual(metadata["series"], "Слідство Міли Васкес")
+        self.assertEqual(metadata["genre"], "Психологічний трилер, Саспенс, Сучасна проза")
+
     def test_book_url_metadata_uses_safe_brand_as_publisher_fallback(self):
         metadata = extract_book_metadata(
             '<html><body>'
