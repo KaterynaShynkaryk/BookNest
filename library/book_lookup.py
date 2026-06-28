@@ -154,12 +154,22 @@ def normalize_google_books_item(item):
         "author": ", ".join(volume.get("authors", [])[:3]),
         "published_year": parse_published_year(volume.get("publishedDate", "")),
         "publisher": volume.get("publisher", ""),
+        "series": extract_google_series(volume),
         "genre": ", ".join(volume.get("categories", [])[:3]),
         "cover_url": cover_url,
         "external_id": item.get("id", ""),
         "external_url": volume.get("infoLink") or volume.get("previewLink") or "",
         "source": "Google Books",
     }
+
+
+def extract_google_series(volume):
+    series_info = volume.get("seriesInfo") or {}
+    if isinstance(series_info, dict):
+        title = series_info.get("bookDisplayTitle") or series_info.get("seriesDisplayTitle")
+        if title:
+            return str(title).strip()
+    return ""
 
 
 def normalize_open_library_doc(doc):
@@ -174,6 +184,7 @@ def normalize_open_library_doc(doc):
         "author": ", ".join(authors[:3]),
         "published_year": doc.get("first_publish_year") or "",
         "publisher": publishers[0] if publishers else "",
+        "series": "",
         "genre": ", ".join(subjects[:3]),
         "cover_url": OPEN_LIBRARY_COVER_URL.format(cover_id=cover_id) if cover_id else "",
         "external_id": key,
@@ -300,6 +311,7 @@ def metadata_from_json_ld(data):
     properties = extract_additional_properties(data)
     author = author or find_property_value(properties, ["автор", "авторка", "автори", "author"])
     publisher = publisher or find_property_value(properties, ["видавництво", "видавець", "publisher"])
+    series = find_property_value(properties, SERIES_LABELS)
     published_year = parse_published_year(str(data.get("datePublished", ""))) or parse_published_year(
         find_property_value(properties, ["рік видання", "дата видання", "publication date", "published"])
     )
@@ -309,6 +321,7 @@ def metadata_from_json_ld(data):
         "author": author,
         "published_year": published_year,
         "publisher": publisher,
+        "series": series,
         "genre": "",
         "cover_url": str(image),
         "description": strip_tags(str(data.get("description") or "")),
@@ -364,7 +377,7 @@ def metadata_from_json_tree(data):
 
 
 def metadata_score(metadata):
-    fields = ("title", "author", "publisher", "published_year", "genre", "cover_url", "description")
+    fields = ("title", "author", "publisher", "series", "published_year", "genre", "cover_url", "description")
     return sum(1 for field in fields if metadata.get(field))
 
 
@@ -382,6 +395,18 @@ def metadata_from_flexible_dict(data):
             "publishingHouse",
             "publishing_house",
             "manufacturer",
+        ),
+    )
+    series = first_value(
+        data,
+        (
+            "series",
+            "seriesName",
+            "series_name",
+            "bookSeries",
+            "book_series",
+            "collection",
+            "setName",
         ),
     )
     published_year = parse_published_year(
@@ -407,6 +432,7 @@ def metadata_from_flexible_dict(data):
 
     author = author or find_property_value(attributes, AUTHOR_LABELS)
     publisher = publisher or find_property_value(attributes, PUBLISHER_LABELS)
+    series = series or find_property_value(attributes, SERIES_LABELS)
     published_year = published_year or parse_published_year(find_property_value(attributes, PUBLISHED_YEAR_LABELS))
     genre = genre or find_property_value(attributes, GENRE_LABELS)
     external_id = external_id or find_property_value(attributes, ["isbn"])
@@ -416,6 +442,7 @@ def metadata_from_flexible_dict(data):
         "author": clean_labeled_value(clean_json_value(author)),
         "published_year": published_year,
         "publisher": clean_labeled_value(clean_json_value(publisher)),
+        "series": clean_labeled_value(clean_json_value(series)),
         "genre": clean_labeled_value(clean_json_value(genre)),
         "cover_url": clean_json_value(image),
         "description": strip_tags(clean_json_value(description)),
@@ -511,6 +538,7 @@ def metadata_from_open_graph(html):
             or extract_meta_content(html, "property", "article:published_time")
         ),
         "publisher": extract_meta_content(html, "property", "book:publisher"),
+        "series": extract_meta_content(html, "property", "book:series"),
         "genre": "",
         "cover_url": image,
         "description": strip_tags(description),
@@ -548,6 +576,7 @@ def find_property_value(properties, labels):
 
 AUTHOR_LABELS = ["Автор", "Авторка", "Автори", "Автор(и)", "Автор/ка", "Author"]
 PUBLISHER_LABELS = ["Видавництво", "Видавець", "Publisher"]
+SERIES_LABELS = ["Серія", "Цикл", "Книжкова серія", "Назва серії", "Series", "Book series", "Collection"]
 PUBLISHED_YEAR_LABELS = [
     "Рік видання",
     "Дата видання",
@@ -564,6 +593,7 @@ def enrich_metadata_from_html(metadata, html):
     metadata = dict(metadata)
     metadata["author"] = clean_labeled_value(metadata.get("author", ""))
     metadata["publisher"] = clean_labeled_value(metadata.get("publisher", ""))
+    metadata["series"] = clean_labeled_value(metadata.get("series", ""))
     metadata["genre"] = clean_labeled_value(metadata.get("genre", ""))
     metadata["author"] = metadata.get("author") or extract_labeled_value(html, AUTHOR_LABELS)
     metadata["publisher"] = metadata.get("publisher") or extract_labeled_value(html, PUBLISHER_LABELS)
@@ -578,6 +608,20 @@ def enrich_metadata_from_html(metadata, html):
             "manufacturer",
         ),
         PUBLISHER_LABELS,
+    )
+    metadata["series"] = metadata.get("series") or extract_labeled_value(html, SERIES_LABELS)
+    metadata["series"] = metadata.get("series") or extract_jsonish_value(
+        html,
+        (
+            "series",
+            "seriesName",
+            "series_name",
+            "bookSeries",
+            "book_series",
+            "collection",
+            "setName",
+        ),
+        SERIES_LABELS,
     )
     metadata["published_year"] = metadata.get("published_year") or parse_published_year(
         extract_labeled_value(html, PUBLISHED_YEAR_LABELS)
@@ -630,7 +674,7 @@ def extract_labeled_value(html, labels):
 
     text = strip_tags(visible_html)
     stop_labels = tuple(
-        dict.fromkeys(AUTHOR_LABELS + PUBLISHER_LABELS + PUBLISHED_YEAR_LABELS + GENRE_LABELS + DESCRIPTION_LABELS + [
+        dict.fromkeys(AUTHOR_LABELS + PUBLISHER_LABELS + SERIES_LABELS + PUBLISHED_YEAR_LABELS + GENRE_LABELS + DESCRIPTION_LABELS + [
             "ISBN", "Кількість сторінок", "Палітурка", "Мова", "Формат", "Language", "Pages",
         ]))
     stop_pattern = "|".join(re.escape(label) for label in stop_labels)
@@ -711,7 +755,7 @@ def clean_labeled_value(value):
 
 def finalize_metadata(metadata, base_url=""):
     metadata = dict(metadata)
-    for field in ("author", "publisher", "genre"):
+    for field in ("author", "publisher", "series", "genre"):
         metadata[field] = clean_labeled_value(metadata.get(field, ""))
     metadata["title"] = strip_title_suffix(strip_tags(metadata.get("title", "")))
     metadata["description"] = strip_tags(metadata.get("description", ""))

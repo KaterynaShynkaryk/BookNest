@@ -33,6 +33,43 @@
     --status-failed-text: hsl(0 0% 42%);
 }
 
+@media (prefers-color-scheme: dark) {
+    :root {
+        color-scheme: dark;
+        --background: hsl(222 28% 9%);
+        --foreground: hsl(42 26% 92%);
+        --card: hsl(222 24% 13%);
+        --primary: hsl(204 32% 62%);
+        --primary-hover: hsl(204 40% 72%);
+        --primary-soft: hsl(211 24% 20%);
+        --primary-foreground: hsl(222 28% 9%);
+        --muted: hsl(222 18% 18%);
+        --muted-foreground: hsl(220 12% 72%);
+        --border: hsl(222 16% 24%);
+        --destructive: hsl(0 50% 66%);
+        --destructive-soft: hsl(0 32% 18%);
+        --gold: hsl(39 82% 66%);
+        --gold-muted: hsl(39 24% 36%);
+        --heart: hsl(0 76% 68%);
+        --tag-bg: hsl(211 22% 20%);
+        --tag-text: hsl(206 36% 78%);
+        --note-bg: hsl(38 28% 16%);
+        --shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
+        --shadow-card: 0 1px 4px rgba(0, 0, 0, 0.38);
+        --shadow-hover: 0 8px 24px rgba(0, 0, 0, 0.42);
+        --status-wishlist-bg: hsl(291 24% 19%);
+        --status-wishlist-text: hsl(286 42% 78%);
+        --status-planned-bg: hsl(42 38% 18%);
+        --status-planned-text: hsl(38 70% 72%);
+        --status-reading-bg: hsl(23 36% 18%);
+        --status-reading-text: hsl(18 68% 74%);
+        --status-completed-bg: hsl(140 25% 18%);
+        --status-completed-text: hsl(142 42% 72%);
+        --status-failed-bg: hsl(0 0% 18%);
+        --status-failed-text: hsl(0 0% 76%);
+    }
+}
+
 * {
     scrollbar-color: var(--border) transparent;
     scrollbar-width: thin;

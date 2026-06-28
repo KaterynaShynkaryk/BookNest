@@ -24,6 +24,7 @@ from .series_shelves import cleanup_empty_series_shelves, sync_book_series_shelf
 
 
 BOOKS_PER_PAGE = 24
+SHELVES_PER_PAGE = 12
 STATISTICS_PERIODS = {"years", "months"}
 MONTH_NAMES_UK = {
     1: "січень",
@@ -289,15 +290,20 @@ def shelf_list(request):
     shelves = (
         Shelf.objects.filter(user=request.user)
         .annotate(
+            manual_order=Case(
+                When(is_auto_series=False, then=Value(0)),
+                default=Value(1),
+                output_field=IntegerField(),
+            ),
             status_order=Case(
                 When(status=Shelf.Status.STARTED, then=Value(0)),
                 When(status=Shelf.Status.NOT_STARTED, then=Value(1)),
                 When(status=Shelf.Status.COMPLETED, then=Value(2)),
                 default=Value(1),
                 output_field=IntegerField(),
-            )
+            ),
         )
-        .order_by("status_order", "name")
+        .order_by("manual_order", "status_order", "name")
         .prefetch_related(
             Prefetch(
                 "books",
@@ -306,12 +312,20 @@ def shelf_list(request):
         )
     )
 
+    shelf_count = shelves.count()
+    paginator = Paginator(shelves, SHELVES_PER_PAGE)
+    page_obj = paginator.get_page(request.GET.get("page"))
+    page_range = paginator.get_elided_page_range(page_obj.number, on_each_side=1, on_ends=1)
+
     return render(
         request,
         "library/shelf_list.html",
         {
-            "shelves": shelves,
-            "shelf_count": shelves.count(),
+            "shelves": page_obj,
+            "shelf_count": shelf_count,
+            "page_obj": page_obj,
+            "page_range": page_range,
+            "page_querystring": "",
         },
     )
 
@@ -499,6 +513,7 @@ BOOK_IMPORT_ALLOWED_FIELDS = [
     "author",
     "genre",
     "publisher",
+    "series",
     "cover_url",
     "description",
 ]
