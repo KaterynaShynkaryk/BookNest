@@ -10,6 +10,14 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+        (() => {
+            const savedTheme = localStorage.getItem("booknest-theme");
+            if (savedTheme === "dark" || savedTheme === "light") {
+                document.documentElement.dataset.theme = savedTheme;
+            }
+        })();
+    </script>
     <link rel="stylesheet" href="{% static 'css/styles.css' %}">
 </head>
 <body class="{% if user.is_authenticated %}has-sidebar{% endif %} {% block body_class %}{% endblock %}">
@@ -37,8 +45,10 @@
                 <div class="nav-actions">
                     {% if user.is_authenticated %}
                         <span class="nav-greeting d-none d-sm-inline">{{ user.username }}</span>
+                        <button class="theme-toggle" type="button" data-theme-toggle aria-label="Перемкнути тему">🌙 Темна</button>
                         <a class="nav-link-button" href="{% url 'logout' %}">Вийти</a>
                     {% else %}
+                        <button class="theme-toggle" type="button" data-theme-toggle aria-label="Перемкнути тему">🌙 Темна</button>
                         <a class="nav-link-button" href="{% url 'login' %}">Увійти</a>
                         <a class="primary-link-button" href="{% url 'register' %}">Реєстрація</a>
                     {% endif %}
@@ -83,6 +93,34 @@
                     message.remove();
                 }, 7000);
             });
+        })();
+    </script>
+    <script>
+        (() => {
+            const toggles = document.querySelectorAll("[data-theme-toggle]");
+            if (!toggles.length) return;
+
+            const getCurrentTheme = () => document.documentElement.dataset.theme
+                || (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+
+            const syncButtons = () => {
+                const isDark = getCurrentTheme() === "dark";
+                toggles.forEach((toggle) => {
+                    toggle.textContent = isDark ? "☀️ Світла" : "🌙 Темна";
+                    toggle.setAttribute("aria-pressed", String(isDark));
+                });
+            };
+
+            toggles.forEach((toggle) => {
+                toggle.addEventListener("click", () => {
+                    const nextTheme = getCurrentTheme() === "dark" ? "light" : "dark";
+                    document.documentElement.dataset.theme = nextTheme;
+                    localStorage.setItem("booknest-theme", nextTheme);
+                    syncButtons();
+                });
+            });
+
+            syncButtons();
         })();
     </script>
 </body>

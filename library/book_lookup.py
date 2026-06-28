@@ -308,10 +308,13 @@ def metadata_from_json_ld(data):
         image = image.get("url", "")
 
     publisher = extract_name(data.get("publisher", ""))
+    series = extract_name(data.get("isPartOf", ""))
+    genre = normalize_json_value(data.get("genre") or data.get("keywords") or "")
     properties = extract_additional_properties(data)
     author = author or find_property_value(properties, ["автор", "авторка", "автори", "author"])
-    publisher = publisher or find_property_value(properties, ["видавництво", "видавець", "publisher"])
-    series = find_property_value(properties, SERIES_LABELS)
+    publisher = publisher or find_property_value(properties, PUBLISHER_LABELS)
+    series = series or find_property_value(properties, SERIES_LABELS)
+    genre = genre or find_property_value(properties, GENRE_LABELS)
     published_year = parse_published_year(str(data.get("datePublished", ""))) or parse_published_year(
         find_property_value(properties, ["рік видання", "дата видання", "publication date", "published"])
     )
@@ -322,7 +325,7 @@ def metadata_from_json_ld(data):
         "published_year": published_year,
         "publisher": publisher,
         "series": series,
-        "genre": "",
+        "genre": genre,
         "cover_url": str(image),
         "description": strip_tags(str(data.get("description") or "")),
         "external_id": str(data.get("isbn") or data.get("sku") or find_property_value(properties, ["isbn"]) or ""),
@@ -395,8 +398,10 @@ def metadata_from_flexible_dict(data):
             "publishingHouse",
             "publishing_house",
             "manufacturer",
+            "imprint",
         ),
     )
+    publisher_fallback = first_value(data, ("brand", "brandName", "brand_name", "vendor", "vendorName"))
     series = first_value(
         data,
         (
@@ -431,7 +436,7 @@ def metadata_from_flexible_dict(data):
     external_url = first_value(data, ("url", "href", "canonical"))
 
     author = author or find_property_value(attributes, AUTHOR_LABELS)
-    publisher = publisher or find_property_value(attributes, PUBLISHER_LABELS)
+    publisher = publisher or find_property_value(attributes, PUBLISHER_LABELS) or clean_labeled_value(publisher_fallback)
     series = series or find_property_value(attributes, SERIES_LABELS)
     published_year = published_year or parse_published_year(find_property_value(attributes, PUBLISHED_YEAR_LABELS))
     genre = genre or find_property_value(attributes, GENRE_LABELS)
@@ -537,9 +542,9 @@ def metadata_from_open_graph(html):
             extract_meta_content(html, "property", "book:release_date")
             or extract_meta_content(html, "property", "article:published_time")
         ),
-        "publisher": extract_meta_content(html, "property", "book:publisher"),
-        "series": extract_meta_content(html, "property", "book:series"),
-        "genre": "",
+        "publisher": extract_meta_content(html, "property", "book:publisher") or extract_meta_content(html, "name", "publisher"),
+        "series": extract_meta_content(html, "property", "book:series") or extract_meta_content(html, "name", "book:series"),
+        "genre": extract_meta_content(html, "property", "article:section") or extract_meta_content(html, "name", "genre"),
         "cover_url": image,
         "description": strip_tags(description),
         "external_id": "",
@@ -575,8 +580,8 @@ def find_property_value(properties, labels):
 
 
 AUTHOR_LABELS = ["Автор", "Авторка", "Автори", "Автор(и)", "Автор/ка", "Author"]
-PUBLISHER_LABELS = ["Видавництво", "Видавець", "Publisher"]
-SERIES_LABELS = ["Серія", "Цикл", "Книжкова серія", "Назва серії", "Series", "Book series", "Collection"]
+PUBLISHER_LABELS = ["Видавництво", "Видавництво книги", "Видавець", "Імпринт", "Publisher", "Imprint"]
+SERIES_LABELS = ["Серія", "Серія книг", "Цикл", "Цикл книг", "Книжкова серія", "Назва серії", "Series", "Book series", "Collection"]
 PUBLISHED_YEAR_LABELS = [
     "Рік видання",
     "Дата видання",
@@ -585,7 +590,7 @@ PUBLISHED_YEAR_LABELS = [
     "Publication year",
     "Published",
 ]
-GENRE_LABELS = ["Жанр", "Категорія", "Розділ", "Genre", "Category"]
+GENRE_LABELS = ["Жанр", "Жанри", "Категорія", "Тематика", "Рубрика", "Розділ", "Genre", "Category", "Section"]
 DESCRIPTION_LABELS = ["Опис", "Анотація", "Про книгу", "Description", "Annotation"]
 
 
@@ -641,6 +646,10 @@ def enrich_metadata_from_html(metadata, html):
         )
     )
     metadata["genre"] = metadata.get("genre") or extract_labeled_value(html, GENRE_LABELS)
+    metadata["genre"] = metadata.get("genre") or extract_meta_content(html, "property",
+                                                                      "article:section") or extract_meta_content(html,
+                                                                                                                 "name",
+                                                                                                                 "genre")
     metadata["description"] = metadata.get("description") or extract_labeled_value(html, DESCRIPTION_LABELS)
     return metadata
 
