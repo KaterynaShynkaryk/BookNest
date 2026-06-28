@@ -275,6 +275,7 @@ class BookListViewTest(TestCase):
                 "author": "Автор",
                 "published_year": "2024",
                 "publisher": "Видавництво",
+                "series": "Серія з URL",
                 "genre": "Роман",
                 "cover_url": "https://example.com/cover.jpg",
                 "description": long_description,
@@ -297,6 +298,7 @@ class BookListViewTest(TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'value="Великий опис"')
+        self.assertContains(response, 'value="Серія з URL"')
         self.assertContains(response, long_description[:120])
 
     def test_book_url_metadata_can_be_extracted_from_json_ld(self):
@@ -307,6 +309,7 @@ class BookListViewTest(TestCase):
             '"additionalProperty":['
             '{"name":"Автор","value":"А. К. Тернер"},'
             '{"name":"Видавництво","value":"Лабораторія"},'
+            '{"name":"Серія","value":"Психологія спілкування"},'
             '{"name":"Рік видання","value":"2024"}'
             ']}'
             "</script>"
@@ -315,6 +318,7 @@ class BookListViewTest(TestCase):
         self.assertEqual(metadata["title"], "Мова тіла")
         self.assertEqual(metadata["author"], "А. К. Тернер")
         self.assertEqual(metadata["publisher"], "Лабораторія")
+        self.assertEqual(metadata["series"], "Психологія спілкування")
         self.assertEqual(metadata["published_year"], "2024")
         self.assertEqual(metadata["cover_url"], "https://example.com/cover.jpg")
 
@@ -327,6 +331,7 @@ class BookListViewTest(TestCase):
             '</head><body>'
             '<dl><dt>Автор</dt><dd>Аксі О</dd>'
             '<dt>Видавництво</dt><dd>Рідна мова</dd>'
+            '<dt>Серія</dt><dd>Казки моря</dd>'
             '<dt>Рік видання</dt><dd>2024</dd></dl>'
             '</body></html>'
         )
@@ -334,6 +339,7 @@ class BookListViewTest(TestCase):
         self.assertEqual(metadata["title"], "Дівчина, яка впала під море")
         self.assertEqual(metadata["author"], "Аксі О")
         self.assertEqual(metadata["publisher"], "Рідна мова")
+        self.assertEqual(metadata["series"], "Казки моря")
         self.assertEqual(metadata["published_year"], "2024")
         self.assertEqual(metadata["cover_url"], "https://example.com/sea.jpg")
 
@@ -345,6 +351,7 @@ class BookListViewTest(TestCase):
             '"brand":"Yakaboo",'
             '"attributes":['
             '{"frontend_label":"Видавництво","value":"Видавництво Старого Лева"},'
+            '{"frontend_label":"Серія","value":"Дитяча полиця"},'
             '{"frontend_label":"Рік видання","value":"2025"},'
             '{"frontend_label":"Автор","value":"Катерина Єгорушкіна"}'
             ']}}'
@@ -355,6 +362,7 @@ class BookListViewTest(TestCase):
         self.assertEqual(metadata["title"], "Книга з атрибутами")
         self.assertEqual(metadata["author"], "Катерина Єгорушкіна")
         self.assertEqual(metadata["publisher"], "Видавництво Старого Лева")
+        self.assertEqual(metadata["series"], "Дитяча полиця")
         self.assertEqual(metadata["published_year"], "2025")
         self.assertNotEqual(metadata["publisher"], "Yakaboo")
 
@@ -432,6 +440,7 @@ class BookListViewTest(TestCase):
                 "title": "Дюна",
                 "author": "Френк Герберт",
                 "publisher": "КСД",
+                "series": "Хроніки Дюни",
                 "genre": "Science fiction",
                 "cover_url": "https://books.google.com/books/content?id=abc&printsec=frontcover&img=1",
             },
@@ -441,6 +450,7 @@ class BookListViewTest(TestCase):
         self.assertContains(response, 'value="Дюна"')
         self.assertContains(response, 'value="Френк Герберт"')
         self.assertContains(response, 'value="КСД"')
+        self.assertContains(response, 'value="Хроніки Дюни"')
         self.assertNotContains(response, 'name="published_year"')
         self.assertContains(response, 'value="Science fiction"')
 
@@ -829,6 +839,14 @@ class BookListViewTest(TestCase):
         self.assertNotContains(response, 'class="book-cover-frame book-cover--sm"')
         self.assertContains(response, 'src="https://example.com/cover.jpg"')
 
+    def test_styles_define_dark_theme_tokens(self):
+        with open("static/css/styles.css", encoding="utf-8") as styles:
+            css = styles.read()
+
+        self.assertIn("@media (prefers-color-scheme: dark)", css)
+        self.assertIn("color-scheme: dark", css)
+        self.assertIn("--background: hsl(222 28% 9%)", css)
+
     def test_book_cover_has_no_decorative_left_stripe(self):
         with open("static/css/styles.css", encoding="utf-8") as styles:
             css = styles.read()
@@ -1027,7 +1045,37 @@ class ShelfListViewTests(TestCase):
         self.assertIn(".page-heading:has(.book-actions-menu[open])", css)
         self.assertIn(".page-heading__actions .book-actions-menu", css)
 
-    def test_shelf_list_orders_started_series_before_not_started_and_completed(self):
+    def test_shelf_list_paginates_shelves(self):
+        for index in range(14):
+            Shelf.objects.create(user=self.user, name=f"Поличка {index:02d}")
+
+        self.client.force_login(self.user)
+        response = self.client.get(reverse("shelf_list"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context["shelf_count"], 14)
+        self.assertEqual(len(response.context["shelves"]), 12)
+        self.assertTrue(response.context["page_obj"].has_next())
+        self.assertContains(response, "Усього: <strong>14</strong>")
+        self.assertContains(response, 'aria-current="page">1</span>')
+        self.assertContains(response, 'href="?page=2">2</a>')
+        self.assertContains(response, "В кінець »")
+
+        second_page = self.client.get(reverse("shelf_list"), {"page": "2"})
+
+        self.assertEqual(second_page.status_code, 200)
+        self.assertEqual(second_page.context["shelf_count"], 14)
+        self.assertEqual(len(second_page.context["shelves"]), 2)
+        self.assertTrue(second_page.context["page_obj"].has_previous())
+        self.assertContains(second_page, 'aria-current="page">2</span>')
+        self.assertContains(second_page, "« На початок")
+
+    def test_shelf_list_orders_user_created_shelves_before_series_status_groups(self):
+        manual = Shelf.objects.create(
+            user=self.user,
+            name="Моя поличка",
+            status=Shelf.Status.COMPLETED,
+        )
         not_started = Shelf.objects.create(
             user=self.user,
             name="Не почато",
@@ -1051,7 +1099,7 @@ class ShelfListViewTests(TestCase):
         response = self.client.get(reverse("shelf_list"))
 
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(list(response.context["shelves"]), [started, not_started, completed])
+        self.assertEqual(list(response.context["shelves"]), [manual, started, not_started, completed])
 
     def test_shelf_list_has_empty_state(self):
         self.client.force_login(self.user)

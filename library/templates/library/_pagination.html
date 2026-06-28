@@ -1,5 +1,5 @@
 {% if page_obj.has_other_pages %}
-    <nav class="pagination-nav" aria-label="Сторінки книг">
+    <nav class="pagination-nav" aria-label="Сторінки">
         {% if page_obj.has_previous %}
             <a class="pagination-link" href="?{% if page_querystring %}{{ page_querystring }}&amp;{% endif %}page=1">« На початок</a>
             <a class="pagination-link" href="?{% if page_querystring %}{{ page_querystring }}&amp;{% endif %}page={{ page_obj.previous_page_number }}">← Попередня</a>
