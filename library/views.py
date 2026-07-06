@@ -287,6 +287,7 @@ def statistics(request):
 
 @login_required
 def shelf_list(request):
+    search_query = request.GET.get("q", "").strip()
     shelves = (
         Shelf.objects.filter(user=request.user)
         .annotate(
@@ -312,10 +313,21 @@ def shelf_list(request):
         )
     )
 
+    if search_query:
+        normalized_query = search_query.casefold()
+        matching_shelf_ids = [
+            shelf_id
+            for shelf_id, name in shelves.values_list("pk", "name").iterator(chunk_size=1000)
+            if normalized_query in name.casefold()
+        ]
+        shelves = shelves.filter(pk__in=matching_shelf_ids)
+
     shelf_count = shelves.count()
     paginator = Paginator(shelves, SHELVES_PER_PAGE)
     page_obj = paginator.get_page(request.GET.get("page"))
     page_range = paginator.get_elided_page_range(page_obj.number, on_each_side=1, on_ends=1)
+    page_query_params = request.GET.copy()
+    page_query_params.pop("page", None)
 
     return render(
         request,
@@ -325,7 +337,9 @@ def shelf_list(request):
             "shelf_count": shelf_count,
             "page_obj": page_obj,
             "page_range": page_range,
-            "page_querystring": "",
+            "page_querystring": page_query_params.urlencode(),
+            "search_query": search_query,
+            "has_active_search": bool(search_query),
         },
     )
 

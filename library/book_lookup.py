@@ -308,13 +308,13 @@ def metadata_from_json_ld(data):
         image = image.get("url", "")
 
     publisher = extract_name(data.get("publisher", ""))
-    series = extract_name(data.get("isPartOf", ""))
-    genre = normalize_json_value(data.get("genre") or data.get("keywords") or "")
+    series = clean_series_value(extract_name(data.get("isPartOf", "")))
+    genre = clean_genre_value(normalize_json_value(data.get("genre") or data.get("keywords") or ""))
     properties = extract_additional_properties(data)
     author = author or find_property_value(properties, ["автор", "авторка", "автори", "author"])
     publisher = publisher or find_property_value(properties, PUBLISHER_LABELS)
-    series = series or find_property_value(properties, SERIES_LABELS)
-    genre = genre or find_property_value(properties, GENRE_LABELS)
+    series = series or clean_series_value(find_property_value(properties, SERIES_LABELS))
+    genre = genre or clean_genre_value(find_property_value(properties, GENRE_LABELS))
     published_year = parse_published_year(str(data.get("datePublished", ""))) or parse_published_year(
         find_property_value(properties, ["рік видання", "дата видання", "publication date", "published"])
     )
@@ -439,7 +439,7 @@ def metadata_from_flexible_dict(data):
     publisher = publisher or find_property_value(attributes, PUBLISHER_LABELS) or clean_labeled_value(publisher_fallback)
     series = series or find_property_value(attributes, SERIES_LABELS)
     published_year = published_year or parse_published_year(find_property_value(attributes, PUBLISHED_YEAR_LABELS))
-    genre = genre or find_property_value(attributes, GENRE_LABELS)
+    genre = genre or clean_genre_value(
     external_id = external_id or find_property_value(attributes, ["isbn"])
 
     return {
@@ -447,8 +447,8 @@ def metadata_from_flexible_dict(data):
         "author": clean_labeled_value(clean_json_value(author)),
         "published_year": published_year,
         "publisher": clean_labeled_value(clean_json_value(publisher)),
-        "series": clean_labeled_value(clean_json_value(series)),
-        "genre": clean_labeled_value(clean_json_value(genre)),
+        "series": clean_series_value(clean_json_value(series)),
+        "genre": clean_genre_value(clean_json_value(genre)),
         "cover_url": clean_json_value(image),
         "description": strip_tags(clean_json_value(description)),
         "external_id": clean_json_value(external_id),
@@ -591,15 +591,15 @@ PUBLISHED_YEAR_LABELS = [
     "Published",
 ]
 GENRE_LABELS = ["Жанр", "Жанри", "Категорія", "Тематика", "Рубрика", "Розділ", "Genre", "Category", "Section"]
-DESCRIPTION_LABELS = ["Опис", "Анотація", "Про книгу", "Description", "Annotation"]
+DESCRIPTION_LABELS = ["Опис", "Опис книги", "Опис товару", "Анотація", "Про книгу", "Description", "Annotation"]
 
 
 def enrich_metadata_from_html(metadata, html):
     metadata = dict(metadata)
     metadata["author"] = clean_labeled_value(metadata.get("author", ""))
     metadata["publisher"] = clean_labeled_value(metadata.get("publisher", ""))
-    metadata["series"] = clean_labeled_value(metadata.get("series", ""))
-    metadata["genre"] = clean_labeled_value(metadata.get("genre", ""))
+    metadata["series"] = clean_series_value(metadata.get("series", ""))
+    metadata["genre"] = clean_genre_value(metadata.get("genre", ""))
     metadata["author"] = metadata.get("author") or extract_labeled_value(html, AUTHOR_LABELS)
     metadata["publisher"] = metadata.get("publisher") or extract_labeled_value(html, PUBLISHER_LABELS)
     metadata["publisher"] = metadata.get("publisher") or extract_jsonish_value(
@@ -614,7 +614,7 @@ def enrich_metadata_from_html(metadata, html):
         ),
         PUBLISHER_LABELS,
     )
-    metadata["series"] = metadata.get("series") or extract_labeled_value(html, SERIES_LABELS)
+    metadata["series"] = metadata.get("series") or clean_series_value(extract_labeled_value(html, SERIES_LABELS))
     metadata["series"] = metadata.get("series") or extract_jsonish_value(
         html,
         (
@@ -645,7 +645,7 @@ def enrich_metadata_from_html(metadata, html):
             PUBLISHED_YEAR_LABELS,
         )
     )
-    metadata["genre"] = metadata.get("genre") or extract_labeled_value(html, GENRE_LABELS)
+    metadata["genre"] = metadata.get("genre") or clean_genre_value(extract_labeled_value(html, GENRE_LABELS))
     metadata["genre"] = metadata.get("genre") or extract_meta_content(html, "property",
                                                                       "article:section") or extract_meta_content(html,
                                                                                                                  "name",
@@ -803,10 +803,26 @@ def clean_labeled_value(value):
     return value
 
 
+def clean_genre_value(value):
+    value = clean_labeled_value(value)
+    if value.casefold() in {label.casefold() for label in DESCRIPTION_LABELS}:
+        return ""
+    return value
+
+
+def clean_series_value(value):
+    value = clean_labeled_value(value)
+    if value.casefold() in {"книга", "book"}:
+        return ""
+    return value
+
+
 def finalize_metadata(metadata, base_url=""):
     metadata = dict(metadata)
-    for field in ("author", "publisher", "series", "genre"):
+    for field in ("author", "publisher"):
         metadata[field] = clean_labeled_value(metadata.get(field, ""))
+    metadata["genre"] = clean_genre_value(metadata.get("genre", ""))
+    metadata["series"] = clean_series_value(metadata.get("series", ""))
     metadata["title"] = strip_title_suffix(strip_tags(metadata.get("title", "")))
     metadata["description"] = strip_tags(metadata.get("description", ""))
     metadata["cover_url"] = normalize_absolute_url(metadata.get("cover_url", ""), base_url)
