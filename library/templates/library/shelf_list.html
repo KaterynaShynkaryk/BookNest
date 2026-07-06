@@ -14,6 +14,24 @@
         </div>
     </section>
 
+    <form class="filter-bar fade-in delay-1" method="get" aria-label="Пошук поличок">
+        <div class="filter-controls filter-controls--compact">
+            <label class="visually-hidden" for="shelf-search">Пошук за назвою полички</label>
+            <input
+                class="form-control search-input"
+                id="shelf-search"
+                type="search"
+                name="q"
+                value="{{ search_query }}"
+                placeholder="Пошук полички"
+            >
+            <button class="nav-link-button compact-submit" type="submit">Знайти</button>
+            {% if has_active_search %}
+                <a class="reset-link" href="{% url 'shelf_list' %}">Скинути</a>
+            {% endif %}
+        </div>
+    </form>
+
     {% if shelves %}
         <section class="shelf-grid fade-in delay-1" aria-label="Список поличок">
             {% for shelf in shelves %}
@@ -75,12 +93,20 @@
     {% else %}
         <div class="empty-state shelf-empty-state">
             <div class="shelf-empty-icon" aria-hidden="true">☷</div>
-            <h2>Поличок ще немає</h2>
-            <p>Створіть першу поличку, щоб групувати книги за настроєм, жанром або планами.</p>
-            <div class="empty-actions">
-                <a class="primary-link-button" href="{% url 'shelf_create' %}">Додати поличку</a>
-                <a class="nav-link-button" href="{% url 'book_list' %}">До бібліотеки</a>
-            </div>
+            {% if has_active_search %}
+                <h2>Поличок не знайдено</h2>
+                <p>Змініть пошук або скиньте його, щоб знову побачити всі полички.</p>
+                <div class="empty-actions">
+                    <a class="nav-link-button" href="{% url 'shelf_list' %}">Скинути пошук</a>
+                </div>
+            {% else %}
+                <h2>Поличок ще немає</h2>
+                <p>Створіть першу поличку, щоб групувати книги за настроєм, жанром або планами.</p>
+                <div class="empty-actions">
+                    <a class="primary-link-button" href="{% url 'shelf_create' %}">Додати поличку</a>
+                    <a class="nav-link-button" href="{% url 'book_list' %}">До бібліотеки</a>
+                </div>
+            {% endif %}
         </div>
     {% endif %}
     <script>

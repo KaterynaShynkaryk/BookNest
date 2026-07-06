@@ -23,7 +23,7 @@
                 placeholder="Пошук за назвою"
             >
 
-            <details class="filter-menu" {% if selected_statuses or selected_genres or selected_publishers or favorite_only %}open{% endif %}>
+            <details class="filter-menu">
                 <summary class="filter-menu__toggle">
                     <span>Фільтри</span>
                     {% if selected_statuses or selected_genres or selected_publishers or favorite_only %}<span class="filter-dot" aria-label="Фільтри активні"></span>{% endif %}
@@ -31,7 +31,7 @@
                 </summary>
 
                 <div class="filter-menu__panel">
-                    <details class="filter-section" open>
+                    <details class="filter-section">
                         <summary class="filter-section__summary">
                             <span>Статус читання</span>
                             <span class="filter-section__chevron" aria-hidden="true"></span>
@@ -50,7 +50,7 @@
                     </details>
 
                     {% if genre_choices %}
-                        <details class="filter-section" open>
+                        <details class="filter-section">
                             <summary class="filter-section__summary">
                                 <span>Жанр</span>
                                 <span class="filter-section__chevron" aria-hidden="true"></span>
@@ -70,7 +70,7 @@
                     {% endif %}
 
                     {% if publisher_choices %}
-                        <details class="filter-section" open>
+                        <details class="filter-section">
                             <summary class="filter-section__summary">
                                 <span>Видавництво</span>
                                 <span class="filter-section__chevron" aria-hidden="true"></span>
@@ -89,7 +89,7 @@
                         </details>
                     {% endif %}
                 
-                    <details class="filter-section" open>
+                    <details class="filter-section">
                         <summary class="filter-section__summary">
                             <span>Інше</span>
                             <span class="filter-section__chevron" aria-hidden="true"></span>

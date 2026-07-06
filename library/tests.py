@@ -105,7 +105,8 @@ class BookListViewTest(TestCase):
         self.assertEqual(response.context["selected_statuses"], [])
         self.assertFalse(response.context["favorite_only"])
         self.assertEqual(response.context["status_choices"], Book.Status.choices)
-        self.assertContains(response, 'class="filter-section" open')
+        self.assertContains(response, 'class="filter-section"')
+        self.assertNotContains(response, 'class="filter-section" open')
         self.assertContains(response, 'class="filter-section__summary"')
         self.assertContains(response, 'class="filter-section__chevron"')
         self.assertContains(response, 'class="filter-checkbox-group"')
@@ -410,6 +411,18 @@ class BookListViewTest(TestCase):
         self.assertEqual(metadata["published_year"], "2024")
         self.assertNotEqual(metadata["publisher"], "book_publisher_label")
 
+    def test_book_url_metadata_leaves_generic_book_series_empty(self):
+        metadata = extract_book_metadata(
+            '<script type="application/ld+json">'
+            '{"@type":"Book","name":"Окрема книга",'
+            '"isPartOf":{"@type":"Book","name":"Книга"},'
+            '"author":{"name":"Автор"}}'
+            "</script>"
+        )
+
+        self.assertEqual(metadata["title"], "Окрема книга")
+        self.assertEqual(metadata["series"], "")
+
     def test_book_url_metadata_does_not_guess_publisher_from_unlabelled_text(self):
         metadata = extract_book_metadata(
             '<html><head>'
@@ -445,6 +458,38 @@ class BookListViewTest(TestCase):
         self.assertEqual(metadata["publisher"], 'Книжковий клуб "Клуб Сімейного Дозвілля"')
         self.assertEqual(metadata["series"], "Слідство Міли Васкес")
         self.assertEqual(metadata["genre"], "Психологічний трилер, Саспенс, Сучасна проза")
+
+    def test_book_url_metadata_does_not_use_description_label_as_genre(self):
+        metadata = extract_book_metadata(
+            '<html><head>'
+            '<meta property="og:title" content="Книга з описом | Yakaboo">'
+            '<meta property="og:description" content="Справжній опис книги.">'
+            '</head><body>'
+            '<section class="characteristics">'
+            '<div>Категорія</div><div>Опис книги</div>'
+            '<p>Справжній опис книги.</p>'
+            '</section>'
+            '</body></html>'
+        )
+
+        self.assertEqual(metadata["title"], "Книга з описом")
+        self.assertEqual(metadata["genre"], "")
+        self.assertEqual(metadata["description"], "Справжній опис книги.")
+
+    def test_book_url_metadata_does_not_use_description_json_value_as_genre(self):
+        metadata = extract_book_metadata(
+            '<html><body>'
+            '<script type="application/json">'
+            '{"product":{"title":"Книга з JSON описом",'
+            '"categoryName":"Опис книги",'
+            '"description":"Справжній опис з JSON."}}'
+            '</script>'
+            '</body></html>'
+        )
+
+        self.assertEqual(metadata["title"], "Книга з JSON описом")
+        self.assertEqual(metadata["genre"], "")
+        self.assertEqual(metadata["description"], "Справжній опис з JSON.")
 
     def test_book_url_metadata_uses_safe_brand_as_publisher_fallback(self):
         metadata = extract_book_metadata(
@@ -1067,6 +1112,17 @@ class ShelfListViewTests(TestCase):
         self.assertNotContains(response, "Чужа поличка")
         self.assertNotContains(response, "Чужа книга")
 
+    def test_book_filters_remain_collapsed_after_search(self):
+        Book.objects.create(user=self.user, title="Абетка магії", author="Автор", status=Book.Status.PLANNED)
+
+        self.client.force_login(self.user)
+        response = self.client.get(reverse("book_list"), {"status": Book.Status.PLANNED})
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'class="filter-menu"')
+        self.assertNotContains(response, 'class="filter-menu" open')
+        self.assertContains(response, 'class="filter-dot"')
+
     def test_shelf_detail_shows_shelf_actions_menu_without_open_link(self):
         shelf = Shelf.objects.create(user=self.user, name="Фентезі")
         book = Book.objects.create(user=self.user, title="Абетка магії", author="Автор Один")
@@ -1088,6 +1144,24 @@ class ShelfListViewTests(TestCase):
             css = styles.read()
         self.assertIn(".page-heading:has(.book-actions-menu[open])", css)
         self.assertIn(".page-heading__actions .book-actions-menu", css)
+
+    def test_shelf_list_can_search_by_name(self):
+        Shelf.objects.create(user=self.user, name="Фентезі")
+        Shelf.objects.create(user=self.user, name="Класика")
+        Shelf.objects.create(user=self.other_user, name="Чужа фентезі поличка")
+
+        self.client.force_login(self.user)
+        response = self.client.get(reverse("shelf_list"), {"q": "фент"})
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context["shelf_count"], 1)
+        self.assertEqual(response.context["search_query"], "фент")
+        self.assertContains(response, 'name="q"')
+        self.assertContains(response, 'value="фент"')
+        self.assertContains(response, "Фентезі")
+        self.assertContains(response, "Скинути")
+        self.assertNotContains(response, "Класика")
+        self.assertNotContains(response, "Чужа фентезі поличка")
 
     def test_shelf_list_paginates_shelves(self):
         for index in range(26):
