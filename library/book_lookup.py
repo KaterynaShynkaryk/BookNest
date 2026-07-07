@@ -439,7 +439,7 @@ def metadata_from_flexible_dict(data):
     publisher = publisher or find_property_value(attributes, PUBLISHER_LABELS) or clean_labeled_value(publisher_fallback)
     series = series or find_property_value(attributes, SERIES_LABELS)
     published_year = published_year or parse_published_year(find_property_value(attributes, PUBLISHED_YEAR_LABELS))
-    genre = genre or clean_genre_value(
+    genre = genre or clean_genre_value(find_property_value(attributes, GENRE_LABELS))
     external_id = external_id or find_property_value(attributes, ["isbn"])
 
     return {
