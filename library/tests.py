@@ -731,6 +731,29 @@ class BookListViewTest(TestCase):
         self.assertContains(response, "Dune Messiah")
         self.assertNotContains(response, "Foundation")
 
+    def test_books_can_be_searched_by_author(self):
+        Book.objects.create(
+            user=self.user,
+            title="Dune Messiah",
+            author="Frank Herbert",
+        )
+        Book.objects.create(
+            user=self.user,
+            title="Foundation",
+            author="Isaac Asimov",
+        )
+
+        self.client.force_login(self.user)
+        response = self.client.get(reverse("book_list"), {"q": "asimov"})
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context["search_query"], "asimov")
+        self.assertEqual(response.context["displayed_count"], 1)
+        self.assertContains(response, "Foundation")
+        self.assertContains(response, "Isaac Asimov")
+        self.assertNotContains(response, "Dune Messiah")
+        self.assertContains(response, "Пошук за назвою або автором")
+
     def test_books_can_be_filtered_by_genre_and_publisher(self):
         Book.objects.create(
             user=self.user,
@@ -935,6 +958,8 @@ class BookListViewTest(TestCase):
         self.assertIn("color-scheme: dark", css)
         self.assertIn("--background: hsl(222 28% 9%)", css)
         self.assertIn(".theme-toggle", css)
+        self.assertIn("font-size: 0.88rem", css)
+        self.assertIn("padding: 0.42rem 0.68rem", css)
 
     def test_book_cover_has_no_decorative_left_stripe(self):
         with open("static/css/styles.css", encoding="utf-8") as styles:
@@ -1091,6 +1116,7 @@ class ShelfListViewTests(TestCase):
         self.assertContains(response, "Класика")
         self.assertContains(response, "Книг: 2")
         self.assertContains(response, 'class="primary-link-button add-book-link" href="/shelves/add/"')
+        self.assertContains(response, f'class="shelf-card__link" href="{reverse("shelf_detail", args=[fantasy.pk])}"')
         self.assertContains(response, "Книг: 1")
         self.assertContains(response, 'class="shelf-cover-grid"')
         self.assertContains(response, 'class="shelf-cover-tile"')
@@ -1108,6 +1134,8 @@ class ShelfListViewTests(TestCase):
         with open("static/css/styles.css", encoding="utf-8") as styles:
             css = styles.read()
         self.assertIn(".shelf-card:has(.book-actions-menu[open])", css)
+        self.assertIn(".shelf-card__link", css)
+        self.assertIn("cursor: pointer", css)
         self.assertNotContains(response, 'class="shelf-card__icon"')
         self.assertNotContains(response, "Чужа поличка")
         self.assertNotContains(response, "Чужа книга")
@@ -1437,6 +1465,18 @@ class BookDetailProgressTests(TestCase):
         self.assertEqual(str(self.book.finish_date), "2026-01-10")
         self.assertEqual(self.book.rating, 3)
         self.assertEqual(self.book.rating_stars(), "★★★☆☆")
+
+    def test_book_detail_links_to_book_shelves(self):
+        shelf = Shelf.objects.create(user=self.user, name="Фентезі")
+        self.book.shelves.add(shelf)
+
+        self.client.force_login(self.user)
+        response = self.client.get(reverse("book_detail", args=[self.book.pk]))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Полиці")
+        self.assertContains(response, f'href="{reverse("shelf_detail", args=[shelf.pk])}"')
+        self.assertContains(response, "Фентезі")
 
     def test_detail_page_avoids_duplicate_author_and_rating_in_main_content(self):
         self.book.status = Book.Status.COMPLETED

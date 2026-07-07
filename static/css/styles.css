@@ -2208,6 +2208,7 @@ a:hover {
 
 .shelf-card__link {
     border-radius: 1rem;
+    cursor: pointer;
     display: block;
     inset: 0;
     position: absolute;
@@ -2376,8 +2377,10 @@ a:hover {
     border: 1px solid var(--border);
     border-radius: 999px;
     color: var(--foreground);
+    font-size: 0.88rem;
     font-weight: 700;
-    padding: 0.55rem 0.85rem;
+    line-height: 1.1;
+    padding: 0.42rem 0.68rem;
     transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease;
 }
 

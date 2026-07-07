@@ -145,8 +145,8 @@ def get_book_filter_context(request, books_queryset):
         normalized_query = search_query.casefold()
         matching_book_ids = [
             book_id
-            for book_id, title in books.values_list("pk", "title").iterator(chunk_size=1000)
-            if normalized_query in title.casefold()
+            for book_id, title, author in books.values_list("pk", "title", "author").iterator(chunk_size=1000)
+            if normalized_query in title.casefold() or normalized_query in author.casefold()
         ]
         books = books.filter(pk__in=matching_book_ids)
 
