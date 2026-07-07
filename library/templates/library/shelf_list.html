@@ -51,7 +51,7 @@
                         <details class="book-actions-menu shelf-actions-menu">
                             <summary aria-label="Дії для полички {{ shelf.name }}">⋯</summary>
                             <nav class="book-actions" aria-label="Дії для полички {{ shelf.name }}">
-                                <a href="{% url 'shelf_books' shelf.pk %}">📚︎ Керувати книгами</a>
+                                <a href="{% url 'shelf_books' shelf.pk %}"><svg class="action-icon" aria-hidden="true"><use href="#icon-library-books"></use></svg> Керувати книгами</a>
                                 <a href="{% url 'shelf_update' shelf.pk %}"><svg class="action-icon" aria-hidden="true"><use href="#icon-edit"></use></svg> Редагувати</a>
                                 <a class="danger-link" href="{% url 'shelf_delete' shelf.pk %}"><svg class="action-icon" aria-hidden="true"><use href="#icon-delete"></use></svg> Видалити</a>
                             </nav>

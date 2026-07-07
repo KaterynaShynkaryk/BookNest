@@ -22,15 +22,15 @@
                     <p>{{ book.author }}</p>
                     <div class="detail-badges">
                         <span class="status-label status-label--{{ book.status }}">{{ book.get_status_display }}</span>
-                        {% if book.is_favorite %}<span class="favorite-label">♥ Улюблена</span>{% endif %}
+                        {% if book.is_favorite %}<span class="favorite-label"><svg class="action-icon" aria-hidden="true"><use href="#icon-favorite"></use></svg> Улюблена</span>{% endif %}
                     </div>
                 </div>
             </div>
 
             <div class="meta-card">
-                {% if book.genre %}<div class="meta-row"><span>🎭︎</span><div><small>Жанр</small><strong>{{ book.genre }}</strong></div></div>{% endif %}
-                {% if book.publisher %}<div class="meta-row"><span>🏛︎</span><div><small>Видавництво</small><strong>{{ book.publisher }}</strong></div></div>{% endif %}
-                {% if book.series %}<div class="meta-row"><span>⏭︎</span><div><small>Серія</small><strong>{{ book.series }}</strong></div></div>{% endif %}
+                {% if book.genre %}<div class="meta-row"><span><svg class="meta-icon" aria-hidden="true"><use href="#icon-theater"></use></svg></span><div><small>Жанр</small><strong>{{ book.genre }}</strong></div></div>{% endif %}
+                {% if book.publisher %}<div class="meta-row"><span><svg class="meta-icon" aria-hidden="true"><use href="#icon-apartment"></use></svg></span><div><small>Видавництво</small><strong>{{ book.publisher }}</strong></div></div>{% endif %}
+                {% if book.series %}<div class="meta-row"><span><svg class="meta-icon" aria-hidden="true"><use href="#icon-collections-bookmark"></use></svg></span><div><small>Серія</small><strong>{{ book.series }}</strong></div></div>{% endif %}
             </div>
 
             {% if book.shelves.all %}
@@ -100,7 +100,7 @@
                                     <form method="post" action="{% url 'note_toggle_favorite' note.pk %}">
                                         {% csrf_token %}
                                         <input type="hidden" name="next" value="{{ request.get_full_path }}">
-                                        <button class="note-favorite-button{% if note.is_favorite %} is-active{% endif %}" type="submit" aria-label="{% if note.is_favorite %}Прибрати нотатку з улюблених{% else %}Додати нотатку в улюблені{% endif %}">{% if note.is_favorite %}♥ Улюблена{% else %}♡ В улюблені{% endif %}</button>
+                                        <button class="note-favorite-button{% if note.is_favorite %} is-active{% endif %}" type="submit" aria-label="{% if note.is_favorite %}Прибрати нотатку з улюблених{% else %}Додати нотатку в улюблені{% endif %}">{% if note.is_favorite %}<svg class="action-icon" aria-hidden="true"><use href="#icon-favorite"></use></svg> Улюблена{% else %}<svg class="action-icon" aria-hidden="true"><use href="#icon-favorite-border"></use></svg> В улюблені{% endif %}</button>
                                     </form>
                                     <a class="note-edit-link" href="{% url 'note_update' note.pk %}?next={{ request.get_full_path|urlencode }}"><svg class="action-icon" aria-hidden="true"><use href="#icon-edit"></use></svg> Редагувати</a>
                                     <form method="post" action="{% url 'note_delete' note.pk %}">
