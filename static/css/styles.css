@@ -1711,7 +1711,9 @@ a:hover {
 }
 
 .nav-icon {
+    font-size: 1.4rem;
     height: 1.4rem;
+    line-height: 1;
     width: 1.4rem;
 }
 
@@ -2380,7 +2382,9 @@ a:hover {
     }
 
     .sidebar-nav .nav-icon {
+        font-size: 1.45rem;
         height: 1.45rem;
+        line-height: 1;
         width: 1.45rem;
     }
 
