@@ -18,6 +18,7 @@
             }
         })();
     </script>
+    <script src="https://code.iconify.design/iconify-icon/3.0.0/iconify-icon.min.js"></script>
     <link rel="stylesheet" href="{% static 'css/styles.css' %}">
 </head>
 <body class="{% if user.is_authenticated %}has-sidebar{% endif %} {% block body_class %}{% endblock %}">
@@ -74,7 +75,6 @@
         {% block content %}{% endblock %}
     </main>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="https://code.iconify.design/iconify-icon/3.0.0/iconify-icon.min.js"></script>
 <script>
         (() => {
             const messages = document.querySelectorAll("[data-flash-message]");
