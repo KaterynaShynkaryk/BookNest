@@ -38,7 +38,7 @@
                     <h2>Полиці</h2>
                     <div class="shelf-tags">
                         {% for shelf in book.shelves.all %}
-                            <span>{{ shelf.name|cut:"<" }}</span>
+                            <a href="{% url 'shelf_detail' shelf.pk %}">{{ shelf.name|cut:"<" }}</a>
                         {% endfor %}
                     </div>
                 </section>
