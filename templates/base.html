@@ -21,37 +21,14 @@
     <link rel="stylesheet" href="{% static 'css/styles.css' %}">
 </head>
 <body class="{% if user.is_authenticated %}has-sidebar{% endif %} {% block body_class %}{% endblock %}">
-    <svg class="icon-sprite" aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg">
-        <symbol id="icon-edit" viewBox="0 0 24 24">
-            <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25z"/>
-            <path d="M20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/>
-        </symbol>
-        <symbol id="icon-delete" viewBox="0 0 24 24">
-            <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12z"/>
-            <path d="M8 4l1-1h6l1 1h4v2H4V4h4z"/>
-        </symbol>
-        <symbol id="icon-menu-book" viewBox="0 0 24 24"><path d="M21 5c-1.1-.35-2.36-.5-3.5-.5-1.9 0-3.95.39-5.5 1.5-1.55-1.11-3.6-1.5-5.5-1.5S2.55 4.89 1 6v14.65c0 .25.25.5.5.5.1 0 .15-.05.25-.05C3.2 20.4 5.3 20 6.5 20c1.9 0 3.95.39 5.5 1.5 1.45-.92 4.08-1.5 5.5-1.5 1.38 0 2.8.25 4.05.85.1.05.15.05.25.05.25 0 .5-.25.5-.5V6c-.6-.45-1.2-.75-1.8-1zM21 18.5c-1.1-.35-2.35-.5-3.5-.5-1.42 0-4.05.58-5.5 1.5V8c1.45-.92 4.08-1.5 5.5-1.5 1.15 0 2.4.15 3.5.5v11.5z"/></symbol>
-        <symbol id="icon-theater" viewBox="0 0 24 24"><path d="M2 6c3.2-1.2 6.8-1.2 10 0 3.2-1.2 6.8-1.2 10 0v6.7c0 4.1-2.7 7.8-6.5 8.9-1.5-.45-2.8-1.35-3.8-2.55-1 1.2-2.3 2.1-3.8 2.55C4 20.5 2 16.8 2 12.7V6zm4 4.75c.7 0 1.25-.55 1.25-1.25S6.7 8.25 6 8.25 4.75 8.8 4.75 9.5 5.3 10.75 6 10.75zm4 0c.7 0 1.25-.55 1.25-1.25S10.7 8.25 10 8.25 8.75 8.8 8.75 9.5 9.3 10.75 10 10.75zm-6 3.5c.85 1.5 2.3 2.25 4 2.25s3.15-.75 4-2.25H4zm12-3.5c.7 0 1.25-.55 1.25-1.25S16.7 8.25 16 8.25s-1.25.55-1.25 1.25.55 1.25 1.25 1.25zm4 0c.7 0 1.25-.55 1.25-1.25S20.7 8.25 20 8.25s-1.25.55-1.25 1.25.55 1.25 1.25 1.25z"/></symbol>
-        <symbol id="icon-apartment" viewBox="0 0 24 24"><path d="M17 11V3H7v4H3v14h8v-4h2v4h8V11h-4zM7 19H5v-2h2v2zm0-4H5v-2h2v2zm0-4H5V9h2v2zm4 4H9v-2h2v2zm0-4H9V9h2v2zm0-4H9V5h2v2zm4 8h-2v-2h2v2zm0-4h-2V9h2v2zm0-4h-2V5h2v2zm4 12h-2v-2h2v2zm0-4h-2v-2h2v2z"/></symbol>
-        <symbol id="icon-collections-bookmark" viewBox="0 0 24 24"><path d="M20 6h-2.18c.11.31.18.65.18 1v11.5c0 .83-.67 1.5-1.5 1.5-.31 0-.62-.1-.88-.28L12 17.25l-3.62 2.47c-.26.18-.57.28-.88.28C6.67 20 6 19.33 6 18.5V7c0-.35.07-.69.18-1H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2z"/><path d="M8 3v14.5l4-2.7 4 2.7V3c0-.55-.45-1-1-1H9c-.55 0-1 .45-1 1z"/></symbol>
-        <symbol id="icon-favorite" viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.08C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></symbol>
-        <symbol id="icon-favorite-border" viewBox="0 0 24 24"><path d="M16.5 3c-1.74 0-3.41.81-4.5 2.09C10.91 3.81 9.24 3 7.5 3 4.42 3 2 5.42 2 8.5c0 3.78 3.4 6.86 8.55 11.54L12 21.35l1.45-1.32C18.6 15.36 22 12.28 22 8.5 22 5.42 19.58 3 16.5 3zm-4.4 15.55l-.1.1-.1-.1C7.14 14.24 4 11.39 4 8.5 4 6.5 5.5 5 7.5 5c1.54 0 3.04.99 3.57 2.36h1.87C13.46 5.99 14.96 5 16.5 5c2 0 3.5 1.5 3.5 3.5 0 2.89-3.14 5.74-7.9 10.05z"/></symbol>
-        <symbol id="icon-library" viewBox="0 0 24 24"><path d="M3 4h5c1.4 0 2.7.5 4 1.5C13.3 4.5 14.6 4 16 4h5v15h-5c-1.4 0-2.7.5-4 1.5C10.7 19.5 9.4 19 8 19H3V4zm2 2v11h3c1 0 2 .22 3 .66V7.34C10 6.45 9 6 8 6H5zm14 0h-3c-1 0-2 .45-3 1.34v10.32c1-.44 2-.66 3-.66h3V6z"/></symbol>
-        <symbol id="icon-notes" viewBox="0 0 24 24"><path d="M5 3h10l4 4v14H5V3zm9 1.5V8h3.5L14 4.5zM7 11h10v2H7v-2zm0 4h7v2H7v-2z"/><path d="M18 13h2v3h3v2h-3v3h-2v-3h-3v-2h3v-3z"/></symbol>
-        <symbol id="icon-shelves" viewBox="0 0 24 24"><path d="M4 4h16v5H4V4zm2 2v1h12V6H6zm-2 5h16v9H4v-9zm2 2v5h12v-5H6zm3 1h6v2H9v-2z"/></symbol>
-        <symbol id="icon-stats" viewBox="0 0 24 24"><path d="M11 2v20C5.95 21.5 2 17.24 2 12s3.95-9.5 9-10zm2 0c5.05.5 9 4.76 9 10 0 2.76-1.12 5.26-2.93 7.07L13 13V2zm1.41 12.41l4.24 4.24A7.96 7.96 0 0 0 20 12c0-3.53-2.29-6.53-5.59-7.59v10z"/></symbol>
-        <symbol id="icon-library-books" viewBox="0 0 24 24"><path d="M4 6h4v14H4V6zm6-2h4v16h-4V4zm6 4h4v12h-4V8z"/></symbol>
-        <symbol id="icon-moon" viewBox="0 0 24 24"><path d="M12.1 2.1c-1.2 1.4-1.9 3.2-1.9 5.1 0 4.4 3.6 8 8 8 1.3 0 2.6-.3 3.7-.9-1.3 4.4-5.3 7.6-10.1 7.6C6 21.9 2.1 18 2.1 12.2c0-4.8 3.2-8.8 7.6-10.1.8-.2 1.6-.2 2.4 0z"/></symbol>
-        <symbol id="icon-sun" viewBox="0 0 24 24"><path d="M6.76 4.84l-1.8-1.79-1.41 1.41 1.79 1.8 1.42-1.42zM1 13h3v-2H1v2zm10-12v3h2V1h-2zm9.04 2.46l-1.41-1.41-1.8 1.79 1.42 1.42 1.79-1.8zM17.24 19.16l1.8 1.79 1.41-1.41-1.79-1.8-1.42 1.42zM20 11v2h3v-2h-3zm-8 7a6 6 0 1 0 0-12 6 6 0 0 0 0 12zm-1 5h2v-3h-2v3zM3.55 19.54l1.41 1.41 1.8-1.79-1.42-1.42-1.79 1.8z"/></symbol>
-    </svg>
     {% block app_nav %}
         {% if user.is_authenticated %}
             <aside class="app-sidebar" aria-label="Основна навігація">
                 <nav class="sidebar-nav">
-                    <a class="{% if request.resolver_match.url_name == 'book_list' or request.resolver_match.url_name == 'book_create' or request.resolver_match.url_name == 'book_detail' or request.resolver_match.url_name == 'book_update' or request.resolver_match.url_name == 'book_delete' %}is-active{% endif %}" href="{% url 'book_list' %}" aria-label="Бібліотека"><svg class="nav-icon" aria-hidden="true"><use href="#icon-library"></use></svg><span class="nav-label">Бібліотека</span></a>
-                    <a class="{% if request.resolver_match.url_name == 'note_list' or request.resolver_match.url_name == 'note_update' %}is-active{% endif %}" href="{% url 'note_list' %}" aria-label="Нотатки"><svg class="nav-icon" aria-hidden="true"><use href="#icon-notes"></use></svg><span class="nav-label">Нотатки</span></a>
-                    <a class="{% if request.resolver_match.url_name == 'shelf_list' or request.resolver_match.url_name == 'shelf_create' or request.resolver_match.url_name == 'shelf_update' or request.resolver_match.url_name == 'shelf_delete' or request.resolver_match.url_name == 'shelf_books' or request.resolver_match.url_name == 'shelf_detail' %}is-active{% endif %}" href="{% url 'shelf_list' %}" aria-label="Полички"><svg class="nav-icon" aria-hidden="true"><use href="#icon-shelves"></use></svg><span class="nav-label">Полички</span></a>
-                    <a class="{% if request.resolver_match.url_name == 'statistics' %}is-active{% endif %}" href="{% url 'statistics' %}" aria-label="Статистика"><svg class="nav-icon" aria-hidden="true"><use href="#icon-stats"></use></svg><span class="nav-label">Статистика</span></a>
+                    <a class="{% if request.resolver_match.url_name == 'book_list' or request.resolver_match.url_name == 'book_create' or request.resolver_match.url_name == 'book_detail' or request.resolver_match.url_name == 'book_update' or request.resolver_match.url_name == 'book_delete' %}is-active{% endif %}" href="{% url 'book_list' %}" aria-label="Бібліотека"><iconify-icon class="nav-icon" icon="ri:book-shelf-fill" aria-hidden="true"></iconify-icon><span class="nav-label">Бібліотека</span></a>
+                    <a class="{% if request.resolver_match.url_name == 'note_list' or request.resolver_match.url_name == 'note_update' %}is-active{% endif %}" href="{% url 'note_list' %}" aria-label="Нотатки"><iconify-icon class="nav-icon" icon="ri:sticky-note-add-fill" aria-hidden="true"></iconify-icon><span class="nav-label">Нотатки</span></a>
+                    <a class="{% if request.resolver_match.url_name == 'shelf_list' or request.resolver_match.url_name == 'shelf_create' or request.resolver_match.url_name == 'shelf_update' or request.resolver_match.url_name == 'shelf_delete' or request.resolver_match.url_name == 'shelf_books' or request.resolver_match.url_name == 'shelf_detail' %}is-active{% endif %}" href="{% url 'shelf_list' %}" aria-label="Полички"><iconify-icon class="nav-icon" icon="ri:archive-drawer-fill" aria-hidden="true"></iconify-icon><span class="nav-label">Полички</span></a>
+                    <a class="{% if request.resolver_match.url_name == 'statistics' %}is-active{% endif %}" href="{% url 'statistics' %}" aria-label="Статистика"><iconify-icon class="nav-icon" icon="ri:pie-chart-2-fill" aria-hidden="true"></iconify-icon><span class="nav-label">Статистика</span></a>
                 </nav>
             </aside>
         {% endif %}
@@ -68,10 +45,10 @@
                 <div class="nav-actions">
                     {% if user.is_authenticated %}
                         <span class="nav-greeting d-none d-sm-inline">{{ user.username }}</span>
-                        <button class="theme-toggle" type="button" data-theme-toggle aria-label="Перемкнути тему"><svg class="action-icon" aria-hidden="true"><use href="#icon-moon"></use></svg><span>Темна</span></button>
+                        <button class="theme-toggle" type="button" data-theme-toggle aria-label="Перемкнути тему"><iconify-icon class="action-icon" icon="ic:baseline-dark-mode" aria-hidden="true"></iconify-icon><span>Темна</span></button>
                         <a class="nav-link-button" href="{% url 'logout' %}">Вийти</a>
                     {% else %}
-                        <button class="theme-toggle" type="button" data-theme-toggle aria-label="Перемкнути тему"><svg class="action-icon" aria-hidden="true"><use href="#icon-moon"></use></svg><span>Темна</span></button>
+                        <button class="theme-toggle" type="button" data-theme-toggle aria-label="Перемкнути тему"><iconify-icon class="action-icon" icon="ic:baseline-dark-mode" aria-hidden="true"></iconify-icon><span>Темна</span></button>
                         <a class="nav-link-button" href="{% url 'login' %}">Увійти</a>
                         <a class="primary-link-button" href="{% url 'register' %}">Реєстрація</a>
                     {% endif %}
@@ -97,6 +74,7 @@
         {% block content %}{% endblock %}
     </main>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://code.iconify.design/iconify-icon/3.0.0/iconify-icon.min.js"></script>
 <script>
         (() => {
             const messages = document.querySelectorAll("[data-flash-message]");
@@ -130,8 +108,8 @@
                 const isDark = getCurrentTheme() === "dark";
                 toggles.forEach((toggle) => {
                     toggle.innerHTML = isDark
-                        ? '<svg class="action-icon" aria-hidden="true"><use href="#icon-sun"></use></svg><span>Світла</span>'
-                        : '<svg class="action-icon" aria-hidden="true"><use href="#icon-moon"></use></svg><span>Темна</span>';
+                        ? '<iconify-icon class="action-icon" icon="ic:baseline-light-mode" aria-hidden="true"></iconify-icon><span>Світла</span>'
+                        : '<iconify-icon class="action-icon" icon="ic:baseline-dark-mode" aria-hidden="true"></iconify-icon><span>Темна</span>';
                     toggle.setAttribute("aria-pressed", String(isDark));
                 });
             };

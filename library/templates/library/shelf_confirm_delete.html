@@ -13,7 +13,7 @@
 
             <form class="delete-actions" method="post">
                 {% csrf_token %}
-                <button class="danger-submit" type="submit"><svg class="action-icon" aria-hidden="true"><use href="#icon-delete"></use></svg> Так, видалити</button>
+                <button class="danger-submit" type="submit"><iconify-icon class="action-icon" icon="ic:baseline-delete" aria-hidden="true"></iconify-icon> Так, видалити</button>
                 <a class="nav-link-button" href="{% url 'shelf_list' %}">← Ні, повернутися</a>
             </form>
         </div>

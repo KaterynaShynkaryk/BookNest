@@ -1693,13 +1693,6 @@ a:hover {
     }
 }
 
-.icon-sprite {
-    height: 0;
-    overflow: hidden;
-    position: absolute;
-    width: 0;
-}
-
 .action-icon {
     display: inline-block;
     fill: currentColor;

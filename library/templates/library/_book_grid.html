@@ -23,7 +23,7 @@
                                     {% csrf_token %}
                                     <input type="hidden" name="next" value="{{ request.get_full_path }}">
                                     <button class="favorite-toggle" type="submit" aria-label="{% if book.is_favorite %}Прибрати з обраного{% else %}Додати в обране{% endif %}">
-                                        {% if book.is_favorite %}<svg class="favorite-icon" aria-hidden="true"><use href="#icon-favorite"></use></svg>{% else %}<svg class="favorite-icon" aria-hidden="true"><use href="#icon-favorite-border"></use></svg>{% endif %}
+                                        {% if book.is_favorite %}<iconify-icon class="favorite-icon" icon="ic:baseline-favorite" aria-hidden="true"></iconify-icon>{% else %}<iconify-icon class="favorite-icon" icon="ic:baseline-favorite-border" aria-hidden="true"></iconify-icon>{% endif %}
                                     </button>
                                 </form>
                             </div>
@@ -52,9 +52,9 @@
                     <details class="book-actions-menu">
                         <summary aria-label="Дії для {{ book.title }}">⋯</summary>
                         <nav class="book-actions" aria-label="Дії для {{ book.title }}">
-                            <a href="{% url 'book_detail' book.pk %}"><svg class="action-icon" aria-hidden="true"><use href="#icon-menu-book"></use></svg> Деталі</a>
-                            <a href="{% url 'book_update' book.pk %}"><svg class="action-icon" aria-hidden="true"><use href="#icon-edit"></use></svg> Редагувати</a>
-                            <a class="danger-link" href="{% url 'book_delete' book.pk %}"><svg class="action-icon" aria-hidden="true"><use href="#icon-delete"></use></svg> Видалити</a>
+                            <a href="{% url 'book_detail' book.pk %}"><iconify-icon class="action-icon" icon="ic:baseline-menu-book" aria-hidden="true"></iconify-icon> Деталі</a>
+                            <a href="{% url 'book_update' book.pk %}"><iconify-icon class="action-icon" icon="ic:baseline-edit" aria-hidden="true"></iconify-icon> Редагувати</a>
+                            <a class="danger-link" href="{% url 'book_delete' book.pk %}"><iconify-icon class="action-icon" icon="ic:baseline-delete" aria-hidden="true"></iconify-icon> Видалити</a>
                         </nav>
                     </details>
                 </div>
