@@ -53,8 +53,8 @@
                         <summary aria-label="Дії для {{ book.title }}">⋯</summary>
                         <nav class="book-actions" aria-label="Дії для {{ book.title }}">
                             <a href="{% url 'book_detail' book.pk %}">👁 Деталі</a>
-                            <a href="{% url 'book_update' book.pk %}"><span class="mirrored-icon" aria-hidden="true">✎</span> Редагувати</a>
-                            <a class="danger-link" href="{% url 'book_delete' book.pk %}">🗙 Видалити</a>
+                            <a href="{% url 'book_update' book.pk %}"><svg class="action-icon" aria-hidden="true"><use href="#icon-edit"></use></svg> Редагувати</a>
+                            <a class="danger-link" href="{% url 'book_delete' book.pk %}"><svg class="action-icon" aria-hidden="true"><use href="#icon-delete"></use></svg> Видалити</a>
                         </nav>
                     </details>
                 </div>

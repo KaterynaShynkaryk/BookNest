@@ -102,11 +102,11 @@
                                         <input type="hidden" name="next" value="{{ request.get_full_path }}">
                                         <button class="note-favorite-button{% if note.is_favorite %} is-active{% endif %}" type="submit" aria-label="{% if note.is_favorite %}Прибрати нотатку з улюблених{% else %}Додати нотатку в улюблені{% endif %}">{% if note.is_favorite %}♥ Улюблена{% else %}♡ В улюблені{% endif %}</button>
                                     </form>
-                                    <a class="note-edit-link" href="{% url 'note_update' note.pk %}?next={{ request.get_full_path|urlencode }}">Редагувати</a>
+                                    <a class="note-edit-link" href="{% url 'note_update' note.pk %}?next={{ request.get_full_path|urlencode }}"><svg class="action-icon" aria-hidden="true"><use href="#icon-edit"></use></svg> Редагувати</a>
                                     <form method="post" action="{% url 'note_delete' note.pk %}">
                                         {% csrf_token %}
                                         <input type="hidden" name="next" value="{{ request.get_full_path }}">
-                                        <button class="text-danger-button" type="submit">Видалити</button>
+                                        <button class="text-danger-button" type="submit"><svg class="action-icon" aria-hidden="true"><use href="#icon-delete"></use></svg> Видалити</button>
                                     </form>
                                 </div>
                             </article>
@@ -164,8 +164,8 @@
 
             <div class="side-card">
                 <h2>Дії</h2>
-                <a class="action-link primary-action" href="{% url 'book_update' book.pk %}"><span class="mirrored-icon" aria-hidden="true">✎</span> Редагувати</a>
-                <a class="action-link danger-action" href="{% url 'book_delete' book.pk %}">🗙 Видалити книгу</a>
+                <a class="action-link primary-action" href="{% url 'book_update' book.pk %}"><svg class="action-icon" aria-hidden="true"><use href="#icon-edit"></use></svg> Редагувати</a>
+                <a class="action-link danger-action" href="{% url 'book_delete' book.pk %}"><svg class="action-icon" aria-hidden="true"><use href="#icon-delete"></use></svg> Видалити книгу</a>
             </div>
         </aside>
     </section>

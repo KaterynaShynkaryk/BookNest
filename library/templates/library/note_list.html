@@ -69,11 +69,11 @@
                                         <input type="hidden" name="next" value="{{ request.get_full_path }}">
                                         <button class="note-favorite-button{% if note.is_favorite %} is-active{% endif %}" type="submit" aria-label="{% if note.is_favorite %}Прибрати нотатку з улюблених{% else %}Додати нотатку в улюблені{% endif %}">{% if note.is_favorite %}♥ Улюблена{% else %}♡ В улюблені{% endif %}</button>
                                     </form>
-                                    <a class="note-edit-link" href="{% url 'note_update' note.pk %}?next={{ request.get_full_path|urlencode }}">Редагувати</a>
+                                    <a class="note-edit-link" href="{% url 'note_update' note.pk %}?next={{ request.get_full_path|urlencode }}"><svg class="action-icon" aria-hidden="true"><use href="#icon-edit"></use></svg> Редагувати</a>
                                     <form method="post" action="{% url 'note_delete' note.pk %}">
                                         {% csrf_token %}
                                         <input type="hidden" name="next" value="{{ request.get_full_path }}">
-                                        <button class="text-danger-button" type="submit">Видалити</button>
+                                        <button class="text-danger-button" type="submit"><svg class="action-icon" aria-hidden="true"><use href="#icon-delete"></use></svg> Видалити</button>
                                     </form>
                                 </div>
                             </article>
@@ -103,11 +103,11 @@
                                         <input type="hidden" name="next" value="{{ request.get_full_path }}">
                                         <button class="note-favorite-button{% if note.is_favorite %} is-active{% endif %}" type="submit" aria-label="{% if note.is_favorite %}Прибрати нотатку з улюблених{% else %}Додати нотатку в улюблені{% endif %}">{% if note.is_favorite %}♥ Улюблена{% else %}♡ В улюблені{% endif %}</button>
                                     </form>
-                                    <a class="note-edit-link" href="{% url 'note_update' note.pk %}?next={{ request.get_full_path|urlencode }}">Редагувати</a>
+                                    <a class="note-edit-link" href="{% url 'note_update' note.pk %}?next={{ request.get_full_path|urlencode }}"><svg class="action-icon" aria-hidden="true"><use href="#icon-edit"></use></svg> Редагувати</a>
                                     <form method="post" action="{% url 'note_delete' note.pk %}">
                                         {% csrf_token %}
                                         <input type="hidden" name="next" value="{{ request.get_full_path }}">
-                                        <button class="text-danger-button" type="submit">Видалити</button>
+                                        <button class="text-danger-button" type="submit"><svg class="action-icon" aria-hidden="true"><use href="#icon-delete"></use></svg> Видалити</button>
                                     </form>
                                 </div>
                             </article>

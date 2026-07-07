@@ -958,8 +958,9 @@ class BookListViewTest(TestCase):
         self.assertIn("color-scheme: dark", css)
         self.assertIn("--background: hsl(222 28% 9%)", css)
         self.assertIn(".theme-toggle", css)
-        self.assertIn("font-size: 0.88rem", css)
-        self.assertIn("padding: 0.42rem 0.68rem", css)
+        self.assertIn("font-size: 0.875rem", css)
+        self.assertIn("min-height: 2.75rem", css)
+        self.assertIn("padding: 0.65rem 1.15rem", css)
 
     def test_book_cover_has_no_decorative_left_stripe(self):
         with open("static/css/styles.css", encoding="utf-8") as styles:
@@ -1117,6 +1118,8 @@ class ShelfListViewTests(TestCase):
         self.assertContains(response, "Книг: 2")
         self.assertContains(response, 'class="primary-link-button add-book-link" href="/shelves/add/"')
         self.assertContains(response, f'class="shelf-card__link" href="{reverse("shelf_detail", args=[fantasy.pk])}"')
+        self.assertContains(response, 'id="icon-edit"')
+        self.assertContains(response, 'id="icon-delete"')
         self.assertContains(response, "Книг: 1")
         self.assertContains(response, 'class="shelf-cover-grid"')
         self.assertContains(response, 'class="shelf-cover-tile"')
@@ -1127,8 +1130,8 @@ class ShelfListViewTests(TestCase):
         self.assertContains(response, 'class="book-actions-menu shelf-actions-menu"')
         self.assertContains(response, "⋯")
         self.assertContains(response, "📚︎ Керувати книгами")
-        self.assertContains(response, '<span class="mirrored-icon" aria-hidden="true">✎</span> Редагувати')
-        self.assertContains(response, "🗙 Видалити")
+        self.assertContains(response, 'href="#icon-edit"')
+        self.assertContains(response, 'href="#icon-delete"')
         self.assertNotContains(response, "Відкрити поличку →")
         self.assertContains(response, 'event.target.closest(".shelf-actions-menu")')
         with open("static/css/styles.css", encoding="utf-8") as styles:
@@ -1165,8 +1168,8 @@ class ShelfListViewTests(TestCase):
         self.assertContains(response, "Абетка магії")
         self.assertContains(response, 'class="book-actions-menu shelf-actions-menu"')
         self.assertContains(response, "📚︎ Керувати книгами")
-        self.assertContains(response, '<span class="mirrored-icon" aria-hidden="true">✎</span> Редагувати')
-        self.assertContains(response, "🗙 Видалити")
+        self.assertContains(response, 'href="#icon-edit"')
+        self.assertContains(response, 'href="#icon-delete"')
         self.assertNotContains(response, "Відкрити поличку")
         with open("static/css/styles.css", encoding="utf-8") as styles:
             css = styles.read()
@@ -1477,6 +1480,10 @@ class BookDetailProgressTests(TestCase):
         self.assertContains(response, "Полиці")
         self.assertContains(response, f'href="{reverse("shelf_detail", args=[shelf.pk])}"')
         self.assertContains(response, "Фентезі")
+        with open("static/css/styles.css", encoding="utf-8") as styles:
+            css = styles.read()
+        self.assertIn(".shelf-tags a", css)
+        self.assertIn("background: var(--tag-bg)", css)
 
     def test_detail_page_avoids_duplicate_author_and_rating_in_main_content(self):
         self.book.status = Book.Status.COMPLETED
