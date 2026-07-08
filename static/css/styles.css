@@ -2002,6 +2002,17 @@ a:hover {
     gap: 0.5rem;
 }
 
+.note-actions-menu {
+    display: none;
+    margin-top: 0.6rem;
+    width: max-content;
+}
+
+.note-actions-menu .book-actions {
+    left: 0;
+    right: auto;
+}
+
 .note-card__actions form {
     display: inline-flex;
     margin: 0;
@@ -2483,6 +2494,14 @@ a:hover {
 
     .book-card__body {
         padding: 1rem;
+    }
+
+    .note-card__actions {
+        display: none;
+    }
+
+    .note-actions-menu {
+        display: block;
     }
 
     .book-card__read-date {

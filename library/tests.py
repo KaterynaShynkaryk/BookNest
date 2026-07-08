@@ -1808,6 +1808,10 @@ class NoteFeatureTests(TestCase):
         self.assertContains(response, "Book note")
         self.assertContains(response, 'class="note-form-toggle note-page-form-toggle"')
         self.assertContains(response, '+ Додати нотатку')
+        self.assertContains(response, 'class="book-actions-menu note-actions-menu"')
+        self.assertContains(response, 'aria-label="Дії для нотатки"')
+        self.assertIn(".note-actions-menu", css)
+        self.assertIn(".note-card__actions {\n        display: none;", css)
         self.assertNotContains(response, "Other hidden note")
 
 
