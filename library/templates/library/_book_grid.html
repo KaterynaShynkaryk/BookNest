@@ -54,7 +54,14 @@
                         <nav class="book-actions" aria-label="Дії для {{ book.title }}">
                             <a href="{% url 'book_detail' book.pk %}"><iconify-icon class="action-icon" icon="ic:baseline-menu-book" aria-hidden="true"></iconify-icon> Деталі</a>
                             <a href="{% url 'book_update' book.pk %}"><iconify-icon class="action-icon" icon="ic:baseline-edit" aria-hidden="true"></iconify-icon> Редагувати</a>
-                            <a class="danger-link" href="{% url 'book_delete' book.pk %}"><iconify-icon class="action-icon" icon="ic:baseline-delete" aria-hidden="true"></iconify-icon> Видалити</a>
+                            {% if shelf %}
+                                <form method="post" action="{% url 'shelf_book_remove' shelf.pk book.pk %}">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                                    <button class="text-danger-button" type="submit"><iconify-icon class="action-icon" icon="ic:outline-remove" aria-hidden="true"></iconify-icon> Прибрати з полички</button>
+                                </form>
+                            {% endif %}
+                            <a class="danger-link" href="{% url 'book_delete' book.pk %}?next={{ request.get_full_path|urlencode }}"><iconify-icon class="action-icon" icon="ic:baseline-delete" aria-hidden="true"></iconify-icon> Видалити</a>
                         </nav>
                     </details>
                 </div>

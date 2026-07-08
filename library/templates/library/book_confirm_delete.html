@@ -14,8 +14,9 @@
 
             <form class="delete-actions" method="post">
                 {% csrf_token %}
+                {% if next_url %}<input type="hidden" name="next" value="{{ next_url }}">{% endif %}
                 <button class="danger-submit" type="submit"><iconify-icon class="action-icon" icon="ic:baseline-delete" aria-hidden="true"></iconify-icon> Так, видалити</button>
-                <a class="nav-link-button" href="{% url 'book_detail' book.pk %}">← Ні, повернутися</a>
+                <a class="nav-link-button" href="{% if next_url %}{{ next_url }}{% else %}{% url 'book_detail' book.pk %}{% endif %}"><iconify-icon class="action-icon" icon="ic:baseline-keyboard-backspace" aria-hidden="true"></iconify-icon> Ні, повернутися</a>
             </form>
         </div>
     </section>

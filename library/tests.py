@@ -412,16 +412,18 @@ class BookListViewTest(TestCase):
         self.assertNotEqual(metadata["publisher"], "book_publisher_label")
 
     def test_book_url_metadata_leaves_generic_book_series_empty(self):
-        metadata = extract_book_metadata(
-            '<script type="application/ld+json">'
-            '{"@type":"Book","name":"Окрема книга",'
-            '"isPartOf":{"@type":"Book","name":"Книга"},'
-            '"author":{"name":"Автор"}}'
-            "</script>"
-        )
+        for generic_series in ("Книга", "Книги", "Book", "Books"):
+            with self.subTest(generic_series=generic_series):
+                metadata = extract_book_metadata(
+                    '<script type="application/ld+json">'
+                    '{"@type":"Book","name":"Окрема книга",'
+                    f'"isPartOf":{{"@type":"Book","name":"{generic_series}"}},'
+                    '"author":{"name":"Автор"}}'
+                    "</script>"
+                )
 
-        self.assertEqual(metadata["title"], "Окрема книга")
-        self.assertEqual(metadata["series"], "")
+                self.assertEqual(metadata["title"], "Окрема книга")
+                self.assertEqual(metadata["series"], "")
 
     def test_book_url_metadata_does_not_guess_publisher_from_unlabelled_text(self):
         metadata = extract_book_metadata(
@@ -1188,6 +1190,44 @@ class ShelfListViewTests(TestCase):
         self.assertIn(".page-heading:has(.book-actions-menu[open])", css)
         self.assertIn(".page-heading__actions .book-actions-menu", css)
 
+    def test_shelf_detail_book_menu_can_remove_book_from_shelf(self):
+        shelf = Shelf.objects.create(user=self.user, name="Фентезі")
+        book = Book.objects.create(user=self.user, title="Абетка магії", author="Автор Один")
+        shelf.books.add(book)
+
+        self.client.force_login(self.user)
+        response = self.client.get(reverse("shelf_detail", args=[shelf.pk]))
+
+        self.assertContains(response, reverse("shelf_book_remove", args=[shelf.pk, book.pk]))
+        self.assertContains(response, 'icon="ic:outline-remove"')
+        self.assertContains(response, "Прибрати з полички")
+
+        remove_response = self.client.post(
+            reverse("shelf_book_remove", args=[shelf.pk, book.pk]),
+            {"next": reverse("shelf_detail", args=[shelf.pk])},
+        )
+
+        self.assertRedirects(remove_response, reverse("shelf_detail", args=[shelf.pk]))
+        self.assertFalse(shelf.books.filter(pk=book.pk).exists())
+        self.assertTrue(Book.objects.filter(pk=book.pk).exists())
+
+    def test_book_delete_returns_to_shelf_when_next_is_shelf_detail(self):
+        shelf = Shelf.objects.create(user=self.user, name="Фентезі")
+        book = Book.objects.create(user=self.user, title="Абетка магії", author="Автор Один")
+        shelf.books.add(book)
+        next_url = reverse("shelf_detail", args=[shelf.pk])
+
+        self.client.force_login(self.user)
+        get_response = self.client.get(reverse("book_delete", args=[book.pk]), {"next": next_url})
+        self.assertContains(get_response, f'name="next" value="{next_url}"')
+        self.assertContains(get_response, f'href="{next_url}"')
+        self.assertContains(get_response, 'icon="ic:baseline-keyboard-backspace"')
+
+        response = self.client.post(reverse("book_delete", args=[book.pk]), {"next": next_url})
+
+        self.assertRedirects(response, next_url)
+        self.assertFalse(Book.objects.filter(pk=book.pk).exists())
+
     def test_shelf_list_can_search_by_name(self):
         Shelf.objects.create(user=self.user, name="Фентезі")
         Shelf.objects.create(user=self.user, name="Класика")
@@ -1409,6 +1449,7 @@ class ShelfListViewTests(TestCase):
         get_response = self.client.get(reverse("shelf_delete", args=[shelf.pk]))
         self.assertEqual(get_response.status_code, 200)
         self.assertContains(get_response, "Книги не будуть видалені")
+        self.assertContains(get_response, 'icon="ic:baseline-keyboard-backspace"')
 
         response = self.client.post(reverse("shelf_delete", args=[shelf.pk]))
 

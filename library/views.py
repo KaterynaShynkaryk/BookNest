@@ -419,6 +419,19 @@ def shelf_books(request, pk):
 
 
 @login_required
+@require_POST
+def shelf_book_remove(request, pk, book_pk):
+    shelf = get_object_or_404(Shelf, pk=pk, user=request.user)
+    book = get_object_or_404(Book, pk=book_pk, user=request.user)
+    shelf.books.remove(book)
+    messages.success(request, f"Книгу «{book.title}» прибрано з полички «{shelf.name}».")
+    redirect_url = get_safe_redirect_url(request)
+    if redirect_url:
+        return redirect(redirect_url)
+    return redirect("shelf_detail", pk=shelf.pk)
+
+
+@login_required
 def shelf_delete(request, pk):
     shelf = get_object_or_404(Shelf, pk=pk, user=request.user)
 
@@ -642,6 +655,7 @@ def book_update(request, pk):
 @login_required
 def book_delete(request, pk):
     book = get_object_or_404(Book, pk=pk, user=request.user)
+    redirect_url = get_safe_redirect_url(request)
 
     if request.method == "POST":
         book_title = book.title
@@ -649,6 +663,8 @@ def book_delete(request, pk):
         book.delete()
         cleanup_empty_series_shelves(user)
         messages.success(request, f"Книгу «{book_title}» видалено.")
+        if redirect_url:
+            return redirect(redirect_url)
         return redirect("book_list")
 
-    return render(request, "library/book_confirm_delete.html", {"book": book})
+    return render(request, "library/book_confirm_delete.html", {"book": book, "next_url": redirect_url})
