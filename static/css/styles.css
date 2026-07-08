@@ -1088,9 +1088,16 @@ a:hover {
     font-size: 0.78rem;
     font-weight: 500;
     justify-content: flex-start;
+    line-height: 1.2;
     min-height: auto;
     padding: 0.45rem 0.55rem;
+    text-align: left;
+    white-space: nowrap;
     width: 100%;
+}
+
+.book-actions__label {
+    min-width: 0;
 }
 
 .book-actions a:hover,

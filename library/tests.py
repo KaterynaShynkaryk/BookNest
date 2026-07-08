@@ -1201,6 +1201,7 @@ class ShelfListViewTests(TestCase):
         self.assertContains(response, reverse("shelf_book_remove", args=[shelf.pk, book.pk]))
         self.assertContains(response, 'icon="ic:outline-remove"')
         self.assertContains(response, "Прибрати з полички")
+        self.assertContains(response, 'class="text-danger-button book-actions__button"')
 
         remove_response = self.client.post(
             reverse("shelf_book_remove", args=[shelf.pk, book.pk]),
