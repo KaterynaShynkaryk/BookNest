@@ -1669,6 +1669,11 @@ a:hover {
         gap: 0.15rem;
     }
 
+    .page-heading__actions {
+        align-items: flex-start;
+        justify-content: flex-start;
+    }
+
     .filter-controls--compact {
         flex-wrap: wrap;
     }

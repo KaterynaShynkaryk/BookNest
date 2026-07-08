@@ -1131,6 +1131,10 @@ class ShelfListViewTests(TestCase):
         self.assertContains(response, "Класика")
         self.assertContains(response, "Книг: 2")
         self.assertContains(response, 'class="primary-link-button add-book-link" href="/shelves/add/"')
+        html = response.content.decode()
+        self.assertLess(html.index('class="primary-link-button add-book-link"'),
+        html.index('class="filter-bar fade-in delay-1"'))
+        self.assertGreater(html.index('class="visible-count"'), html.index('class="filter-bar fade-in delay-1"'))
         self.assertContains(response, f'class="shelf-card__link" href="{reverse("shelf_detail", args=[fantasy.pk])}"')
         self.assertContains(response, "Книг: 1")
         self.assertContains(response, 'class="shelf-cover-grid"')
