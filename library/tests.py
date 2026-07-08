@@ -130,8 +130,8 @@ class BookListViewTest(TestCase):
         self.assertContains(response, "status-label--planned")
         self.assertContains(response, "status-label--reading")
         self.assertContains(response, "status-label--failed")
-        self.assertContains(response, "♥")
-        self.assertContains(response, "♡")
+        self.assertContains(response, 'icon="ic:baseline-favorite"')
+        self.assertContains(response, 'icon="ic:baseline-favorite-border"')
         self.assertContains(response, "Бажанка")
         self.assertContains(response, "Заплановано")
         self.assertContains(response, "Читаю")
@@ -412,16 +412,18 @@ class BookListViewTest(TestCase):
         self.assertNotEqual(metadata["publisher"], "book_publisher_label")
 
     def test_book_url_metadata_leaves_generic_book_series_empty(self):
-        metadata = extract_book_metadata(
-            '<script type="application/ld+json">'
-            '{"@type":"Book","name":"Окрема книга",'
-            '"isPartOf":{"@type":"Book","name":"Книга"},'
-            '"author":{"name":"Автор"}}'
-            "</script>"
-        )
+        for generic_series in ("Книга", "Книги", "Book", "Books"):
+            with self.subTest(generic_series=generic_series):
+                metadata = extract_book_metadata(
+                    '<script type="application/ld+json">'
+                    '{"@type":"Book","name":"Окрема книга",'
+                    f'"isPartOf":{{"@type":"Book","name":"{generic_series}"}},'
+                    '"author":{"name":"Автор"}}'
+                    "</script>"
+                )
 
-        self.assertEqual(metadata["title"], "Окрема книга")
-        self.assertEqual(metadata["series"], "")
+                self.assertEqual(metadata["title"], "Окрема книга")
+                self.assertEqual(metadata["series"], "")
 
     def test_book_url_metadata_does_not_guess_publisher_from_unlabelled_text(self):
         metadata = extract_book_metadata(
@@ -958,8 +960,21 @@ class BookListViewTest(TestCase):
         self.assertIn("color-scheme: dark", css)
         self.assertIn("--background: hsl(222 28% 9%)", css)
         self.assertIn(".theme-toggle", css)
-        self.assertIn("font-size: 0.88rem", css)
-        self.assertIn("padding: 0.42rem 0.68rem", css)
+        self.assertIn("font-size: 0.875rem", css)
+        self.assertIn("min-height: 2.75rem", css)
+        self.assertIn("padding: 0.65rem 1.15rem", css)
+        self.assertIn(".nav-icon", css)
+        self.assertIn(".favorite-icon", css)
+        self.assertIn(".meta-icon", css)
+        self.assertIn("font-size: 0", css)
+        self.assertIn("font-size: 1.05rem", css)
+        self.assertIn("font-size: 1.4rem", css)
+        self.assertIn("height: 1.4rem", css)
+        self.assertIn("min-height: 3.15rem", css)
+        self.assertIn("font-size: 1.45rem", css)
+        self.assertIn("padding-bottom: calc(5.6rem + env(safe-area-inset-bottom))", css)
+        self.assertIn(".book-card__link:focus", css)
+        self.assertIn("outline: 0", css)
 
     def test_book_cover_has_no_decorative_left_stripe(self):
         with open("static/css/styles.css", encoding="utf-8") as styles:
@@ -1116,6 +1131,10 @@ class ShelfListViewTests(TestCase):
         self.assertContains(response, "Класика")
         self.assertContains(response, "Книг: 2")
         self.assertContains(response, 'class="primary-link-button add-book-link" href="/shelves/add/"')
+        html = response.content.decode()
+        self.assertLess(html.index('class="primary-link-button add-book-link"'),
+        html.index('class="filter-bar fade-in delay-1"'))
+        self.assertGreater(html.index('class="visible-count"'), html.index('class="filter-bar fade-in delay-1"'))
         self.assertContains(response, f'class="shelf-card__link" href="{reverse("shelf_detail", args=[fantasy.pk])}"')
         self.assertContains(response, "Книг: 1")
         self.assertContains(response, 'class="shelf-cover-grid"')
@@ -1126,9 +1145,10 @@ class ShelfListViewTests(TestCase):
         self.assertContains(response, 'class="is-active" href="/shelves/"')
         self.assertContains(response, 'class="book-actions-menu shelf-actions-menu"')
         self.assertContains(response, "⋯")
-        self.assertContains(response, "📚︎ Керувати книгами")
-        self.assertContains(response, '<span class="mirrored-icon" aria-hidden="true">✎</span> Редагувати')
-        self.assertContains(response, "🗙 Видалити")
+        self.assertContains(response, "Керувати книгами")
+        self.assertContains(response, 'icon="material-symbols:library-books"')
+        self.assertContains(response, 'icon="ic:baseline-edit"')
+        self.assertContains(response, 'icon="ic:baseline-delete"')
         self.assertNotContains(response, "Відкрити поличку →")
         self.assertContains(response, 'event.target.closest(".shelf-actions-menu")')
         with open("static/css/styles.css", encoding="utf-8") as styles:
@@ -1164,14 +1184,54 @@ class ShelfListViewTests(TestCase):
         self.assertContains(response, "Фентезі")
         self.assertContains(response, "Абетка магії")
         self.assertContains(response, 'class="book-actions-menu shelf-actions-menu"')
-        self.assertContains(response, "📚︎ Керувати книгами")
-        self.assertContains(response, '<span class="mirrored-icon" aria-hidden="true">✎</span> Редагувати')
-        self.assertContains(response, "🗙 Видалити")
+        self.assertContains(response, "Керувати книгами")
+        self.assertContains(response, 'icon="material-symbols:library-books"')
+        self.assertContains(response, 'icon="ic:baseline-edit"')
+        self.assertContains(response, 'icon="ic:baseline-delete"')
         self.assertNotContains(response, "Відкрити поличку")
         with open("static/css/styles.css", encoding="utf-8") as styles:
             css = styles.read()
         self.assertIn(".page-heading:has(.book-actions-menu[open])", css)
         self.assertIn(".page-heading__actions .book-actions-menu", css)
+
+    def test_shelf_detail_book_menu_can_remove_book_from_shelf(self):
+        shelf = Shelf.objects.create(user=self.user, name="Фентезі")
+        book = Book.objects.create(user=self.user, title="Абетка магії", author="Автор Один")
+        shelf.books.add(book)
+
+        self.client.force_login(self.user)
+        response = self.client.get(reverse("shelf_detail", args=[shelf.pk]))
+
+        self.assertContains(response, reverse("shelf_book_remove", args=[shelf.pk, book.pk]))
+        self.assertContains(response, 'icon="ic:outline-remove"')
+        self.assertContains(response, "Прибрати з полички")
+        self.assertContains(response, 'class="text-danger-button book-actions__button"')
+
+        remove_response = self.client.post(
+            reverse("shelf_book_remove", args=[shelf.pk, book.pk]),
+            {"next": reverse("shelf_detail", args=[shelf.pk])},
+        )
+
+        self.assertRedirects(remove_response, reverse("shelf_detail", args=[shelf.pk]))
+        self.assertFalse(shelf.books.filter(pk=book.pk).exists())
+        self.assertTrue(Book.objects.filter(pk=book.pk).exists())
+
+    def test_book_delete_returns_to_shelf_when_next_is_shelf_detail(self):
+        shelf = Shelf.objects.create(user=self.user, name="Фентезі")
+        book = Book.objects.create(user=self.user, title="Абетка магії", author="Автор Один")
+        shelf.books.add(book)
+        next_url = reverse("shelf_detail", args=[shelf.pk])
+
+        self.client.force_login(self.user)
+        get_response = self.client.get(reverse("book_delete", args=[book.pk]), {"next": next_url})
+        self.assertContains(get_response, f'name="next" value="{next_url}"')
+        self.assertContains(get_response, f'href="{next_url}"')
+        self.assertContains(get_response, 'icon="ic:baseline-keyboard-backspace"')
+
+        response = self.client.post(reverse("book_delete", args=[book.pk]), {"next": next_url})
+
+        self.assertRedirects(response, next_url)
+        self.assertFalse(Book.objects.filter(pk=book.pk).exists())
 
     def test_shelf_list_can_search_by_name(self):
         Shelf.objects.create(user=self.user, name="Фентезі")
@@ -1341,7 +1401,8 @@ class ShelfListViewTests(TestCase):
             self.assertContains(response, f"https://example.com/cover-{index}.jpg")
         self.assertNotContains(response, "https://example.com/cover-1.jpg")
         self.assertContains(response, "+ ще 1")
-        self.assertContains(response, "📚︎ Керувати книгами")
+        self.assertContains(response, "Керувати книгами")
+        self.assertContains(response, 'icon="material-symbols:library-books"')
         self.assertNotContains(response, 'class="shelf-card__manage-link"')
         self.assertNotContains(response, 'class="shelf-book-list"')
 
@@ -1393,6 +1454,7 @@ class ShelfListViewTests(TestCase):
         get_response = self.client.get(reverse("shelf_delete", args=[shelf.pk]))
         self.assertEqual(get_response.status_code, 200)
         self.assertContains(get_response, "Книги не будуть видалені")
+        self.assertContains(get_response, 'icon="ic:baseline-keyboard-backspace"')
 
         response = self.client.post(reverse("shelf_delete", args=[shelf.pk]))
 
@@ -1477,6 +1539,10 @@ class BookDetailProgressTests(TestCase):
         self.assertContains(response, "Полиці")
         self.assertContains(response, f'href="{reverse("shelf_detail", args=[shelf.pk])}"')
         self.assertContains(response, "Фентезі")
+        with open("static/css/styles.css", encoding="utf-8") as styles:
+            css = styles.read()
+        self.assertIn(".shelf-tags a", css)
+        self.assertIn("background: var(--tag-bg)", css)
 
     def test_detail_page_avoids_duplicate_author_and_rating_in_main_content(self):
         self.book.status = Book.Status.COMPLETED
@@ -1718,9 +1784,12 @@ class NoteFeatureTests(TestCase):
         self.assertContains(response, "До книг")
         self.assertContains(response, "BookNest")
         self.assertContains(response, 'class="app-sidebar"')
-        self.assertContains(response, "📚︎ Бібліотека")
-        self.assertContains(response, "📝︎ Нотатки")
-        self.assertContains(response, "☷︎ Полички")
+        self.assertContains(response, "https://code.iconify.design/iconify-icon/3.0.0/iconify-icon.min.js")
+        self.assertContains(response, "Нотатки")
+        self.assertContains(response, "Полички")
+        self.assertContains(response, 'icon="ri:book-shelf-fill"')
+        self.assertContains(response, 'icon="ri:sticky-note-add-fill"')
+        self.assertContains(response, 'icon="ri:archive-drawer-fill"')
         self.assertContains(response, 'href="/shelves/"')
         self.assertContains(response, 'class="is-active" href="/notes/"')
         self.assertNotContains(response, "sidebar-brand")
@@ -1739,6 +1808,10 @@ class NoteFeatureTests(TestCase):
         self.assertContains(response, "Book note")
         self.assertContains(response, 'class="note-form-toggle note-page-form-toggle"')
         self.assertContains(response, '+ Додати нотатку')
+        self.assertContains(response, 'class="book-actions-menu note-actions-menu"')
+        self.assertContains(response, 'aria-label="Дії для нотатки"')
+        self.assertIn(".note-actions-menu", css)
+        self.assertIn(".note-card__actions {\n        display: none;", css)
         self.assertNotContains(response, "Other hidden note")
 
 

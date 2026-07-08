@@ -22,15 +22,15 @@
                     <p>{{ book.author }}</p>
                     <div class="detail-badges">
                         <span class="status-label status-label--{{ book.status }}">{{ book.get_status_display }}</span>
-                        {% if book.is_favorite %}<span class="favorite-label">♥ Улюблена</span>{% endif %}
+                        {% if book.is_favorite %}<span class="favorite-label"><iconify-icon class="action-icon" icon="ic:baseline-favorite" aria-hidden="true"></iconify-icon> Улюблена</span>{% endif %}
                     </div>
                 </div>
             </div>
 
             <div class="meta-card">
-                {% if book.genre %}<div class="meta-row"><span>🎭︎</span><div><small>Жанр</small><strong>{{ book.genre }}</strong></div></div>{% endif %}
-                {% if book.publisher %}<div class="meta-row"><span>🏛︎</span><div><small>Видавництво</small><strong>{{ book.publisher }}</strong></div></div>{% endif %}
-                {% if book.series %}<div class="meta-row"><span>⏭︎</span><div><small>Серія</small><strong>{{ book.series }}</strong></div></div>{% endif %}
+                {% if book.genre %}<div class="meta-row"><span><iconify-icon class="meta-icon" icon="ic:baseline-theater-comedy" aria-hidden="true"></iconify-icon></span><div><small>Жанр</small><strong>{{ book.genre }}</strong></div></div>{% endif %}
+                {% if book.publisher %}<div class="meta-row"><span><iconify-icon class="meta-icon" icon="ic:baseline-apartment" aria-hidden="true"></iconify-icon></span><div><small>Видавництво</small><strong>{{ book.publisher }}</strong></div></div>{% endif %}
+                {% if book.series %}<div class="meta-row"><span><iconify-icon class="meta-icon" icon="ic:baseline-collections-bookmark" aria-hidden="true"></iconify-icon></span><div><small>Серія</small><strong>{{ book.series }}</strong></div></div>{% endif %}
             </div>
 
             {% if book.shelves.all %}
@@ -97,18 +97,14 @@
                                 {% if note.title %}<h3>{{ note.title }}</h3>{% endif %}
                                 <p>{{ note.content }}</p>
                                 <div class="note-card__actions">
-                                    <form method="post" action="{% url 'note_toggle_favorite' note.pk %}">
-                                        {% csrf_token %}
-                                        <input type="hidden" name="next" value="{{ request.get_full_path }}">
-                                        <button class="note-favorite-button{% if note.is_favorite %} is-active{% endif %}" type="submit" aria-label="{% if note.is_favorite %}Прибрати нотатку з улюблених{% else %}Додати нотатку в улюблені{% endif %}">{% if note.is_favorite %}♥ Улюблена{% else %}♡ В улюблені{% endif %}</button>
-                                    </form>
-                                    <a class="note-edit-link" href="{% url 'note_update' note.pk %}?next={{ request.get_full_path|urlencode }}">Редагувати</a>
-                                    <form method="post" action="{% url 'note_delete' note.pk %}">
-                                        {% csrf_token %}
-                                        <input type="hidden" name="next" value="{{ request.get_full_path }}">
-                                        <button class="text-danger-button" type="submit">Видалити</button>
-                                    </form>
+                                    {% include "library/_note_action_controls.html" with note=note in_menu=False %}
                                 </div>
+                                <details class="book-actions-menu note-actions-menu">
+                                    <summary aria-label="Дії для нотатки">⋯</summary>
+                                    <nav class="book-actions" aria-label="Дії для нотатки">
+                                        {% include "library/_note_action_controls.html" with note=note in_menu=True %}
+                                    </nav>
+                                </details>
                             </article>
                         {% endfor %}
                     </div>
@@ -164,8 +160,8 @@
 
             <div class="side-card">
                 <h2>Дії</h2>
-                <a class="action-link primary-action" href="{% url 'book_update' book.pk %}"><span class="mirrored-icon" aria-hidden="true">✎</span> Редагувати</a>
-                <a class="action-link danger-action" href="{% url 'book_delete' book.pk %}">🗙 Видалити книгу</a>
+                <a class="action-link primary-action" href="{% url 'book_update' book.pk %}"><iconify-icon class="action-icon" icon="ic:baseline-edit" aria-hidden="true"></iconify-icon> Редагувати</a>
+                <a class="action-link danger-action" href="{% url 'book_delete' book.pk %}"><iconify-icon class="action-icon" icon="ic:baseline-delete" aria-hidden="true"></iconify-icon> Видалити книгу</a>
             </div>
         </aside>
     </section>

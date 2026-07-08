@@ -23,7 +23,7 @@
                                     {% csrf_token %}
                                     <input type="hidden" name="next" value="{{ request.get_full_path }}">
                                     <button class="favorite-toggle" type="submit" aria-label="{% if book.is_favorite %}Прибрати з обраного{% else %}Додати в обране{% endif %}">
-                                        {% if book.is_favorite %}♥{% else %}♡{% endif %}
+                                        {% if book.is_favorite %}<iconify-icon class="favorite-icon" icon="ic:baseline-favorite" aria-hidden="true"></iconify-icon>{% else %}<iconify-icon class="favorite-icon" icon="ic:baseline-favorite-border" aria-hidden="true"></iconify-icon>{% endif %}
                                     </button>
                                 </form>
                             </div>
@@ -52,9 +52,16 @@
                     <details class="book-actions-menu">
                         <summary aria-label="Дії для {{ book.title }}">⋯</summary>
                         <nav class="book-actions" aria-label="Дії для {{ book.title }}">
-                            <a href="{% url 'book_detail' book.pk %}">👁 Деталі</a>
-                            <a href="{% url 'book_update' book.pk %}"><span class="mirrored-icon" aria-hidden="true">✎</span> Редагувати</a>
-                            <a class="danger-link" href="{% url 'book_delete' book.pk %}">🗙 Видалити</a>
+                            <a href="{% url 'book_detail' book.pk %}"><iconify-icon class="action-icon" icon="ic:baseline-menu-book" aria-hidden="true"></iconify-icon> Деталі</a>
+                            <a href="{% url 'book_update' book.pk %}"><iconify-icon class="action-icon" icon="ic:baseline-edit" aria-hidden="true"></iconify-icon> Редагувати</a>
+                            {% if shelf %}
+                                <form method="post" action="{% url 'shelf_book_remove' shelf.pk book.pk %}">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                                    <button class="text-danger-button book-actions__button" type="submit"><iconify-icon class="action-icon" icon="ic:outline-remove" aria-hidden="true"></iconify-icon><span class="book-actions__label">Прибрати з полички</span></button>
+                                </form>
+                            {% endif %}
+                            <a class="danger-link" href="{% url 'book_delete' book.pk %}?next={{ request.get_full_path|urlencode }}"><iconify-icon class="action-icon" icon="ic:baseline-delete" aria-hidden="true"></iconify-icon> Видалити</a>
                         </nav>
                     </details>
                 </div>

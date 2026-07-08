@@ -64,18 +64,14 @@
                                 {% if note.title %}<h3>{{ note.title }}</h3>{% endif %}
                                 <p>{{ note.content }}</p>
                                 <div class="note-card__actions">
-                                    <form method="post" action="{% url 'note_toggle_favorite' note.pk %}">
-                                        {% csrf_token %}
-                                        <input type="hidden" name="next" value="{{ request.get_full_path }}">
-                                        <button class="note-favorite-button{% if note.is_favorite %} is-active{% endif %}" type="submit" aria-label="{% if note.is_favorite %}Прибрати нотатку з улюблених{% else %}Додати нотатку в улюблені{% endif %}">{% if note.is_favorite %}♥ Улюблена{% else %}♡ В улюблені{% endif %}</button>
-                                    </form>
-                                    <a class="note-edit-link" href="{% url 'note_update' note.pk %}?next={{ request.get_full_path|urlencode }}">Редагувати</a>
-                                    <form method="post" action="{% url 'note_delete' note.pk %}">
-                                        {% csrf_token %}
-                                        <input type="hidden" name="next" value="{{ request.get_full_path }}">
-                                        <button class="text-danger-button" type="submit">Видалити</button>
-                                    </form>
+                                    {% include "library/_note_action_controls.html" with note=note in_menu=False %}
                                 </div>
+                                <details class="book-actions-menu note-actions-menu">
+                                    <summary aria-label="Дії для нотатки">⋯</summary>
+                                    <nav class="book-actions" aria-label="Дії для нотатки">
+                                        {% include "library/_note_action_controls.html" with note=note in_menu=True %}
+                                    </nav>
+                                </details>
                             </article>
                         {% endfor %}
                     </div>
@@ -98,18 +94,14 @@
                                 {% if note.title %}<h3>{{ note.title }}</h3>{% endif %}
                                 <p>{{ note.content }}</p>
                                 <div class="note-card__actions">
-                                    <form method="post" action="{% url 'note_toggle_favorite' note.pk %}">
-                                        {% csrf_token %}
-                                        <input type="hidden" name="next" value="{{ request.get_full_path }}">
-                                        <button class="note-favorite-button{% if note.is_favorite %} is-active{% endif %}" type="submit" aria-label="{% if note.is_favorite %}Прибрати нотатку з улюблених{% else %}Додати нотатку в улюблені{% endif %}">{% if note.is_favorite %}♥ Улюблена{% else %}♡ В улюблені{% endif %}</button>
-                                    </form>
-                                    <a class="note-edit-link" href="{% url 'note_update' note.pk %}?next={{ request.get_full_path|urlencode }}">Редагувати</a>
-                                    <form method="post" action="{% url 'note_delete' note.pk %}">
-                                        {% csrf_token %}
-                                        <input type="hidden" name="next" value="{{ request.get_full_path }}">
-                                        <button class="text-danger-button" type="submit">Видалити</button>
-                                    </form>
+                                    {% include "library/_note_action_controls.html" with note=note in_menu=False %}
                                 </div>
+                                <details class="book-actions-menu note-actions-menu">
+                                    <summary aria-label="Дії для нотатки">⋯</summary>
+                                    <nav class="book-actions" aria-label="Дії для нотатки">
+                                        {% include "library/_note_action_controls.html" with note=note in_menu=True %}
+                                    </nav>
+                                </details>
                             </article>
                         {% endfor %}
                     </div>

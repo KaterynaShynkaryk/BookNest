@@ -812,7 +812,7 @@ def clean_genre_value(value):
 
 def clean_series_value(value):
     value = clean_labeled_value(value)
-    if value.casefold() in {"книга", "book"}:
+    if value.casefold() in {"книга", "книги", "book", "books"}:
         return ""
     return value
 

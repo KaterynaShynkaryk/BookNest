@@ -9,7 +9,6 @@
             <p>Окремі колекції для ваших книг</p>
         </div>
         <div class="page-heading__actions">
-            <span class="visible-count">Усього: <strong>{{ shelf_count }}</strong></span>
             <a class="primary-link-button add-book-link" href="{% url 'shelf_create' %}">+ Додати поличку</a>
         </div>
     </section>
@@ -30,6 +29,7 @@
                 <a class="reset-link" href="{% url 'shelf_list' %}">Скинути</a>
             {% endif %}
         </div>
+        <span class="visible-count">Усього: <strong>{{ shelf_count }}</strong></span>
     </form>
 
     {% if shelves %}
@@ -51,9 +51,9 @@
                         <details class="book-actions-menu shelf-actions-menu">
                             <summary aria-label="Дії для полички {{ shelf.name }}">⋯</summary>
                             <nav class="book-actions" aria-label="Дії для полички {{ shelf.name }}">
-                                <a href="{% url 'shelf_books' shelf.pk %}">📚︎ Керувати книгами</a>
-                                <a href="{% url 'shelf_update' shelf.pk %}"><span class="mirrored-icon" aria-hidden="true">✎</span> Редагувати</a>
-                                <a class="danger-link" href="{% url 'shelf_delete' shelf.pk %}">🗙 Видалити</a>
+                                <a href="{% url 'shelf_books' shelf.pk %}"><iconify-icon class="action-icon" icon="material-symbols:library-books" aria-hidden="true"></iconify-icon> Керувати книгами</a>
+                                <a href="{% url 'shelf_update' shelf.pk %}"><iconify-icon class="action-icon" icon="ic:baseline-edit" aria-hidden="true"></iconify-icon> Редагувати</a>
+                                <a class="danger-link" href="{% url 'shelf_delete' shelf.pk %}"><iconify-icon class="action-icon" icon="ic:baseline-delete" aria-hidden="true"></iconify-icon> Видалити</a>
                             </nav>
                         </details>
                     </div>
