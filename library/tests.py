@@ -156,6 +156,19 @@ class BookListViewTest(TestCase):
         self.assertContains(response, 'data-flash-dismiss')
         self.assertContains(response, 'rel="icon" type="image/svg+xml"')
         self.assertContains(response, 'images/booknest-logo.svg')
+        self.assertContains(response, 'rel="icon" type="image/png" sizes="32x32"')
+        self.assertContains(response, 'images/booknest-favicon-32.png')
+        self.assertContains(response, 'rel="apple-touch-icon" sizes="180x180"')
+        self.assertContains(response, 'images/booknest-apple-touch-icon.png')
+        self.assertContains(response, 'rel="manifest"')
+        self.assertContains(response, 'manifest.webmanifest')
+        with open("build.sh", encoding="utf-8") as build_script:
+            build_commands = build_script.read()
+        self.assertIn("python scripts/generate_app_icons.py", build_commands)
+        self.assertLess(
+            build_commands.index("python scripts/generate_app_icons.py"),
+            build_commands.index("python manage.py collectstatic"),
+        )
         self.assertContains(response, 'aria-label="Закрити повідомлення"')
         self.assertContains(response, "Книгу «Flash Book» додано до бібліотеки.")
         with open("static/css/styles.css", encoding="utf-8") as styles:
@@ -412,7 +425,7 @@ class BookListViewTest(TestCase):
         self.assertNotEqual(metadata["publisher"], "book_publisher_label")
 
     def test_book_url_metadata_leaves_generic_book_series_empty(self):
-        for generic_series in ("Книга", "Книги", "Book", "Books"):
+        for generic_series in ("Книга", "Книги", "Книг", "книг", "Book", "Books"):
             with self.subTest(generic_series=generic_series):
                 metadata = extract_book_metadata(
                     '<script type="application/ld+json">'
@@ -1193,6 +1206,8 @@ class ShelfListViewTests(TestCase):
             css = styles.read()
         self.assertIn(".page-heading:has(.book-actions-menu[open])", css)
         self.assertIn(".page-heading__actions .book-actions-menu", css)
+        self.assertIn(".shelf-detail-heading .page-heading__actions", css)
+        self.assertIn("right: 0", css)
 
     def test_shelf_detail_book_menu_can_remove_book_from_shelf(self):
         shelf = Shelf.objects.create(user=self.user, name="Фентезі")

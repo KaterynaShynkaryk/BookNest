@@ -211,3 +211,9 @@ __marimo__/
 *.dump
 *.backup
 booknest-db*.sql
+
+# Generated mobile/PWA icons (created by scripts/generate_app_icons.py)
+backend/static/images/booknest-favicon-32.png
+backend/static/images/booknest-apple-touch-icon.png
+backend/static/images/booknest-icon-192.png
+backend/static/images/booknest-icon-512.png
